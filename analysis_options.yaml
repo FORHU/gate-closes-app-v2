@@ -1,0 +1,13 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    public_member_api_docs: false
+    # Conflicts with the Repository/DataSource interface pattern this
+    # template's Clean Architecture is built on — many features only need
+    # one method today, and the abstraction is still worth keeping for
+    # testability (mocking) and future extension.
+    one_member_abstracts: false
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options

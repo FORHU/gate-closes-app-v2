@@ -1,0 +1,60 @@
+name: Flutter Enterprise CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📚 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: ⚙️ Generate Localization (l10n)
+        run: flutter gen-l10n
+
+      - name: 🔍 Verify Formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: 🕵️ Analyze Code
+        run: flutter analyze
+
+      - name: 🧱 Enforce Feature Isolation (no cross-feature imports)
+        run: |
+          # 'auth' owns app-wide session/identity state and is the one
+          # sanctioned shared feature other features may import (Handbook §2.4).
+          fail=0
+          for dir in lib/features/*/; do
+            feature=$(basename "$dir")
+            matches=$(grep -rnE "import 'package:flutter_template/features/" "$dir" \
+              | grep -vE "features/$feature/" \
+              | grep -vE "features/auth/" || true)
+            if [ -n "$matches" ]; then
+              echo "::error::Cross-feature import detected in feature '$feature':"
+              echo "$matches"
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "Features must not import from other features (except 'auth'). See the Engineering Handbook §2.4."
+            exit 1
+          fi
+          echo "✅ No disallowed cross-feature imports found."
+
+      - name: 🧪 Run Tests
+        run: flutter test
