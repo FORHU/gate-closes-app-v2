@@ -42,19 +42,19 @@ class TerminalEchoSocketService {
       appLogger.i(
         'Socket connected to /terminal-echo. Joining airport:$airportIata',
       );
-      _socket!.emit('join-airport', {'airportIata': airportIata});
+      _socket!.emit('terminal_echo:join_airport', {'airportIata': airportIata});
     });
 
     if (onNewEcho != null) {
-      _socket!.on('new-terminal-echo', (data) {
-        if (data is Map) {
-          onNewEcho(data.cast<String, dynamic>());
+      _socket!.on('terminal_echo:changed', (data) {
+        if (data is Map && data['type'] == 'create' && data['data'] is Map) {
+          onNewEcho((data['data'] as Map).cast<String, dynamic>());
         }
       });
     }
 
     if (onReactionUpdated != null) {
-      _socket!.on('reaction-updated', (data) {
+      _socket!.on('terminal_echo:reaction_updated', (data) {
         if (data is Map) {
           onReactionUpdated(data.cast<String, dynamic>());
         }

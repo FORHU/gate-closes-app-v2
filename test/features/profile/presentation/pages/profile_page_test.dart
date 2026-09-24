@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/errors/failure.dart';
 import 'package:flutter_template/core/services/storage_service.dart';
+import 'package:flutter_template/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:flutter_template/features/flight/domain/repositories/flight_repository.dart';
+import 'package:flutter_template/features/flight/presentation/controllers/flight_controller.dart';
 import 'package:flutter_template/features/profile/data/repositories/profile_repository.dart';
 import 'package:flutter_template/features/profile/domain/entities/profile_entity.dart';
 import 'package:flutter_template/features/profile/presentation/controllers/profile_controller.dart';
@@ -13,16 +15,28 @@ import 'package:mocktail/mocktail.dart';
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
 
+class MockFlightRepository extends Mock implements FlightRepository {}
+
 class MockStorageService extends Mock implements StorageService {}
 
 void main() {
+  late MockProfileRepository mockProfileRepository;
+  late MockFlightRepository mockFlightRepository;
+  late MockStorageService mockStorage;
+
+  setUp(() {
+    mockProfileRepository = MockProfileRepository();
+    mockFlightRepository = MockFlightRepository();
+    mockStorage = MockStorageService();
+
+    when(mockStorage.readUserModel).thenReturn(null);
+  });
+
   testWidgets(
-    'ProfilePage renders the fetched profile with no layout errors',
+    'ProfilePage renders hero and Add Boarding Pass button '
+    'when no active flight',
     (tester) async {
-      final mockRepository = MockProfileRepository();
-      final mockStorage = MockStorageService();
-      when(mockStorage.readUserModel).thenReturn(null);
-      when(mockRepository.getProfile).thenAnswer(
+      when(mockProfileRepository.getProfile).thenAnswer(
         (_) async => const Right(
           ProfileEntity(
             id: '1',
@@ -32,12 +46,16 @@ void main() {
           ),
         ),
       );
+      when(mockFlightRepository.getActiveFlightTicket).thenAnswer(
+        (_) async => const Right(null),
+      );
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             storageServiceProvider.overrideWithValue(mockStorage),
-            profileRepositoryProvider.overrideWithValue(mockRepository),
+            profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+            flightRepositoryProvider.overrideWithValue(mockFlightRepository),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -49,30 +67,51 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ada Lovelace'), findsOneWidget);
-      expect(find.text('ada@example.com'), findsOneWidget);
-      expect(
-        find.text('Building great things with Flutter.'),
-        findsOneWidget,
-      );
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('FLIGHT DATA'), findsOneWidget);
+      expect(find.text('ADD BOARDING PASS'), findsOneWidget);
+      expect(find.text('ACCOUNT'), findsOneWidget);
+      expect(find.text('Edit Profile'), findsOneWidget);
+      expect(find.text('Change Password'), findsOneWidget);
+      expect(find.text('GENERAL'), findsOneWidget);
+      expect(find.text('Dark mode'), findsOneWidget);
+      expect(find.text('Log Out'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
 
   testWidgets(
-    'ProfilePage falls back to session data with a retry option on failure',
+    'ProfilePage renders active flight card when flight ticket exists',
     (tester) async {
-      final mockRepository = MockProfileRepository();
-      final mockStorage = MockStorageService();
-      when(mockStorage.readUserModel).thenReturn(null);
-      when(
-        mockRepository.getProfile,
-      ).thenAnswer((_) async => const Left(NetworkFailure()));
+      when(mockProfileRepository.getProfile).thenAnswer(
+        (_) async => const Right(
+          ProfileEntity(
+            id: '1',
+            name: 'Ada Lovelace',
+            email: 'ada@example.com',
+          ),
+        ),
+      );
+      when(mockFlightRepository.getActiveFlightTicket).thenAnswer(
+        (_) async => Right(
+          FlightTicketEntity(
+            id: 'flight-1',
+            userId: 'user-1',
+            flightNumber: 'SQ321',
+            fromAirport: 'SIN',
+            toAirport: 'LHR',
+            departureDateTime: DateTime(2026, 10, 15, 9, 30),
+            returnDateTime: DateTime(2026, 10, 25, 18),
+          ),
+        ),
+      );
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             storageServiceProvider.overrideWithValue(mockStorage),
-            profileRepositoryProvider.overrideWithValue(mockRepository),
+            profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+            flightRepositoryProvider.overrideWithValue(mockFlightRepository),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -83,7 +122,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('SQ321'), findsOneWidget);
+      expect(find.text('SIN'), findsWidgets);
+      expect(find.text('LHR'), findsWidgets);
       expect(tester.takeException(), isNull);
     },
   );

@@ -18,13 +18,14 @@ class ConversationSocketService {
 
   bool get isConnected => _socket?.connected ?? false;
 
-  /// Connects to the `/conversations` namespace and joins the given
-  /// conversation's room. The namespace requires a valid access token —
-  /// unauthenticated sockets are rejected by server-side middleware.
+  /// Connects to the `/conversations` namespace. If [conversationId] is
+  /// provided, joins that conversation's room. Otherwise connects to the
+  /// namespace to receive user-level events (e.g. `conversation:updated`).
   void connect({
-    required String conversationId,
+    String? conversationId,
     void Function(Map<String, dynamic> message)? onMessageReceived,
     void Function(Map<String, dynamic> reaction)? onReactionUpdated,
+    void Function(Map<String, dynamic> update)? onConversationUpdated,
   }) {
     disconnect();
     _currentConversationId = conversationId;
@@ -46,11 +47,25 @@ class ConversationSocketService {
     );
 
     _socket!.onConnect((_) {
-      appLogger.i(
-        'Socket connected to /conversations. Joining $conversationId',
-      );
-      _socket!.emit('join_conversation', {'conversationId': conversationId});
+      if (conversationId != null) {
+        appLogger.i(
+          'Socket connected to /conversations. Joining $conversationId',
+        );
+        _socket!.emit('join_conversation', {'conversationId': conversationId});
+      } else {
+        appLogger.i(
+          'Socket connected to /conversations (listening for user updates)',
+        );
+      }
     });
+
+    if (onConversationUpdated != null) {
+      _socket!.on('conversation:updated', (data) {
+        if (data is Map) {
+          onConversationUpdated(data.cast<String, dynamic>());
+        }
+      });
+    }
 
     if (onMessageReceived != null) {
       _socket!.on('message:received', (data) {

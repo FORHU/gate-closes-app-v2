@@ -157,6 +157,45 @@ class MessageThreadController extends Notifier<MessageThreadState> {
     );
   }
 
+  /// Sends a voice memo message with waveform and audio duration.
+  Future<bool> sendVoice({
+    required String fileUrl,
+    required double audioDuration,
+    required List<double> waveformData,
+    String? fileName,
+  }) async {
+    final conversationId = _conversationId;
+    if (conversationId == null) return false;
+
+    state = state.copyWith(isSending: true);
+    final repo = ref.read(messagesRepositoryProvider);
+    final result = await repo.sendVoiceMessage(
+      conversationId: conversationId,
+      fileUrl: fileUrl,
+      audioDuration: audioDuration,
+      waveformData: waveformData,
+      fileName: fileName,
+    );
+
+    return result.fold(
+      (failure) {
+        state = state.copyWith(isSending: false, error: failure.message);
+        return false;
+      },
+      (sent) {
+        if (!state.messages.any((m) => m.id == sent.id)) {
+          state = state.copyWith(
+            isSending: false,
+            messages: [...state.messages, sent],
+          );
+        } else {
+          state = state.copyWith(isSending: false);
+        }
+        return true;
+      },
+    );
+  }
+
   Future<void> react({required String messageId, required String reaction}) {
     final conversationId = _conversationId;
     if (conversationId == null) return Future.value();

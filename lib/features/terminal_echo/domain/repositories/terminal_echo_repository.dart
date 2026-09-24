@@ -31,4 +31,15 @@ abstract class TerminalEchoRepository {
 
   /// Increments listen count when an audio echo is played.
   Future<Either<Failure, void>> incrementListen(String echoId);
+
+  /// Fetches echo pins as a GeoJSON FeatureCollection (`GET /terminal-echo/map`).
+  Future<Either<Failure, Map<String, dynamic>>> getMapGeoJson({
+    double? west,
+    double? south,
+    double? east,
+    double? north,
+  });
+
+  /// Fetches a single Terminal Echo by its id (`GET /terminal-echo/:id`).
+  Future<Either<Failure, TerminalEchoEntity>> getEchoById(String id);
 }

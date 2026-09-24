@@ -11,5 +11,10 @@ class RouteNames {
   static const String worldMap = '/worldMap';
   static const String feed = '/feed';
   static const String createEcho = '/feed/create';
+  static const String echoThread = '/feed/thread';
+  static const String airportSearch = '/feed/airport-search';
   static const String profile = '/profile';
+  static const String editProfile = '/profile/edit';
+  static const String changePassword = '/profile/change-password';
+  static const String addBoardingPass = '/add-boarding-pass';
 }

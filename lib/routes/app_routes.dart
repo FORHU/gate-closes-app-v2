@@ -6,9 +6,16 @@ import 'package:flutter_template/features/auth/presentation/pages/forgot_passwor
 import 'package:flutter_template/features/auth/presentation/pages/login_page.dart';
 import 'package:flutter_template/features/auth/presentation/pages/onboarding_page.dart';
 import 'package:flutter_template/features/auth/presentation/pages/register_page.dart';
+import 'package:flutter_template/features/boarding_pass/presentation/pages/add_boarding_pass_page.dart';
 import 'package:flutter_template/features/connections/presentation/pages/connections_page.dart';
+import 'package:flutter_template/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:flutter_template/features/profile/presentation/pages/change_password_page.dart';
+import 'package:flutter_template/features/profile/presentation/pages/profile_editor_page.dart';
 import 'package:flutter_template/features/profile/presentation/pages/profile_page.dart';
+import 'package:flutter_template/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
+import 'package:flutter_template/features/terminal_echo/presentation/pages/airport_search_page.dart';
 import 'package:flutter_template/features/terminal_echo/presentation/pages/create_echo_page.dart';
+import 'package:flutter_template/features/terminal_echo/presentation/pages/echo_thread_page.dart';
 import 'package:flutter_template/features/terminal_echo/presentation/pages/feed_page.dart';
 import 'package:flutter_template/features/worldMap/presentation/pages/world_map_page.dart';
 import 'package:flutter_template/routes/route_names.dart';
@@ -86,10 +93,36 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.onboarding,
         builder: (context, state) => const OnboardingPage(),
       ),
-      // Outside the shell (no bottom nav) — pushed as a full-screen modal.
       GoRoute(
         path: RouteNames.createEcho,
         builder: (context, state) => const CreateEchoPage(),
+      ),
+      GoRoute(
+        path: RouteNames.echoThread,
+        builder: (context, state) {
+          final echo = state.extra! as TerminalEchoEntity;
+          return EchoThreadPage(echo: echo);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.airportSearch,
+        builder: (context, state) => const AirportSearchPage(),
+      ),
+      GoRoute(
+        path: RouteNames.addBoardingPass,
+        builder: (context, state) {
+          final extra = state.extra;
+          final ticket = extra is FlightTicketEntity ? extra : null;
+          return AddBoardingPassPage(initialTicket: ticket);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.editProfile,
+        builder: (context, state) => const ProfileEditorPage(),
+      ),
+      GoRoute(
+        path: RouteNames.changePassword,
+        builder: (context, state) => const ChangePasswordPage(),
       ),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),

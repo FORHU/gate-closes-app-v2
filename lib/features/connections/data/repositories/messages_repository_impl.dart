@@ -64,6 +64,42 @@ class MessagesRepositoryImpl implements MessagesRepository {
   }
 
   @override
+  Future<Either<Failure, ConversationMessageEntity>> sendVoiceMessage({
+    required String conversationId,
+    required String fileUrl,
+    required double audioDuration,
+    required List<double> waveformData,
+    String? fileName,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'fileUrl': fileUrl,
+        'audioDuration': (audioDuration * 1000).toInt(),
+        'waveformData': waveformData,
+      };
+      if (fileName != null) {
+        payload['fileName'] = fileName;
+      }
+
+      final response = await _api.post(
+        ApiEndpoints.conversationMessages(conversationId),
+        payload,
+      );
+
+      final rawData = (response as Map)['data'];
+      final model = ConversationMessageModel.fromJson(
+        (rawData as Map).cast<String, dynamic>(),
+      );
+
+      return Right(model);
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> updateReaction({
     required String conversationId,
     required String messageId,

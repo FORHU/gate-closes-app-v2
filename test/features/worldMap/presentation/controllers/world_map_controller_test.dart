@@ -5,6 +5,8 @@ import 'package:flutter_template/features/airport/domain/repositories/airport_re
 import 'package:flutter_template/features/airport/presentation/controllers/airport_controller.dart';
 import 'package:flutter_template/features/location/domain/entities/location_coordinates.dart';
 import 'package:flutter_template/features/location/domain/repositories/location_repository.dart';
+import 'package:flutter_template/features/terminal_echo/domain/repositories/terminal_echo_repository.dart';
+import 'package:flutter_template/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
 import 'package:flutter_template/features/worldMap/presentation/controllers/world_map_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -14,10 +16,14 @@ class MockLocationRepository extends Mock implements LocationRepository {}
 
 class MockAirportRepository extends Mock implements AirportRepository {}
 
+class MockTerminalEchoRepository extends Mock
+    implements TerminalEchoRepository {}
+
 void main() {
   late ProviderContainer container;
   late MockLocationRepository mockLocationRepository;
   late MockAirportRepository mockAirportRepository;
+  late MockTerminalEchoRepository mockTerminalEchoRepository;
 
   const tCoordinates = LocationCoordinates(latitude: 1.35, longitude: 103.99);
   const tAirports = [
@@ -32,6 +38,16 @@ void main() {
   setUp(() {
     mockLocationRepository = MockLocationRepository();
     mockAirportRepository = MockAirportRepository();
+    mockTerminalEchoRepository = MockTerminalEchoRepository();
+
+    when(
+      mockAirportRepository.getAirportGeoJson,
+    ).thenAnswer((_) async => const Right(<String, dynamic>{}));
+    when(
+      mockTerminalEchoRepository.getMapGeoJson,
+    ).thenAnswer(
+      (_) async => const Right(<String, dynamic>{'features': <dynamic>[]}),
+    );
   });
 
   tearDown(() {
@@ -51,6 +67,9 @@ void main() {
         overrides: [
           locationRepositoryProvider.overrideWithValue(mockLocationRepository),
           airportRepositoryProvider.overrideWithValue(mockAirportRepository),
+          terminalEchoRepositoryProvider.overrideWithValue(
+            mockTerminalEchoRepository,
+          ),
         ],
       )..read(worldMapControllerProvider);
 
@@ -72,6 +91,9 @@ void main() {
         overrides: [
           locationRepositoryProvider.overrideWithValue(mockLocationRepository),
           airportRepositoryProvider.overrideWithValue(mockAirportRepository),
+          terminalEchoRepositoryProvider.overrideWithValue(
+            mockTerminalEchoRepository,
+          ),
         ],
       )..read(worldMapControllerProvider);
 
@@ -97,6 +119,9 @@ void main() {
         overrides: [
           locationRepositoryProvider.overrideWithValue(mockLocationRepository),
           airportRepositoryProvider.overrideWithValue(mockAirportRepository),
+          terminalEchoRepositoryProvider.overrideWithValue(
+            mockTerminalEchoRepository,
+          ),
         ],
       )..read(worldMapControllerProvider);
 

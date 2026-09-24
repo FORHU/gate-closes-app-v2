@@ -41,6 +41,12 @@ abstract class AuthRemoteDataSource {
 
   Future<void> logout(String? refreshToken);
   Future<UserModel> checkAuth(String token);
+  Future<UserModel> editProfile({String? username, String? gender});
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -177,5 +183,28 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel> checkAuth(String token) async {
     final data = await _api.get(ApiEndpoints.me);
     return UserModel.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  @override
+  Future<UserModel> editProfile({String? username, String? gender}) async {
+    final payload = <String, dynamic>{};
+    if (username != null && username.isNotEmpty) payload['username'] = username;
+    if (gender != null && gender.isNotEmpty) payload['gender'] = gender;
+
+    final data = await _api.patch(ApiEndpoints.editProfile, payload);
+    return UserModel.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await _api.post(ApiEndpoints.changePassword, {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+      'confirmPassword': confirmPassword,
+    });
   }
 }

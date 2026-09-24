@@ -76,6 +76,49 @@ class FlightController extends Notifier<FlightState> {
     );
   }
 
+  /// Saves (creates or updates) the flight ticket on backend and
+  /// rehydrates state.
+  Future<bool> saveFlightTicket({
+    required String flightNumber,
+    required String fromAirport,
+    required String toAirport,
+    required DateTime departureDateTime,
+    required DateTime returnDateTime,
+    DateTime? arrivalDateTime,
+  }) async {
+    state = state.copyWith(isLoading: true);
+    final repo = ref.read(flightRepositoryProvider);
+
+    final result = state.activeFlight != null
+        ? await repo.updateFlightTicket(
+            flightNumber: flightNumber,
+            fromAirport: fromAirport,
+            toAirport: toAirport,
+            departureDateTime: departureDateTime,
+            returnDateTime: returnDateTime,
+            arrivalDateTime: arrivalDateTime,
+          )
+        : await repo.createFlightTicket(
+            flightNumber: flightNumber,
+            fromAirport: fromAirport,
+            toAirport: toAirport,
+            departureDateTime: departureDateTime,
+            returnDateTime: returnDateTime,
+            arrivalDateTime: arrivalDateTime,
+          );
+
+    return result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+        return false;
+      },
+      (_) async {
+        await fetchActiveFlight();
+        return true;
+      },
+    );
+  }
+
   /// Removes active flight ticket.
   Future<bool> deleteFlightTicket() async {
     state = state.copyWith(isLoading: true);

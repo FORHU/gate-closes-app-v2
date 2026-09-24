@@ -10,12 +10,20 @@ abstract class MessagesRepository {
     int limit = 50,
   });
 
-  /// Sends a text message. Voice-memo composition isn't wired up yet — the
-  /// backend supports it (`fileUrl`/`fileName`/`audioDuration`/
-  /// `waveformData`), but recording UI is out of this phase's scope.
+  /// Sends a text message.
   Future<Either<Failure, ConversationMessageEntity>> sendTextMessage({
     required String conversationId,
     required String textMessage,
+  });
+
+  /// Sends a voice memo message with uploaded fileUrl, audioDuration,
+  /// and waveformData.
+  Future<Either<Failure, ConversationMessageEntity>> sendVoiceMessage({
+    required String conversationId,
+    required String fileUrl,
+    required double audioDuration,
+    required List<double> waveformData,
+    String? fileName,
   });
 
   /// Toggles a reaction on a message. `reaction` must be one of the 6

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_template/core/errors/failure.dart';
+import 'package:flutter_template/core/services/storage_service.dart';
 import 'package:flutter_template/features/connections/domain/entities/connection_entity.dart';
 import 'package:flutter_template/features/connections/domain/repositories/connections_repository.dart';
 import 'package:flutter_template/features/connections/presentation/controllers/connections_controller.dart';
@@ -8,13 +9,17 @@ import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockConnectionsRepository extends Mock implements ConnectionsRepository {}
+class MockStorageService extends Mock implements StorageService {}
 
 void main() {
   late ProviderContainer container;
   late MockConnectionsRepository mockRepository;
+  late MockStorageService mockStorage;
 
   setUp(() {
     mockRepository = MockConnectionsRepository();
+    mockStorage = MockStorageService();
+    when(() => mockStorage.readUserModel()).thenReturn(null);
   });
 
   tearDown(() {
@@ -49,6 +54,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           connectionsRepositoryProvider.overrideWithValue(mockRepository),
+          storageServiceProvider.overrideWithValue(mockStorage),
         ],
       )..read(connectionsControllerProvider);
 
@@ -67,6 +73,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           connectionsRepositoryProvider.overrideWithValue(mockRepository),
+          storageServiceProvider.overrideWithValue(mockStorage),
         ],
       )..read(connectionsControllerProvider);
 
@@ -87,6 +94,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           connectionsRepositoryProvider.overrideWithValue(mockRepository),
+          storageServiceProvider.overrideWithValue(mockStorage),
         ],
       )..read(connectionsControllerProvider);
 

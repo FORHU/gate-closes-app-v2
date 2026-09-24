@@ -65,6 +65,12 @@ class _FeedPageState extends ConsumerState<FeedPage> {
           style:
               TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search_rounded, color: colors.textPrimary),
+            onPressed: () => context.push(RouteNames.airportSearch),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: colors.accent,
@@ -145,23 +151,26 @@ class _EchoTile extends ConsumerWidget {
     final name = echo.senderUsername ?? 'Unknown traveler';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: colors.accent.withValues(alpha: 0.18),
-                child: Text(
-                  initial,
-                  style: TextStyle(
-                    color: colors.accent,
-                    fontWeight: FontWeight.w700,
+    return InkWell(
+      onTap: () => context.push(RouteNames.echoThread, extra: echo),
+      borderRadius: BorderRadius.circular(16),
+      child: GlassCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: colors.accent.withValues(alpha: 0.18),
+                  child: Text(
+                    initial,
+                    style: TextStyle(
+                      color: colors.accent,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -228,6 +237,7 @@ class _EchoTile extends ConsumerWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }

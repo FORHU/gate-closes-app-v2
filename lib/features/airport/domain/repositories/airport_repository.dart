@@ -20,4 +20,7 @@ abstract class AirportRepository {
     LocationCoordinates coordinates, {
     double radiusKm = 50,
   });
+
+  /// Fetches the airport boundaries GeoJSON FeatureCollection (`GET /airport/geojson`).
+  Future<Either<Failure, Map<String, dynamic>>> getAirportGeoJson();
 }

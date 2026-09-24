@@ -6,6 +6,8 @@ import 'package:flutter_template/features/airport/domain/repositories/airport_re
 import 'package:flutter_template/features/airport/presentation/controllers/airport_controller.dart';
 import 'package:flutter_template/features/location/domain/entities/location_coordinates.dart';
 import 'package:flutter_template/features/location/domain/repositories/location_repository.dart';
+import 'package:flutter_template/features/terminal_echo/domain/repositories/terminal_echo_repository.dart';
+import 'package:flutter_template/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
 import 'package:flutter_template/features/worldMap/presentation/pages/world_map_page.dart';
 import 'package:flutter_template/l10n/generated/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +18,9 @@ class MockLocationRepository extends Mock implements LocationRepository {}
 
 class MockAirportRepository extends Mock implements AirportRepository {}
 
+class MockTerminalEchoRepository extends Mock
+    implements TerminalEchoRepository {}
+
 const _tCoordinates = LocationCoordinates(latitude: 1.35, longitude: 103.99);
 
 void main() {
@@ -24,6 +29,17 @@ void main() {
     (tester) async {
       final mockLocationRepository = MockLocationRepository();
       final mockAirportRepository = MockAirportRepository();
+      final mockTerminalEchoRepository = MockTerminalEchoRepository();
+
+      when(
+        mockAirportRepository.getAirportGeoJson,
+      ).thenAnswer((_) async => const Right(<String, dynamic>{}));
+      when(
+        mockTerminalEchoRepository.getMapGeoJson,
+      ).thenAnswer(
+        (_) async => const Right(<String, dynamic>{'features': <dynamic>[]}),
+      );
+
       when(
         mockLocationRepository.getCurrentLocation,
       ).thenAnswer((_) async => const Right(_tCoordinates));
@@ -55,6 +71,9 @@ void main() {
             airportRepositoryProvider.overrideWithValue(
               mockAirportRepository,
             ),
+            terminalEchoRepositoryProvider.overrideWithValue(
+              mockTerminalEchoRepository,
+            ),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -65,29 +84,99 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // In spatial mode, current selected airport is displayed
+      expect(find.text('Singapore Changi Airport'), findsOneWidget);
+
+      // Switch to list view to verify both airports
+      await tester.tap(find.byIcon(Icons.view_list_rounded));
+      await tester.pumpAndSettle();
+
       expect(find.text('Singapore Changi Airport'), findsOneWidget);
       expect(find.text('Senai International Airport'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
 
-  testWidgets('WorldMapPage shows an empty state with no results', (
-    tester,
-  ) async {
-    final mockLocationRepository = MockLocationRepository();
-    final mockAirportRepository = MockAirportRepository();
-    when(
-      mockLocationRepository.getCurrentLocation,
-    ).thenAnswer((_) async => const Right(_tCoordinates));
-    when(
-      () => mockAirportRepository.findNearby(_tCoordinates),
-    ).thenAnswer((_) async => const Right([]));
+  testWidgets(
+    'WorldMapPage shows an empty state with no results in list mode',
+    (tester) async {
+      final mockLocationRepository = MockLocationRepository();
+      final mockAirportRepository = MockAirportRepository();
+      final mockTerminalEchoRepository = MockTerminalEchoRepository();
+
+      when(
+        mockAirportRepository.getAirportGeoJson,
+      ).thenAnswer((_) async => const Right(<String, dynamic>{}));
+      when(
+        mockTerminalEchoRepository.getMapGeoJson,
+      ).thenAnswer(
+        (_) async => const Right(<String, dynamic>{'features': <dynamic>[]}),
+      );
+
+      when(
+        mockLocationRepository.getCurrentLocation,
+      ).thenAnswer((_) async => const Right(_tCoordinates));
+      when(
+        () => mockAirportRepository.findNearby(_tCoordinates),
+      ).thenAnswer((_) async => const Right([]));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            locationRepositoryProvider.overrideWithValue(
+              mockLocationRepository,
+            ),
+            airportRepositoryProvider.overrideWithValue(mockAirportRepository),
+            terminalEchoRepositoryProvider.overrideWithValue(
+              mockTerminalEchoRepository,
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: WorldMapPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to list view to see empty state
+      await tester.tap(find.byIcon(Icons.view_list_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No nearby airports'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'WorldMapPage shows a retry option when the fetch fails in list mode',
+    (tester) async {
+      final mockLocationRepository = MockLocationRepository();
+      final mockAirportRepository = MockAirportRepository();
+      final mockTerminalEchoRepository = MockTerminalEchoRepository();
+
+      when(
+        mockAirportRepository.getAirportGeoJson,
+      ).thenAnswer((_) async => const Right(<String, dynamic>{}));
+      when(
+        mockTerminalEchoRepository.getMapGeoJson,
+      ).thenAnswer(
+        (_) async => const Right(<String, dynamic>{'features': <dynamic>[]}),
+      );
+
+      when(
+        mockLocationRepository.getCurrentLocation,
+    ).thenAnswer((_) async => const Left(NetworkFailure()));
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           locationRepositoryProvider.overrideWithValue(mockLocationRepository),
           airportRepositoryProvider.overrideWithValue(mockAirportRepository),
+          terminalEchoRepositoryProvider.overrideWithValue(
+            mockTerminalEchoRepository,
+          ),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -98,32 +187,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No nearby airports'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('WorldMapPage shows a retry option when the fetch fails', (
-    tester,
-  ) async {
-    final mockLocationRepository = MockLocationRepository();
-    final mockAirportRepository = MockAirportRepository();
-    when(
-      mockLocationRepository.getCurrentLocation,
-    ).thenAnswer((_) async => const Left(NetworkFailure()));
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          locationRepositoryProvider.overrideWithValue(mockLocationRepository),
-          airportRepositoryProvider.overrideWithValue(mockAirportRepository),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: WorldMapPage(),
-        ),
-      ),
-    );
+    // Switch to list view to see error/retry state
+    await tester.tap(find.byIcon(Icons.view_list_rounded));
     await tester.pumpAndSettle();
 
     expect(find.text('Retry'), findsOneWidget);

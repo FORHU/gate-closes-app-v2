@@ -116,4 +116,25 @@ class AirportRepositoryImpl implements AirportRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getAirportGeoJson() async {
+    try {
+      final response = await _api.get(ApiEndpoints.airportGeoJson);
+      final rawData = (response as Map)['data'];
+      if (rawData is Map<String, dynamic>) {
+        return Right(rawData);
+      } else if (rawData is Map) {
+        return Right(rawData.cast<String, dynamic>());
+      }
+      return const Right(<String, dynamic>{
+        'type': 'FeatureCollection',
+        'features': <dynamic>[],
+      });
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

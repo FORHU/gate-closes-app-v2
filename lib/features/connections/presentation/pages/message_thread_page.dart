@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_template/core/services/file_upload_service.dart';
 import 'package:flutter_template/core/utils/context_extensions.dart';
 import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:flutter_template/features/connections/domain/entities/connection_entity.dart';
@@ -9,8 +11,9 @@ import 'package:flutter_template/features/connections/domain/entities/conversati
 import 'package:flutter_template/features/connections/presentation/controllers/message_thread_controller.dart';
 import 'package:flutter_template/shared/widgets/app_state_view.dart';
 import 'package:flutter_template/shared/widgets/emoji_reaction_picker.dart';
+import 'package:flutter_template/shared/widgets/voice_recorder_composer.dart';
+import 'package:flutter_template/shared/widgets/waveform_player.dart';
 import 'package:flutter_template/theme/tokens/colors.dart';
-import 'package:flutter_template/theme/tokens/radius.dart';
 import 'package:flutter_template/theme/tokens/spacing.dart';
 
 /// 1-on-1 thread for a single connection. Realtime sync is `/conversations`
@@ -27,8 +30,8 @@ class MessageThreadPage extends ConsumerStatefulWidget {
 }
 
 class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
-  final _textController = TextEditingController();
   final _scrollController = ScrollController();
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -42,7 +45,6 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
 
   @override
   void dispose() {
-    _textController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -58,14 +60,56 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     );
   }
 
-  Future<void> _send() async {
-    final text = _textController.text;
-    if (text.trim().isEmpty) return;
-    _textController.clear();
-    final ok =
-        await ref.read(messageThreadControllerProvider.notifier).sendText(text);
-    if (ok) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  Future<void> _handleSendVoice(
+    File file,
+    double durationSeconds,
+    List<double> waveform,
+  ) async {
+    setState(() => _isUploading = true);
+    try {
+      final uploadService = ref.read(fileUploadServiceProvider);
+      final uploadRes = await uploadService.uploadAudio(file);
+
+      final uploaded = uploadRes.fold(
+        (failure) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(failure.message)),
+            );
+          }
+          return null;
+        },
+        (up) => up,
+      );
+
+      if (uploaded == null) {
+        if (mounted) setState(() => _isUploading = false);
+        return;
+      }
+
+      final success = await ref
+          .read(messageThreadControllerProvider.notifier)
+          .sendVoice(
+            fileUrl: uploaded.url,
+            audioDuration: durationSeconds * 1000,
+            waveformData: waveform,
+            fileName: uploaded.key,
+          );
+
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+
+      if (success) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+      }
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send voice message: $e')),
+        );
+      }
     }
   }
 
@@ -114,7 +158,33 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       body: Column(
         children: [
           Expanded(child: _buildBody(state, currentUserId, colors, accent)),
-          _Composer(controller: _textController, onSend: _send, colors: colors),
+          if (_isUploading)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(accent),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'Sending voice note...',
+                    style: TextStyle(fontSize: 12, color: colors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          VoiceRecorderComposer(
+            isInline: true,
+            accentColor: accent,
+            onRecorded: _handleSendVoice,
+          ),
         ],
       ),
     );
@@ -146,7 +216,7 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       return const AppStateView(
         kind: AppStateKind.empty,
         title: 'Say hello',
-        message: 'No messages yet — send the first one.',
+        message: 'No messages yet — send a voice note to start.',
       );
     }
 
@@ -156,10 +226,23 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       itemCount: state.messages.length,
       itemBuilder: (context, index) {
         final message = state.messages[index];
+        final isMine = message.isMine(currentUserId);
+
+        // Grouping: index is 0..length-1 (oldest to newest)
+        final older = index > 0 ? state.messages[index - 1] : null;
+        final newer = index < state.messages.length - 1
+            ? state.messages[index + 1]
+            : null;
+
+        final startsGroup = older == null || older.senderId != message.senderId;
+        final endsGroup = newer == null || newer.senderId != message.senderId;
+
         return _MessageBubble(
           message: message,
-          isMine: message.isMine(currentUserId),
+          isMine: isMine,
           accent: accent,
+          startsGroup: startsGroup,
+          endsGroup: endsGroup,
           onReact: (reaction) => ref
               .read(messageThreadControllerProvider.notifier)
               .react(messageId: message.id, reaction: reaction),
@@ -169,85 +252,85 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
   }
 }
 
-class _Composer extends StatelessWidget {
-  const _Composer({
-    required this.controller,
-    required this.onSend,
-    required this.colors,
-  });
-
-  final TextEditingController controller;
-  final VoidCallback onSend;
-  final GateColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 4,
-                style: TextStyle(color: colors.textPrimary),
-                decoration: InputDecoration(
-                  hintText: 'Message…',
-                  hintStyle: TextStyle(color: colors.textMuted),
-                  filled: true,
-                  fillColor: colors.surface,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: AppRadius.brPill,
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.brPill,
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.brPill,
-                    borderSide: BorderSide(color: colors.accent, width: 1.5),
-                  ),
-                ),
-                onSubmitted: (_) => onSend(),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            IconButton(
-              onPressed: onSend,
-              icon: const Icon(Icons.send_rounded),
-              color: colors.accent,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.isMine,
     required this.accent,
+    required this.startsGroup,
+    required this.endsGroup,
     required this.onReact,
   });
 
   final ConversationMessageEntity message;
   final bool isMine;
   final Color accent;
+  final bool startsGroup;
+  final bool endsGroup;
   final ValueChanged<String> onReact;
 
   Future<void> _showReactionPicker(BuildContext context) async {
     final reaction = await EmojiReactionPicker.show(context);
     if (reaction != null) onReact(reaction);
+  }
+
+  BorderRadius _bubbleBorderRadius() {
+    const rBig = 18.0;
+    const rSmall = 4.0;
+
+    if (isMine) {
+      if (startsGroup && endsGroup) {
+        return BorderRadius.circular(rBig);
+      }
+      if (startsGroup && !endsGroup) {
+        return const BorderRadius.only(
+          topLeft: Radius.circular(rBig),
+          topRight: Radius.circular(rBig),
+          bottomRight: Radius.circular(rBig),
+          bottomLeft: Radius.circular(rSmall),
+        );
+      }
+      if (!startsGroup && !endsGroup) {
+        return const BorderRadius.only(
+          topLeft: Radius.circular(rSmall),
+          bottomLeft: Radius.circular(rSmall),
+          topRight: Radius.circular(rBig),
+          bottomRight: Radius.circular(rBig),
+        );
+      }
+      return const BorderRadius.only(
+        topLeft: Radius.circular(rSmall),
+        bottomLeft: Radius.circular(rBig),
+        topRight: Radius.circular(rBig),
+        bottomRight: Radius.circular(rBig),
+      );
+    } else {
+      if (startsGroup && endsGroup) {
+        return BorderRadius.circular(rBig);
+      }
+      if (startsGroup && !endsGroup) {
+        return const BorderRadius.only(
+          topLeft: Radius.circular(rBig),
+          bottomLeft: Radius.circular(rBig),
+          topRight: Radius.circular(rBig),
+          bottomRight: Radius.circular(rSmall),
+        );
+      }
+      if (!startsGroup && !endsGroup) {
+        return const BorderRadius.only(
+          topLeft: Radius.circular(rBig),
+          bottomLeft: Radius.circular(rBig),
+          topRight: Radius.circular(rSmall),
+          bottomRight: Radius.circular(rSmall),
+        );
+      }
+      return const BorderRadius.only(
+        topLeft: Radius.circular(rBig),
+        bottomLeft: Radius.circular(rBig),
+        topRight: Radius.circular(rSmall),
+        bottomRight: Radius.circular(rBig),
+      );
+    }
   }
 
   @override
@@ -258,7 +341,10 @@ class _MessageBubble extends StatelessWidget {
     final align = isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.only(
+        top: startsGroup ? 6 : 2,
+        bottom: endsGroup ? 6 : 2,
+      ),
       child: Column(
         crossAxisAlignment: align,
         children: [
@@ -266,42 +352,72 @@ class _MessageBubble extends StatelessWidget {
             onLongPress: () => _showReactionPicker(context),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.75,
+                maxWidth: MediaQuery.of(context).size.width * 0.78,
               ),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
+                  horizontal: 12,
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
                   color: bubbleColor,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: _bubbleBorderRadius(),
                   border: isMine
                       ? Border.all(color: accent.withValues(alpha: 0.4))
                       : Border.all(color: colors.border),
                 ),
-                child: Text(
-                  message.textMessage.isNotEmpty
-                      ? message.textMessage
-                      : (message.isVoiceMemo
-                          ? '🎤 Voice memo'
-                          : '(empty message)'),
-                  style: TextStyle(color: colors.textPrimary),
-                ),
+                child: message.isVoiceMemo
+                    ? WaveformPlayer(
+                        audioUrl: message.fileUrl!,
+                        waveformData: message.waveformData,
+                        durationSeconds: message.audioDuration > 0
+                            ? message.audioDuration / 1000
+                            : 0,
+                      )
+                    : Text(
+                        message.textMessage.isNotEmpty
+                            ? message.textMessage
+                            : '(empty voice memo)',
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
               ),
             ),
           ),
           if (message.reactions.isNotEmpty) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Wrap(
               spacing: 4,
               children: [
                 for (final entry in message.reactions.entries)
                   if (entry.value > 0)
-                    Text(
-                      '${kEmojiReactions[entry.key] ?? entry.key} '
-                      '${entry.value}',
-                      style: TextStyle(fontSize: 11, color: colors.textMuted),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => onReact(entry.key),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: message.currentUserReactions
+                                    .contains(entry.key)
+                                ? accent
+                                : colors.border,
+                          ),
+                        ),
+                        child: Text(
+                          '${kEmojiReactions[entry.key] ?? entry.key} '
+                          '${entry.value}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
               ],
             ),

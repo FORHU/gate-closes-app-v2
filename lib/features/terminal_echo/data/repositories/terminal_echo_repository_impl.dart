@@ -111,4 +111,58 @@ class TerminalEchoRepositoryImpl implements TerminalEchoRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getMapGeoJson({
+    double? west,
+    double? south,
+    double? east,
+    double? north,
+  }) async {
+    try {
+      final query = <String, dynamic>{};
+      if (west != null && south != null && east != null && north != null) {
+        query['west'] = west;
+        query['south'] = south;
+        query['east'] = east;
+        query['north'] = north;
+      }
+
+      final response = await _api.get(
+        ApiEndpoints.terminalEchoMap,
+        query: query.isEmpty ? null : query,
+      );
+
+      final rawData = (response as Map)['data'];
+      if (rawData is Map<String, dynamic>) {
+        return Right(rawData);
+      } else if (rawData is Map) {
+        return Right(rawData.cast<String, dynamic>());
+      }
+      return const Right(<String, dynamic>{
+        'type': 'FeatureCollection',
+        'features': <dynamic>[],
+      });
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, TerminalEchoEntity>> getEchoById(String id) async {
+    try {
+      final response = await _api.get('${ApiEndpoints.terminalEcho}/$id');
+      final rawData = (response as Map)['data'];
+      final model = TerminalEchoModel.fromJson(
+        (rawData is Map) ? rawData.cast<String, dynamic>() : {},
+      );
+      return Right(model);
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

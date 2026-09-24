@@ -44,6 +44,15 @@ abstract class AuthRepository {
 
   Future<Either<Failure, void>> logout();
   Future<Either<Failure, UserEntity>> refreshAuth();
+  Future<Either<Failure, UserEntity>> editProfile({
+    String? username,
+    String? gender,
+  });
+  Future<Either<Failure, void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
 }
 
 /// Coordinates the remote data source and local token storage. Catches the
@@ -222,4 +231,41 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, UserEntity>> editProfile({
+    String? username,
+    String? gender,
+  }) async {
+    try {
+      final updated = await _remote.editProfile(
+        username: username,
+        gender: gender,
+      );
+      await _storage.saveUserModel(updated);
+      return Right(updated);
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) =>
+      _void(
+        () => _remote.changePassword(
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+          confirmPassword: confirmPassword,
+        ),
+      );
 }

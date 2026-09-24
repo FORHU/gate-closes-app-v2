@@ -32,6 +32,73 @@ class FlightRepositoryImpl implements FlightRepository {
   }
 
   @override
+  Future<Either<Failure, String>> createFlightTicket({
+    required String flightNumber,
+    required String fromAirport,
+    required String toAirport,
+    required DateTime departureDateTime,
+    required DateTime returnDateTime,
+    DateTime? arrivalDateTime,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'flightNumber': flightNumber.trim(),
+        'fromAirport': fromAirport.trim(),
+        'toAirport': toAirport.trim(),
+        'departureDateTime': departureDateTime.toIso8601String(),
+        'returnDateTime': returnDateTime.toIso8601String(),
+      };
+      if (arrivalDateTime != null) {
+        payload['arrivalDateTime'] = arrivalDateTime.toIso8601String();
+      }
+
+      final response = await _api.post(ApiEndpoints.flightTicket, payload);
+      final message =
+          (response as Map)['message']?.toString() ?? 'Flight ticket created.';
+      return Right(message);
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> updateFlightTicket({
+    String? flightNumber,
+    String? fromAirport,
+    String? toAirport,
+    DateTime? departureDateTime,
+    DateTime? returnDateTime,
+    DateTime? arrivalDateTime,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (flightNumber != null) payload['flightNumber'] = flightNumber.trim();
+      if (fromAirport != null) payload['fromAirport'] = fromAirport.trim();
+      if (toAirport != null) payload['toAirport'] = toAirport.trim();
+      if (departureDateTime != null) {
+        payload['departureDateTime'] = departureDateTime.toIso8601String();
+      }
+      if (returnDateTime != null) {
+        payload['returnDateTime'] = returnDateTime.toIso8601String();
+      }
+      if (arrivalDateTime != null) {
+        payload['arrivalDateTime'] = arrivalDateTime.toIso8601String();
+      }
+
+      final response = await _api.put(ApiEndpoints.flightTicket, payload);
+      final message =
+          (response as Map)['message']?.toString() ?? 'Flight ticket updated.';
+      return Right(message);
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> deleteFlightTicket() async {
     try {
       await _api.delete(ApiEndpoints.flightTicket);

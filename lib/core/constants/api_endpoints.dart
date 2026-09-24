@@ -31,6 +31,7 @@ class ApiEndpoints {
       '/airport/check-inside-airport-boundary';
   static const String airportNearby = '/airport/nearby';
   static const String airportSearch = '/airport/search';
+  static const String airportGeoJson = '/airport/geojson';
 
   /// Flight Ticket endpoints
   static const String flightTicket = '/flight-ticket';
@@ -41,9 +42,17 @@ class ApiEndpoints {
 
   /// Terminal Echo endpoints
   static const String terminalEcho = '/terminal-echo';
+  static const String terminalEchoMap = '/terminal-echo/map';
   static String terminalEchoListen(String id) => '/terminal-echo/$id/listen';
   static String terminalEchoReaction(String id) =>
       '/terminal-echo/$id/reaction';
+
+  /// Terminal Echo Reply endpoints
+  static const String terminalEchoReply = '/terminal-echo-reply';
+  static String terminalEchoReplyListen(String id) =>
+      '/terminal-echo-reply/$id/listen';
+  static String terminalEchoReplyReaction(String id) =>
+      '/terminal-echo-reply/$id/reaction';
 
   /// Conversation / Connections endpoints
   static const String conversations = '/conversations';

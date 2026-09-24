@@ -125,6 +125,47 @@ class AuthController extends Notifier<AuthState> {
       },
     );
   }
+
+  Future<bool> editProfile({String? username, String? gender}) async {
+    state = state.copyWith(isLoading: true);
+    final result = await ref.read(authRepositoryProvider).editProfile(
+          username: username,
+          gender: gender,
+        );
+    return result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+        return false;
+      },
+      (user) {
+        state = state.copyWith(isLoading: false, user: user);
+        return true;
+      },
+    );
+  }
+
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    state = state.copyWith(isLoading: true);
+    final result = await ref.read(authRepositoryProvider).changePassword(
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+          confirmPassword: confirmPassword,
+        );
+    return result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+        return false;
+      },
+      (_) {
+        state = state.copyWith(isLoading: false);
+        return true;
+      },
+    );
+  }
 }
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(

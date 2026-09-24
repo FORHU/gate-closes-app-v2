@@ -22,6 +22,8 @@ class VoiceRecorderComposer extends StatefulWidget {
     required this.onRecorded,
     this.onCancel,
     this.maxDuration = const Duration(seconds: 10),
+    this.isInline = false,
+    this.accentColor,
     super.key,
   });
 
@@ -31,6 +33,8 @@ class VoiceRecorderComposer extends StatefulWidget {
 
   final VoidCallback? onCancel;
   final Duration maxDuration;
+  final bool isInline;
+  final Color? accentColor;
 
   @override
   State<VoiceRecorderComposer> createState() => _VoiceRecorderComposerState();
@@ -145,15 +149,21 @@ class _VoiceRecorderComposerState extends State<VoiceRecorderComposer> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final accent = widget.accentColor ?? colors.accent;
 
     return switch (_phase) {
-      _RecorderPhase.idle =>
-        _IdleState(onStart: _startRecording, onCancel: widget.onCancel),
+      _RecorderPhase.idle => _IdleState(
+          onStart: _startRecording,
+          onCancel: widget.onCancel,
+          isInline: widget.isInline,
+          accentColor: accent,
+        ),
       _RecorderPhase.recording => _RecordingState(
           elapsed: _elapsed,
           maxDuration: widget.maxDuration,
           waveform: _waveform,
           onStop: _stopRecording,
+          isInline: widget.isInline,
         ),
       _RecorderPhase.review => _ReviewState(
           durationSeconds: _elapsed.inMilliseconds / 1000,
@@ -163,20 +173,63 @@ class _VoiceRecorderComposerState extends State<VoiceRecorderComposer> {
           onDiscard: _discard,
           onConfirm: _confirm,
           colors: colors,
+          accentColor: accent,
         ),
     };
   }
 }
 
 class _IdleState extends StatelessWidget {
-  const _IdleState({required this.onStart, this.onCancel});
+  const _IdleState({
+    required this.onStart,
+    this.onCancel,
+    this.isInline = false,
+    this.accentColor,
+  });
 
   final VoidCallback onStart;
   final VoidCallback? onCancel;
+  final bool isInline;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final accent = accentColor ?? colors.accent;
+
+    if (isInline) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: colors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Hold or tap mic to record voice note...',
+                style: TextStyle(color: colors.textMuted, fontSize: 13),
+              ),
+            ),
+            GestureDetector(
+              onTap: onStart,
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: accent,
+                child: Icon(
+                  Icons.mic_rounded,
+                  color: colors.accentOn,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -192,7 +245,7 @@ class _IdleState extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: colors.accent,
+              color: accent,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(color: colors.accentGlow20, blurRadius: 20),
@@ -212,18 +265,72 @@ class _RecordingState extends StatelessWidget {
     required this.maxDuration,
     required this.waveform,
     required this.onStop,
+    this.isInline = false,
   });
 
   final Duration elapsed;
   final Duration maxDuration;
   final List<double> waveform;
   final VoidCallback onStop;
+  final bool isInline;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final remaining = maxDuration - elapsed;
     final seconds = (remaining.inMilliseconds / 1000).clamp(0, 999);
+
+    if (isInline) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: colors.error.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: colors.error,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '${seconds.toStringAsFixed(0)}s',
+              style: TextStyle(
+                color: colors.error,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: SizedBox(
+                height: 24,
+                child: _StaticWaveform(samples: waveform, color: colors.error),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            GestureDetector(
+              onTap: onStop,
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: colors.error,
+                child: const Icon(
+                  Icons.stop_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -263,6 +370,7 @@ class _ReviewState extends StatelessWidget {
     required this.onDiscard,
     required this.onConfirm,
     required this.colors,
+    this.accentColor,
   });
 
   final double durationSeconds;
@@ -272,9 +380,12 @@ class _ReviewState extends StatelessWidget {
   final VoidCallback onDiscard;
   final VoidCallback onConfirm;
   final GateColors colors;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
+    final accent = accentColor ?? colors.accent;
+
     return Row(
       children: [
         IconButton(
@@ -287,7 +398,7 @@ class _ReviewState extends StatelessWidget {
             width: 40,
             height: 40,
             decoration:
-                BoxDecoration(color: colors.accent, shape: BoxShape.circle),
+                BoxDecoration(color: accent, shape: BoxShape.circle),
             child: Icon(
               isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
               color: colors.accentOn,
@@ -298,7 +409,7 @@ class _ReviewState extends StatelessWidget {
         Expanded(
           child: SizedBox(
             height: 32,
-            child: _StaticWaveform(samples: waveform, color: colors.accent),
+            child: _StaticWaveform(samples: waveform, color: accent),
           ),
         ),
         Text(
@@ -308,7 +419,7 @@ class _ReviewState extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         IconButton(
           onPressed: onConfirm,
-          icon: Icon(Icons.send_rounded, color: colors.accent),
+          icon: Icon(Icons.send_rounded, color: accent),
         ),
       ],
     );
