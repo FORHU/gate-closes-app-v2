@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart' as ap;
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// Compact inline audio player rendering a stored `waveformData` sample
 /// list — shared by Terminal Echo cards and Messaging bubbles, both of

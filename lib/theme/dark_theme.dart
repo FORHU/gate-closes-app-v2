@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/theme/components/button_theme.dart';
-import 'package:flutter_template/theme/components/card_theme.dart';
-import 'package:flutter_template/theme/components/input_theme.dart';
-import 'package:flutter_template/theme/tokens/colors.dart';
-import 'package:flutter_template/theme/tokens/typography.dart';
+import 'package:gate_closes/theme/components/button_theme.dart';
+import 'package:gate_closes/theme/components/card_theme.dart';
+import 'package:gate_closes/theme/components/input_theme.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
+import 'package:gate_closes/theme/tokens/typography.dart';
 
 /// Gate Closes dark theme — the primary/default identity, ported from
 /// `gate-closes-app` (dark background, lime accent, glass surfaces).

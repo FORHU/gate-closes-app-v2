@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
 
 /// Ambient accent-glow backdrop, pure Flutter (`RadialGradient` on a
 /// `Container` — no package). Ported from `gate-closes-app`'s

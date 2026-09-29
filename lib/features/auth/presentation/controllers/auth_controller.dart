@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:flutter_template/core/services/api_service.dart';
-import 'package:flutter_template/core/services/cookie_service.dart';
-import 'package:flutter_template/core/services/storage_service.dart';
-import 'package:flutter_template/features/auth/data/datasources/auth_remote_datasource.dart';
-import 'package:flutter_template/features/auth/data/repositories/auth_repository.dart';
-import 'package:flutter_template/features/auth/domain/entities/user_entity.dart';
-import 'package:flutter_template/features/auth/domain/usecases/login_usecase.dart';
-import 'package:flutter_template/features/auth/domain/usecases/refresh_auth_usecase.dart';
+import 'package:gate_closes/core/services/api_service.dart';
+import 'package:gate_closes/core/services/cookie_service.dart';
+import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/features/auth/data/datasources/auth_remote_datasource.dart';
+import 'package:gate_closes/features/auth/data/repositories/auth_repository.dart';
+import 'package:gate_closes/features/auth/domain/entities/user_entity.dart';
+import 'package:gate_closes/features/auth/domain/usecases/login_usecase.dart';
+import 'package:gate_closes/features/auth/domain/usecases/refresh_auth_usecase.dart';
 
 // --- Dependency wiring (Riverpod providers) ---
 

@@ -1,6 +1,6 @@
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/features/location/domain/entities/location_coordinates.dart';
-import 'package:flutter_template/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/features/location/domain/entities/location_coordinates.dart';
+import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:fpdart/fpdart.dart';
 
 abstract class TerminalEchoRepository {

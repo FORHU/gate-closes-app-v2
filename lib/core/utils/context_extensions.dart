@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/l10n/generated/app_localizations.dart';
-import 'package:flutter_template/theme/tokens/colors.dart';
+import 'package:gate_closes/l10n/generated/app_localizations.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
 
 extension L10nExtension on BuildContext {
   /// Provides clean, non-nullable access to AppLocalizations.

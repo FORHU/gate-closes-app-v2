@@ -1,5 +1,5 @@
-import 'package:flutter_template/bootstrap.dart';
-import 'package:flutter_template/core/config/app_config.dart';
+import 'package:gate_closes/bootstrap.dart';
+import 'package:gate_closes/core/config/app_config.dart';
 
 /// Default entry point for a bare `flutter run` (no `-t`).
 /// Loads `.env.dev` at runtime via flutter_dotenv.

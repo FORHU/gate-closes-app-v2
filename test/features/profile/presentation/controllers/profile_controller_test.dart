@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/features/profile/data/repositories/profile_repository.dart';
-import 'package:flutter_template/features/profile/domain/entities/profile_entity.dart';
-import 'package:flutter_template/features/profile/presentation/controllers/profile_controller.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/features/profile/data/repositories/profile_repository.dart';
+import 'package:gate_closes/features/profile/domain/entities/profile_entity.dart';
+import 'package:gate_closes/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';

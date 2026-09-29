@@ -2,13 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_template/core/config/app_config.dart';
-import 'package:flutter_template/core/errors/exceptions.dart';
-import 'package:flutter_template/core/services/adapter_config/adapter_config.dart';
-import 'package:flutter_template/core/services/cookie_service.dart';
-import 'package:flutter_template/core/services/interceptors/auth_interceptor.dart';
-import 'package:flutter_template/core/services/storage_service.dart';
-import 'package:flutter_template/core/utils/logger.dart';
+import 'package:gate_closes/core/config/app_config.dart';
+import 'package:gate_closes/core/errors/exceptions.dart';
+import 'package:gate_closes/core/services/adapter_config/adapter_config.dart';
+import 'package:gate_closes/core/services/cookie_service.dart';
+import 'package:gate_closes/core/services/interceptors/auth_interceptor.dart';
+import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/core/utils/logger.dart';
 
 /// Thin, typed wrapper around [Dio]. Every network call in the app goes through
 /// here. Methods return decoded JSON and throw [AppException] subtypes on

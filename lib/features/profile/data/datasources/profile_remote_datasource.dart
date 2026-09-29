@@ -1,6 +1,6 @@
-import 'package:flutter_template/core/constants/api_endpoints.dart';
-import 'package:flutter_template/core/services/api_service.dart';
-import 'package:flutter_template/features/profile/data/models/profile_model.dart';
+import 'package:gate_closes/core/constants/api_endpoints.dart';
+import 'package:gate_closes/core/services/api_service.dart';
+import 'package:gate_closes/features/profile/data/models/profile_model.dart';
 
 /// Talks to the remote API. Knows nothing about state or UI.
 abstract class ProfileRemoteDataSource {

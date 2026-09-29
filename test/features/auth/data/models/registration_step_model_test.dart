@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/auth/data/models/registration_step_model.dart';
+import 'package:gate_closes/features/auth/data/models/registration_step_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

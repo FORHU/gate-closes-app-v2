@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart' as ap;
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/theme/tokens/colors.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 

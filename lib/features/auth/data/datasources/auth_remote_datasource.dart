@@ -1,7 +1,7 @@
-import 'package:flutter_template/core/constants/api_endpoints.dart';
-import 'package:flutter_template/core/services/api_service.dart';
-import 'package:flutter_template/features/auth/data/models/registration_step_model.dart';
-import 'package:flutter_template/features/auth/data/models/user_model.dart';
+import 'package:gate_closes/core/constants/api_endpoints.dart';
+import 'package:gate_closes/core/services/api_service.dart';
+import 'package:gate_closes/features/auth/data/models/registration_step_model.dart';
+import 'package:gate_closes/features/auth/data/models/user_model.dart';
 
 /// Talks to the remote API. Knows nothing about storage or UI.
 ///

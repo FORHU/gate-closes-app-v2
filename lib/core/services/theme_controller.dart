@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/services/storage_service.dart';
+import 'package:gate_closes/core/services/storage_service.dart';
 
 const _themeModeKey = 'theme_mode';
 

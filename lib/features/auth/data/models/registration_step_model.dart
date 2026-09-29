@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/auth/domain/entities/registration_step.dart';
+import 'package:gate_closes/features/auth/domain/entities/registration_step.dart';
 
 class RegistrationStepModel extends RegistrationStep {
   const RegistrationStepModel({

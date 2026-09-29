@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/boarding_pass/domain/parsers/bcbp_parser.dart';
+import 'package:gate_closes/features/boarding_pass/domain/parsers/bcbp_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

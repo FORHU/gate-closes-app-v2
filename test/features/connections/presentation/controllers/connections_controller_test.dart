@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/core/services/storage_service.dart';
-import 'package:flutter_template/features/connections/domain/entities/connection_entity.dart';
-import 'package:flutter_template/features/connections/domain/repositories/connections_repository.dart';
-import 'package:flutter_template/features/connections/presentation/controllers/connections_controller.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/features/connections/domain/entities/connection_entity.dart';
+import 'package:gate_closes/features/connections/domain/repositories/connections_repository.dart';
+import 'package:gate_closes/features/connections/presentation/controllers/connections_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';

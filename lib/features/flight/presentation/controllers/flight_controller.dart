@@ -1,9 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:flutter_template/features/flight/data/repositories/flight_repository_impl.dart';
-import 'package:flutter_template/features/flight/domain/entities/flight_ticket_entity.dart';
-import 'package:flutter_template/features/flight/domain/repositories/flight_repository.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/flight/data/repositories/flight_repository_impl.dart';
+import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:gate_closes/features/flight/domain/repositories/flight_repository.dart';
 
 // --- Dependency wiring ---
 

@@ -1,5 +1,5 @@
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
 import 'package:fpdart/fpdart.dart';
 
 abstract class FlightRepository {

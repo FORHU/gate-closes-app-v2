@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/shared/widgets/buttons.dart';
-import 'package:flutter_template/theme/tokens/colors.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/shared/widgets/buttons.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 import 'package:gap/gap.dart';
 
 /// Visual intent for [AppStateView]. Drives the default icon and accent color.

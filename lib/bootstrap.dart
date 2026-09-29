@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app.dart';
-import 'package:flutter_template/core/config/app_config.dart';
-import 'package:flutter_template/core/services/storage_service.dart';
-import 'package:flutter_template/core/utils/logger.dart';
+import 'package:gate_closes/app.dart';
+import 'package:gate_closes/core/config/app_config.dart';
+import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Shared startup used by every entry point. Pins the chosen [config], does

@@ -1,13 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/services/storage_service.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:flutter_template/features/location/domain/entities/location_coordinates.dart';
-import 'package:flutter_template/features/terminal_echo/data/datasources/terminal_echo_socket_service.dart';
-import 'package:flutter_template/features/terminal_echo/data/models/terminal_echo_model.dart';
-import 'package:flutter_template/features/terminal_echo/data/repositories/terminal_echo_repository_impl.dart';
-import 'package:flutter_template/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
-import 'package:flutter_template/features/terminal_echo/domain/repositories/terminal_echo_repository.dart';
+import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/location/domain/entities/location_coordinates.dart';
+import 'package:gate_closes/features/terminal_echo/data/datasources/terminal_echo_socket_service.dart';
+import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_model.dart';
+import 'package:gate_closes/features/terminal_echo/data/repositories/terminal_echo_repository_impl.dart';
+import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
+import 'package:gate_closes/features/terminal_echo/domain/repositories/terminal_echo_repository.dart';
 
 // --- Dependency wiring ---
 

@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/features/airport/domain/entities/airport_entity.dart';
-import 'package:flutter_template/features/airport/presentation/controllers/airport_controller.dart';
-import 'package:flutter_template/shared/widgets/glass_card.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
+import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
+import 'package:gate_closes/shared/widgets/glass_card.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// Modal bottom sheet for searching and selecting an airport.
 /// Mirrors `AirportPickerModal.tsx` in the React Native reference app.

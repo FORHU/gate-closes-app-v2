@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/core/utils/validators.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/forgot_password_controller.dart';
-import 'package:flutter_template/shared/widgets/buttons.dart';
-import 'package:flutter_template/shared/widgets/modern_text_field.dart';
-import 'package:flutter_template/shared/widgets/top_toast.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/core/utils/validators.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/forgot_password_controller.dart';
+import 'package:gate_closes/shared/widgets/buttons.dart';
+import 'package:gate_closes/shared/widgets/modern_text_field.dart';
+import 'package:gate_closes/shared/widgets/top_toast.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// The 3-step forgot-password wizard, dispatched by
 /// `ForgotPasswordController`'s current step — same one-directional-step

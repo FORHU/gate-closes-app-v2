@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/services/storage_service.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:flutter_template/features/connections/data/datasources/conversation_socket_service.dart';
-import 'package:flutter_template/features/connections/data/repositories/connections_repository_impl.dart';
-import 'package:flutter_template/features/connections/domain/entities/connection_entity.dart';
-import 'package:flutter_template/features/connections/domain/repositories/connections_repository.dart';
+import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/connections/data/datasources/conversation_socket_service.dart';
+import 'package:gate_closes/features/connections/data/repositories/connections_repository_impl.dart';
+import 'package:gate_closes/features/connections/domain/entities/connection_entity.dart';
+import 'package:gate_closes/features/connections/domain/repositories/connections_repository.dart';
 
 // --- Dependency wiring ---
 

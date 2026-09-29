@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/theme/tokens/effects.dart';
-import 'package:flutter_template/theme/tokens/radius.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/theme/tokens/effects.dart';
+import 'package:gate_closes/theme/tokens/radius.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// A floating, softly-shadowed surface — the base for most cards.
 ///

@@ -1,5 +1,5 @@
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/features/boarding_pass/domain/entities/boarding_pass_entity.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/features/boarding_pass/domain/entities/boarding_pass_entity.dart';
 import 'package:fpdart/fpdart.dart';
 
 abstract class BoardingPassRepository {

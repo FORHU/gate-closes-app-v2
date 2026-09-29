@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/airport/domain/entities/airport_entity.dart';
+import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 
 class AirportModel extends AirportEntity {
   const AirportModel({

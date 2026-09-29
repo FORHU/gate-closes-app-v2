@@ -1,5 +1,5 @@
-import 'package:flutter_template/core/config/app_config.dart';
-import 'package:flutter_template/core/utils/logger.dart';
+import 'package:gate_closes/core/config/app_config.dart';
+import 'package:gate_closes/core/utils/logger.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Manages realtime Socket.IO connections for the `/terminal-echo` namespace.

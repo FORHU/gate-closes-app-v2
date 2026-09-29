@@ -1,6 +1,6 @@
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/features/location/domain/entities/location_coordinates.dart';
-import 'package:flutter_template/features/location/domain/repositories/location_repository.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/features/location/domain/entities/location_coordinates.dart';
+import 'package:gate_closes/features/location/domain/repositories/location_repository.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:geolocator/geolocator.dart';
 

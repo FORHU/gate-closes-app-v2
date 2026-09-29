@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 
 /// The 4 real signup steps on `gate-closes-api` (verified against
 /// `user.auth.route.ts`/`user.auth.controller.ts`) — not a single call.

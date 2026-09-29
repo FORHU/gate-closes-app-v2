@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/features/auth/presentation/widgets/login_form.dart';
-import 'package:flutter_template/shared/widgets/ambient_background.dart';
-import 'package:flutter_template/theme/tokens/effects.dart';
-import 'package:flutter_template/theme/tokens/radius.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/auth/presentation/widgets/login_form.dart';
+import 'package:gate_closes/shared/widgets/ambient_background.dart';
+import 'package:gate_closes/theme/tokens/effects.dart';
+import 'package:gate_closes/theme/tokens/radius.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});

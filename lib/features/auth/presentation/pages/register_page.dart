@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/features/auth/presentation/pages/login_page.dart'
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/auth/presentation/pages/login_page.dart'
     show LoginPage;
-import 'package:flutter_template/features/auth/presentation/widgets/register_form.dart';
-import 'package:flutter_template/shared/widgets/ambient_background.dart';
-import 'package:flutter_template/theme/tokens/effects.dart';
-import 'package:flutter_template/theme/tokens/radius.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/features/auth/presentation/widgets/register_form.dart';
+import 'package:gate_closes/shared/widgets/ambient_background.dart';
+import 'package:gate_closes/theme/tokens/effects.dart';
+import 'package:gate_closes/theme/tokens/radius.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// Register page — Gate Closes glass aesthetic matching [LoginPage].
 class RegisterPage extends StatelessWidget {

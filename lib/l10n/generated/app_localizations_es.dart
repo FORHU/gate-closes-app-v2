@@ -9,7 +9,7 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appName => 'flutter_template';
+  String get appName => 'Gate Closes';
 
   @override
   String get login => 'Iniciar sesión';

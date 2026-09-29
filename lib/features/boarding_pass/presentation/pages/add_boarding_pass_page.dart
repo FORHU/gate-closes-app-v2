@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/features/boarding_pass/presentation/widgets/boarding_pass_scanner_sheet.dart';
-import 'package:flutter_template/features/flight/domain/entities/flight_ticket_entity.dart';
-import 'package:flutter_template/routes/route_names.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/boarding_pass/presentation/widgets/boarding_pass_scanner_sheet.dart';
+import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:gate_closes/routes/route_names.dart';
 import 'package:go_router/go_router.dart';
 
 /// Full screen boarding pass scanning / manual entry page.

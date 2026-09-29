@@ -3,14 +3,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/services/file_upload_service.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/features/airport/presentation/controllers/airport_controller.dart';
-import 'package:flutter_template/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
-import 'package:flutter_template/shared/widgets/modern_text_field.dart';
-import 'package:flutter_template/shared/widgets/top_toast.dart';
-import 'package:flutter_template/shared/widgets/voice_recorder_composer.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/services/file_upload_service.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
+import 'package:gate_closes/shared/widgets/modern_text_field.dart';
+import 'package:gate_closes/shared/widgets/top_toast.dart';
+import 'package:gate_closes/shared/widgets/voice_recorder_composer.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// Compose a Terminal Echo. A voice memo is mandatory on the real API
 /// (`TerminalEchoCtrl.create`'s Joi schema requires `fileUrl`/`fileName`) —

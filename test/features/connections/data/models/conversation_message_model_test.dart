@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/connections/data/models/conversation_message_model.dart';
+import 'package:gate_closes/features/connections/data/models/conversation_message_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

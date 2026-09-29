@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/boarding_pass/domain/entities/boarding_pass_entity.dart';
+import 'package:gate_closes/features/boarding_pass/domain/entities/boarding_pass_entity.dart';
 
 /// Pure Dart parser for IATA Resolution 791 BCBP (Bar Coded Boarding Pass)
 /// data. Independent of Flutter UI and device hardware.

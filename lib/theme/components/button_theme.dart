@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/theme/tokens/colors.dart';
-import 'package:flutter_template/theme/tokens/radius.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
-import 'package:flutter_template/theme/tokens/typography.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
+import 'package:gate_closes/theme/tokens/radius.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
+import 'package:gate_closes/theme/tokens/typography.dart';
 
 /// Ported from `gate-closes-app`'s `PrimaryButton`: lime pill button, black
 /// label text, 56px height, subtle accent glow, pressed/disabled states.

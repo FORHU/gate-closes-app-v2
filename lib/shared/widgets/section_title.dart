@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
 
 /// A bold section header with an optional trailing action ("See all").
 class SectionTitle extends StatelessWidget {

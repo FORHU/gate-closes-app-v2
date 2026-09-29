@@ -1,8 +1,8 @@
-import 'package:flutter_template/core/errors/exceptions.dart';
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/features/profile/data/datasources/profile_remote_datasource.dart';
-import 'package:flutter_template/features/profile/data/models/profile_model.dart';
-import 'package:flutter_template/features/profile/data/repositories/profile_repository.dart';
+import 'package:gate_closes/core/errors/exceptions.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/features/profile/data/datasources/profile_remote_datasource.dart';
+import 'package:gate_closes/features/profile/data/models/profile_model.dart';
+import 'package:gate_closes/features/profile/data/repositories/profile_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 

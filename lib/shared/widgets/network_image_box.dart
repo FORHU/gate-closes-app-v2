@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
 
 /// Cached remote image with an ink-style shimmer placeholder and error box.
 class NetworkImageBox extends StatelessWidget {

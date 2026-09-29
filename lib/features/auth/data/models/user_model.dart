@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/auth/domain/entities/user_entity.dart';
+import 'package:gate_closes/features/auth/domain/entities/user_entity.dart';
 
 /// Data-layer extension of [UserEntity] that knows how to (de)serialize and
 /// carries the auth token returned by the API.

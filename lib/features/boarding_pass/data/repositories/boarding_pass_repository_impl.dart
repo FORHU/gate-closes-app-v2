@@ -1,9 +1,9 @@
-import 'package:flutter_template/core/constants/api_endpoints.dart';
-import 'package:flutter_template/core/errors/exceptions.dart';
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/core/services/api_service.dart';
-import 'package:flutter_template/features/boarding_pass/domain/entities/boarding_pass_entity.dart';
-import 'package:flutter_template/features/boarding_pass/domain/repositories/boarding_pass_repository.dart';
+import 'package:gate_closes/core/constants/api_endpoints.dart';
+import 'package:gate_closes/core/errors/exceptions.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/core/services/api_service.dart';
+import 'package:gate_closes/features/boarding_pass/domain/entities/boarding_pass_entity.dart';
+import 'package:gate_closes/features/boarding_pass/domain/repositories/boarding_pass_repository.dart';
 import 'package:fpdart/fpdart.dart';
 
 class BoardingPassRepositoryImpl implements BoardingPassRepository {

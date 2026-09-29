@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/location/domain/entities/location_coordinates.dart';
+import 'package:gate_closes/features/location/domain/entities/location_coordinates.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

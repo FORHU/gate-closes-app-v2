@@ -1,10 +1,10 @@
-import 'package:flutter_template/core/constants/api_endpoints.dart';
-import 'package:flutter_template/core/errors/exceptions.dart';
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/core/services/api_service.dart';
-import 'package:flutter_template/features/flight/data/models/flight_ticket_model.dart';
-import 'package:flutter_template/features/flight/domain/entities/flight_ticket_entity.dart';
-import 'package:flutter_template/features/flight/domain/repositories/flight_repository.dart';
+import 'package:gate_closes/core/constants/api_endpoints.dart';
+import 'package:gate_closes/core/errors/exceptions.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/core/services/api_service.dart';
+import 'package:gate_closes/features/flight/data/models/flight_ticket_model.dart';
+import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:gate_closes/features/flight/domain/repositories/flight_repository.dart';
 import 'package:fpdart/fpdart.dart';
 
 class FlightRepositoryImpl implements FlightRepository {

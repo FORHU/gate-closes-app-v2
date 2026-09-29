@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/constants/api_endpoints.dart';
-import 'package:flutter_template/core/errors/exceptions.dart';
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/core/services/api_service.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/core/constants/api_endpoints.dart';
+import 'package:gate_closes/core/errors/exceptions.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/core/services/api_service.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:fpdart/fpdart.dart';
 
 /// Result of `POST /s3/upload` — see `s3.service.ts`'s `uploadFile`, which

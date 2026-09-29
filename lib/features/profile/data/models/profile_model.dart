@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/profile/domain/entities/profile_entity.dart';
+import 'package:gate_closes/features/profile/domain/entities/profile_entity.dart';
 
 /// Data-layer extension of [ProfileEntity] that knows how to deserialize.
 class ProfileModel extends ProfileEntity {

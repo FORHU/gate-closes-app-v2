@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 
 /// The 3 interactive steps of the forgot-password wizard (verified against
 /// `user.auth.route.ts`): request code → verify code → set new password.

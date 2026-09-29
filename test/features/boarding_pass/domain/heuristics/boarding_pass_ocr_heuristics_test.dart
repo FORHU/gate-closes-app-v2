@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/boarding_pass/domain/heuristics/boarding_pass_ocr_heuristics.dart';
+import 'package:gate_closes/features/boarding_pass/domain/heuristics/boarding_pass_ocr_heuristics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

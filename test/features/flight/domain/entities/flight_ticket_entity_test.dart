@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

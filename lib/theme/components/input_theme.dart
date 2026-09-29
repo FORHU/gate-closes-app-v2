@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/theme/tokens/colors.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
 
 class AppInputTheme {
   AppInputTheme._();

@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
+import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 
 class TerminalEchoModel extends TerminalEchoEntity {
   const TerminalEchoModel({

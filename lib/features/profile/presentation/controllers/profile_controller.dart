@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:flutter_template/features/profile/data/datasources/profile_remote_datasource.dart';
-import 'package:flutter_template/features/profile/data/repositories/profile_repository.dart';
-import 'package:flutter_template/features/profile/domain/entities/profile_entity.dart';
-import 'package:flutter_template/features/profile/domain/usecases/get_profile_usecase.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/profile/data/datasources/profile_remote_datasource.dart';
+import 'package:gate_closes/features/profile/data/repositories/profile_repository.dart';
+import 'package:gate_closes/features/profile/domain/entities/profile_entity.dart';
+import 'package:gate_closes/features/profile/domain/usecases/get_profile_usecase.dart';
 
 // --- Dependency wiring (Riverpod providers) ---
 

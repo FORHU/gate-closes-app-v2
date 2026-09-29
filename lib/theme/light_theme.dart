@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/theme/components/button_theme.dart';
-import 'package:flutter_template/theme/components/card_theme.dart';
-import 'package:flutter_template/theme/components/input_theme.dart';
-import 'package:flutter_template/theme/tokens/colors.dart';
-import 'package:flutter_template/theme/tokens/typography.dart';
+import 'package:gate_closes/theme/components/button_theme.dart';
+import 'package:gate_closes/theme/components/card_theme.dart';
+import 'package:gate_closes/theme/components/input_theme.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
+import 'package:gate_closes/theme/tokens/typography.dart';
 
 /// Gate Closes light theme — a complementary palette that keeps the lime
 /// brand hue (darkened for contrast on white), not a straight inversion of

@@ -1,5 +1,5 @@
-import 'package:flutter_template/core/errors/failure.dart';
-import 'package:flutter_template/features/connections/domain/entities/connection_entity.dart';
+import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/features/connections/domain/entities/connection_entity.dart';
 import 'package:fpdart/fpdart.dart';
 
 abstract class ConnectionsRepository {

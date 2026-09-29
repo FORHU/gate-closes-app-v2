@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/routes/route_names.dart';
-import 'package:flutter_template/shared/widgets/ambient_background.dart';
-import 'package:flutter_template/shared/widgets/animated_bottom_navigation.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/routes/route_names.dart';
+import 'package:gate_closes/shared/widgets/ambient_background.dart';
+import 'package:gate_closes/shared/widgets/animated_bottom_navigation.dart';
 import 'package:go_router/go_router.dart';
 
 /// App shell: hosts the routed [child] and the premium glass bottom navigation.

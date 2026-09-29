@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/connections/domain/entities/conversation_message_entity.dart';
+import 'package:gate_closes/features/connections/domain/entities/conversation_message_entity.dart';
 
 class ConversationMessageModel extends ConversationMessageEntity {
   const ConversationMessageModel({

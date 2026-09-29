@@ -2,17 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/features/airport/domain/entities/airport_entity.dart';
-import 'package:flutter_template/features/boarding_pass/domain/heuristics/boarding_pass_ocr_heuristics.dart';
-import 'package:flutter_template/features/boarding_pass/domain/parsers/bcbp_parser.dart';
-import 'package:flutter_template/features/flight/domain/entities/flight_ticket_entity.dart';
-import 'package:flutter_template/features/flight/presentation/controllers/flight_controller.dart';
-import 'package:flutter_template/shared/widgets/airport_picker_sheet.dart';
-import 'package:flutter_template/shared/widgets/app_button.dart';
-import 'package:flutter_template/shared/widgets/glass_card.dart';
-import 'package:flutter_template/shared/widgets/modern_text_field.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
+import 'package:gate_closes/features/boarding_pass/domain/heuristics/boarding_pass_ocr_heuristics.dart';
+import 'package:gate_closes/features/boarding_pass/domain/parsers/bcbp_parser.dart';
+import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:gate_closes/features/flight/presentation/controllers/flight_controller.dart';
+import 'package:gate_closes/shared/widgets/airport_picker_sheet.dart';
+import 'package:gate_closes/shared/widgets/app_button.dart';
+import 'package:gate_closes/shared/widgets/glass_card.dart';
+import 'package:gate_closes/shared/widgets/modern_text_field.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// Boarding pass camera scanner & manual confirmation sheet.
 /// Matches `BoardingPassForm.tsx` from the Expo React Native app.

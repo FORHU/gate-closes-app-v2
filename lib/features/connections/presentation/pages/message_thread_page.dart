@@ -3,18 +3,18 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/services/file_upload_service.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:flutter_template/features/connections/domain/entities/connection_entity.dart';
-import 'package:flutter_template/features/connections/domain/entities/conversation_message_entity.dart';
-import 'package:flutter_template/features/connections/presentation/controllers/message_thread_controller.dart';
-import 'package:flutter_template/shared/widgets/app_state_view.dart';
-import 'package:flutter_template/shared/widgets/emoji_reaction_picker.dart';
-import 'package:flutter_template/shared/widgets/voice_recorder_composer.dart';
-import 'package:flutter_template/shared/widgets/waveform_player.dart';
-import 'package:flutter_template/theme/tokens/colors.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/services/file_upload_service.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/connections/domain/entities/connection_entity.dart';
+import 'package:gate_closes/features/connections/domain/entities/conversation_message_entity.dart';
+import 'package:gate_closes/features/connections/presentation/controllers/message_thread_controller.dart';
+import 'package:gate_closes/shared/widgets/app_state_view.dart';
+import 'package:gate_closes/shared/widgets/emoji_reaction_picker.dart';
+import 'package:gate_closes/shared/widgets/voice_recorder_composer.dart';
+import 'package:gate_closes/shared/widgets/waveform_player.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// 1-on-1 thread for a single connection. Realtime sync is `/conversations`
 /// socket-backed (see [MessageThreadController]); marking read only updates

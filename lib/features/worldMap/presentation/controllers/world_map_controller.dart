@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/features/airport/domain/entities/airport_entity.dart';
-import 'package:flutter_template/features/airport/presentation/controllers/airport_controller.dart';
-import 'package:flutter_template/features/terminal_echo/domain/entities/terminal_echo_map_node_entity.dart';
-import 'package:flutter_template/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
+import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
+import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
+import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_map_node_entity.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
 
 class WorldMapState extends Equatable {
   const WorldMapState({

@@ -1,10 +1,10 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:flutter_template/features/boarding_pass/data/repositories/boarding_pass_repository_impl.dart';
-import 'package:flutter_template/features/boarding_pass/domain/entities/boarding_pass_entity.dart';
-import 'package:flutter_template/features/boarding_pass/domain/parsers/bcbp_parser.dart';
-import 'package:flutter_template/features/boarding_pass/domain/repositories/boarding_pass_repository.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/boarding_pass/data/repositories/boarding_pass_repository_impl.dart';
+import 'package:gate_closes/features/boarding_pass/domain/entities/boarding_pass_entity.dart';
+import 'package:gate_closes/features/boarding_pass/domain/parsers/bcbp_parser.dart';
+import 'package:gate_closes/features/boarding_pass/domain/repositories/boarding_pass_repository.dart';
 
 // --- Dependency wiring ---
 

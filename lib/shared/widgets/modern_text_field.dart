@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/theme/tokens/radius.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/theme/tokens/radius.dart';
 import 'package:gap/gap.dart';
 
 /// A Gate Closes text field — theme-aware glass surface, lime focus state.

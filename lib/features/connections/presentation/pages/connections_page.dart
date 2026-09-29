@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/utils/context_extensions.dart';
-import 'package:flutter_template/features/connections/domain/entities/connection_entity.dart';
-import 'package:flutter_template/features/connections/presentation/controllers/connections_controller.dart';
-import 'package:flutter_template/features/connections/presentation/pages/message_thread_page.dart';
-import 'package:flutter_template/shared/widgets/app_state_view.dart';
-import 'package:flutter_template/shared/widgets/glass_card.dart';
-import 'package:flutter_template/theme/tokens/spacing.dart';
+import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/connections/domain/entities/connection_entity.dart';
+import 'package:gate_closes/features/connections/presentation/controllers/connections_controller.dart';
+import 'package:gate_closes/features/connections/presentation/pages/message_thread_page.dart';
+import 'package:gate_closes/shared/widgets/app_state_view.dart';
+import 'package:gate_closes/shared/widgets/glass_card.dart';
+import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// Connections: Parallel Soul / Destination Thread / Baton Touch tabs, all
 /// backed by the single unified `/api/conversations` domain — see

@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/terminal_echo/data/models/terminal_echo_model.dart';
+import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -41,7 +41,7 @@ jobs:
           fail=0
           for dir in lib/features/*/; do
             feature=$(basename "$dir")
-            matches=$(grep -rnE "import 'package:flutter_template/features/" "$dir" \
+            matches=$(grep -rnE "import 'package:gate_closes/features/" "$dir" \
               | grep -vE "features/$feature/" \
               | grep -vE "features/auth/" || true)
             if [ -n "$matches" ]; then

@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
-  /// **'flutter_template'**
+  /// **'Gate Closes'**
   String get appName;
 
   /// No description provided for @login.

@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_template/core/constants/api_endpoints.dart';
-import 'package:flutter_template/core/services/adapter_config/adapter_config.dart';
-import 'package:flutter_template/core/services/cookie_service.dart';
-import 'package:flutter_template/core/services/storage_service.dart';
+import 'package:gate_closes/core/constants/api_endpoints.dart';
+import 'package:gate_closes/core/services/adapter_config/adapter_config.dart';
+import 'package:gate_closes/core/services/cookie_service.dart';
+import 'package:gate_closes/core/services/storage_service.dart';
 
 /// Attaches the access token to outgoing requests and transparently refreshes
 /// it once when the server returns 401, then retries the original request.

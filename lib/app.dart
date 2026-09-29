@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/config/app_config.dart';
-import 'package:flutter_template/core/services/theme_controller.dart';
-import 'package:flutter_template/l10n/generated/app_localizations.dart';
-import 'package:flutter_template/routes/app_routes.dart';
-import 'package:flutter_template/theme/app_theme.dart';
+import 'package:gate_closes/core/config/app_config.dart';
+import 'package:gate_closes/core/services/theme_controller.dart';
+import 'package:gate_closes/l10n/generated/app_localizations.dart';
+import 'package:gate_closes/routes/app_routes.dart';
+import 'package:gate_closes/theme/app_theme.dart';
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});

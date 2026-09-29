@@ -1,5 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_template/core/config/environment.dart';
+import 'package:gate_closes/core/config/environment.dart';
 
 /// Per-environment settings, fixed at startup.
 ///
