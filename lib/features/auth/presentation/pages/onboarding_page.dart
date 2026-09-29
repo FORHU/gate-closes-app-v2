@@ -63,7 +63,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   Future<void> _completeOnboarding() async {
-    await ref.read(storageServiceProvider).setOnboardingSeen();
+    final userId = ref.read(authControllerProvider).user?.id;
+    if (userId != null) {
+      await ref.read(storageServiceProvider).setOnboardingSeen(userId);
+    }
     if (mounted) {
       context.go(RouteNames.home);
     }

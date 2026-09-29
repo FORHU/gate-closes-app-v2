@@ -51,7 +51,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: RouteNames.home,
     refreshListenable: notifier,
     redirect: (context, state) {
-      final isAuth = ref.read(authControllerProvider).isAuthenticated;
+      final user = ref.read(authControllerProvider).user;
+      final isAuth = user != null;
       final goingToLogin = state.matchedLocation == RouteNames.login;
       final goingToRegister = state.matchedLocation == RouteNames.register;
       final goingToForgotPassword =
@@ -64,7 +65,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // Onboarding gate: new users see it once.
-      final seenOnboarding = ref.read(storageServiceProvider).onboardingSeen;
+      final seenOnboarding =
+          ref.read(storageServiceProvider).isOnboardingSeen(user.id);
       if (!seenOnboarding) {
         final goingToOnboarding =
             state.matchedLocation == RouteNames.onboarding;

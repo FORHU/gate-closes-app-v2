@@ -48,7 +48,7 @@ void main() {
         ),
       ),
     );
-    when(mockStorage.setOnboardingSeen).thenAnswer((_) async {});
+    when(() => mockStorage.setOnboardingSeen(any())).thenAnswer((_) async {});
     when(mockFlightRepository.getActiveFlightTicket).thenAnswer(
       (_) async => const Right(null),
     );
