@@ -1,0 +1,15 @@
+{
+  "@@locale": "en",
+  "appName": "Gate Closes",
+  "login": "Login",
+  "logout": "Logout",
+  "email": "Email",
+  "password": "Password",
+  "welcomeBack": "Welcome back",
+  "signInToContinue": "Sign in to continue",
+  "loginHint": "Hint: any email + password of 6+ chars",
+  "home": "Home",
+  "profile": "Profile",
+  "worldMap": "World Map",
+  "connections": "Connections"
+}

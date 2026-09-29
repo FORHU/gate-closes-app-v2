@@ -1,0 +1,14 @@
+{
+  "@@locale": "es",
+  "appName": "Gate Closes",
+  "login": "Iniciar sesión",
+  "logout": "Cerrar sesión",
+  "email": "Correo electrónico",
+  "password": "Contraseña",
+  "welcomeBack": "Bienvenido de nuevo",
+  "signInToContinue": "Inicia sesión para continuar",
+  "loginHint": "Pista: cualquier correo y una contraseña de 6+ caracteres",
+  "home": "Inicio",
+  "profile": "Perfil",
+  "connections": "Conexiones"
+}

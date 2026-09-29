@@ -1,6 +1,16 @@
+# Environment variables
+.env
+.env.dev
+.env.prod
+.env.local
+!.env.example
+
 # Miscellaneous
 *.class
 *.lock
+# Apps (unlike packages/plugins) should commit their lockfile for
+# reproducible builds across machines/CI — un-ignore it specifically.
+!pubspec.lock
 *.log
 *.pyc
 *.swp
@@ -117,3 +127,8 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# Environment variables
+.env
+.env.*
+!.env.example
