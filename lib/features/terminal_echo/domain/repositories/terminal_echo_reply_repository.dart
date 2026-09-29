@@ -1,7 +1,7 @@
+import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_reply_entity.dart';
-import 'package:fpdart/fpdart.dart';
 
 abstract class TerminalEchoReplyRepository {
   /// Fetches all replies for a specific Terminal Echo thread.

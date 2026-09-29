@@ -1,5 +1,5 @@
-import 'package:gate_closes/features/auth/data/models/registration_step_model.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gate_closes/features/auth/data/models/registration_step_model.dart';
 
 void main() {
   group('RegistrationStepModel parsing against gate-closes-api contracts', () {

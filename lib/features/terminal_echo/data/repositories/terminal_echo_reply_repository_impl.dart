@@ -1,3 +1,4 @@
+import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/constants/api_endpoints.dart';
 import 'package:gate_closes/core/errors/exceptions.dart';
 import 'package:gate_closes/core/errors/failure.dart';
@@ -6,7 +7,6 @@ import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_rep
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_reply_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/repositories/terminal_echo_reply_repository.dart';
-import 'package:fpdart/fpdart.dart';
 
 class TerminalEchoReplyRepositoryImpl implements TerminalEchoReplyRepository {
   const TerminalEchoReplyRepositoryImpl(this._api);

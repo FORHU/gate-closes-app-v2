@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
 import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
 import 'package:gate_closes/features/flight/domain/repositories/flight_repository.dart';
@@ -9,8 +11,6 @@ import 'package:gate_closes/features/profile/domain/entities/profile_entity.dart
 import 'package:gate_closes/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:gate_closes/features/profile/presentation/pages/profile_page.dart';
 import 'package:gate_closes/l10n/generated/app_localizations.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockProfileRepository extends Mock implements ProfileRepository {}

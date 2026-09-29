@@ -1,10 +1,10 @@
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:gate_closes/core/config/app_config.dart';
 import 'package:gate_closes/core/services/api_service.dart';
 import 'package:gate_closes/core/services/cookie_service.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockStorageService extends Mock implements StorageService {}

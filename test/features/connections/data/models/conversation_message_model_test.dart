@@ -1,5 +1,5 @@
-import 'package:gate_closes/features/connections/data/models/conversation_message_model.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gate_closes/features/connections/data/models/conversation_message_model.dart';
 
 void main() {
   group('ConversationMessageModel parsing against gate-closes-api contracts',

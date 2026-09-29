@@ -397,8 +397,7 @@ class _ReviewState extends StatelessWidget {
           child: Container(
             width: 40,
             height: 40,
-            decoration:
-                BoxDecoration(color: accent, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
             child: Icon(
               isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
               color: colors.accentOn,

@@ -101,10 +101,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                   controller: _currentPasswordController,
                   prefixIcon: Icons.lock_outline_rounded,
                   obscureText: _obscureCurrent,
-                  validator: (v) =>
-                      (v == null || v.isEmpty)
-                          ? 'Current password is required'
-                          : null,
+                  validator: (v) => (v == null || v.isEmpty)
+                      ? 'Current password is required'
+                      : null,
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureCurrent

@@ -1,8 +1,8 @@
+import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/exceptions.dart';
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:gate_closes/features/profile/domain/entities/profile_entity.dart';
-import 'package:fpdart/fpdart.dart';
 
 /// Repository contract (the abstraction the domain layer depends on).
 abstract class ProfileRepository {

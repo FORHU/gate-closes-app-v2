@@ -63,9 +63,7 @@ class _AirportSearchPageState extends ConsumerState<AirportSearchPage> {
 
   void _selectAirport(AirportEntity airport) {
     unawaited(
-      ref
-          .read(terminalEchoControllerProvider.notifier)
-          .loadFeed(airport.iata),
+      ref.read(terminalEchoControllerProvider.notifier).loadFeed(airport.iata),
     );
     context.pop(airport);
   }

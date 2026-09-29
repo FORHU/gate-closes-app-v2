@@ -87,14 +87,13 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
         return;
       }
 
-      final success = await ref
-          .read(messageThreadControllerProvider.notifier)
-          .sendVoice(
-            fileUrl: uploaded.url,
-            audioDuration: durationSeconds * 1000,
-            waveformData: waveform,
-            fileName: uploaded.key,
-          );
+      final success =
+          await ref.read(messageThreadControllerProvider.notifier).sendVoice(
+                fileUrl: uploaded.url,
+                audioDuration: durationSeconds * 1000,
+                waveformData: waveform,
+                fileName: uploaded.key,
+              );
 
       if (mounted) {
         setState(() => _isUploading = false);
@@ -402,10 +401,10 @@ class _MessageBubble extends StatelessWidget {
                           color: colors.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: message.currentUserReactions
-                                    .contains(entry.key)
-                                ? accent
-                                : colors.border,
+                            color:
+                                message.currentUserReactions.contains(entry.key)
+                                    ? accent
+                                    : colors.border,
                           ),
                         ),
                         child: Text(

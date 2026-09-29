@@ -1,5 +1,5 @@
-import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_model.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_model.dart';
 
 void main() {
   group('TerminalEchoModel parsing and attributes', () {

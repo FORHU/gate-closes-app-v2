@@ -583,9 +583,7 @@ class _ReplyTile extends ConsumerWidget {
   Future<void> _react(BuildContext context, WidgetRef ref) async {
     final reaction = await EmojiReactionPicker.show(context);
     if (reaction == null) return;
-    await ref
-        .read(terminalEchoThreadControllerProvider.notifier)
-        .react(
+    await ref.read(terminalEchoThreadControllerProvider.notifier).react(
           replyId: reply.id,
           reaction: EchoReactionType.values.byName(reaction),
         );

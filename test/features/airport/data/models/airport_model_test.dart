@@ -1,6 +1,6 @@
+import 'package:flutter_test/flutter_test.dart';
 import 'package:gate_closes/features/airport/data/models/airport_model.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AirportModel parsing & DetectionState mapping', () {

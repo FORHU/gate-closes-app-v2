@@ -1,3 +1,4 @@
+import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/constants/api_endpoints.dart';
 import 'package:gate_closes/core/errors/exceptions.dart';
 import 'package:gate_closes/core/errors/failure.dart';
@@ -5,7 +6,6 @@ import 'package:gate_closes/core/services/api_service.dart';
 import 'package:gate_closes/features/connections/data/models/conversation_message_model.dart';
 import 'package:gate_closes/features/connections/domain/entities/conversation_message_entity.dart';
 import 'package:gate_closes/features/connections/domain/repositories/messages_repository.dart';
-import 'package:fpdart/fpdart.dart';
 
 class MessagesRepositoryImpl implements MessagesRepository {
   const MessagesRepositoryImpl(this._api);

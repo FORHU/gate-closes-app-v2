@@ -1,6 +1,6 @@
+import 'package:flutter_test/flutter_test.dart';
 import 'package:gate_closes/features/connections/data/models/connection_model.dart';
 import 'package:gate_closes/features/connections/domain/entities/connection_entity.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ConnectionModel parsing against gate-closes-api contracts', () {

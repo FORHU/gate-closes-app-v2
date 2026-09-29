@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/shared/widgets/buttons.dart';
 import 'package:gate_closes/theme/tokens/colors.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
-import 'package:gap/gap.dart';
 
 /// Visual intent for [AppStateView]. Drives the default icon and accent color.
 enum AppStateKind { error, empty, notFound, info }

@@ -1,6 +1,6 @@
+import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/features/connections/domain/entities/conversation_message_entity.dart';
-import 'package:fpdart/fpdart.dart';
 
 abstract class MessagesRepository {
   /// Lists messages for a conversation, newest-first (matches the backend's

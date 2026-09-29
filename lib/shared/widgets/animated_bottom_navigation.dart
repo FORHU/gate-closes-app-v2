@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/theme/tokens/effects.dart';
 import 'package:gate_closes/theme/tokens/radius.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
-import 'package:gap/gap.dart';
 
 /// A single destination in [AnimatedBottomNavigation].
 class NavBarItem {
