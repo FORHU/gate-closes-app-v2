@@ -351,7 +351,7 @@ class _UsernameGenderStepState extends ConsumerState<_UsernameGenderStep> {
         children: [
           ModernTextField(
             label: 'Username',
-            hint: 'Jane123.45',
+            hint: 'traveler_jane',
             controller: _usernameController,
             prefixIcon: Icons.badge_outlined,
             validator: Validators.username,

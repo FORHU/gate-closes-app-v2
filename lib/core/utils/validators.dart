@@ -41,15 +41,17 @@ class Validators {
     return null;
   }
 
-  static final RegExp _usernameRegex = RegExp(r'^[A-Za-z]+\d{1,3}\.\d{2}$');
+  static final RegExp _usernameRegex =
+      RegExp(r'^(?!.*\.\.)(?!.*\.$)[a-zA-Z0-9._]{3,30}$');
 
-  /// Mirrors the backend's username pattern (`user.auth.controller.ts`,
-  /// `setUsernameGender`) — e.g. `Jane123.45`.
+  /// Instagram-style username pattern: 3-30 characters, letters, numbers,
+  /// periods, and underscores. Cannot end with a period or have consecutive
+  /// periods.
   static String? username(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return 'Username is required';
     if (!_usernameRegex.hasMatch(v)) {
-      return 'Use letters followed by digits, e.g. Jane123.45';
+      return '3-30 characters (letters, numbers, underscores, periods)';
     }
     return null;
   }

@@ -71,9 +71,8 @@ class _ProfileEditorPageState extends ConsumerState<ProfileEditorPage> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final user = ref.watch(authControllerProvider).user;
-    final initial = (user?.name.isNotEmpty ?? false)
-        ? user!.name[0].toUpperCase()
-        : '?';
+    final initial =
+        (user?.name.isNotEmpty ?? false) ? user!.name[0].toUpperCase() : '?';
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -120,7 +119,7 @@ class _ProfileEditorPageState extends ConsumerState<ProfileEditorPage> {
                 const SizedBox(height: AppSpacing.xl),
                 ModernTextField(
                   label: 'USERNAME',
-                  hint: 'Name123.45',
+                  hint: 'traveler_jane',
                   controller: _usernameController,
                   prefixIcon: Icons.badge_outlined,
                   validator: Validators.username,
