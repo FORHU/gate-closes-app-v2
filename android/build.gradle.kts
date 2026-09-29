@@ -19,6 +19,14 @@ allprojects {
     }
 }
 
+subprojects {
+    plugins.withId("com.android.library") {
+        if (!plugins.hasPlugin("org.jetbrains.kotlin.android")) {
+            plugins.apply("org.jetbrains.kotlin.android")
+        }
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
