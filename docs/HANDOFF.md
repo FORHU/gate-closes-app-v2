@@ -43,33 +43,22 @@ on this phone" with *Open Feed* / *Try the map again*.
 Connect phone: USB debugging on, accept the prompt; if `offline`:
 `adb kill-server && adb start-server && adb devices`.
 
-## 2. Nothing is committed
+## 2. Commits
 
-Both repos are on `main` with uncommitted work. **Commit only when the
-user asks**: one conventional commit per feature, **no Co-Authored-By /
-Claude attribution**. Never commit ticket PII or ticket images.
+**Commit only when the user asks**: one conventional commit per feature,
+**no Co-Authored-By / Claude attribution**. Never commit ticket PII or
+ticket images.
 
-**App (`gate-closes-app-v2`)** — suggested commits:
-* `feat(map)`: Expo map shell — `world_map_page`, `world_map_controller`,
-  `airport_boundary_index`, `echo_map_features`, `map_badges` + PNGs +
-  `tool/render_map_badges.dart`, `map_disk_cache`, `connectivity_service`,
-  location stream (`core/location/*`), lite map + `map_render_guard`.
-* `feat(map)`: Map Lighting — `map_lighting_controller`, `map_lighting_page`,
-  Settings link in `profile_page`.
-* `feat(nav)`: map-first shell — `map_bottom_nav`, `airport_gate_dialog`,
-  `dialog_page`, `main_layout`, routes; removed `animated_bottom_navigation`.
-* ~~`feat(echo)`~~ **committed** (`6e6a8e7` echo card / deferred loads /
-  outside-zone alert; `d0cdb40` feed airport search, Expo's `searchFeed`).
-  `echo_preview_dialog` (+ test) is still uncommitted: it needs
-  `RouteNames.connectionDraftFor`, so commit it with `feat(connections)`
-  or after it.
-* `feat(connections)`: DM draft (`openDraft`, create on first send).
-* `feat(boarding-pass)`: save/show boarding time + terminal.
-* `docs`: moved architecture/boarding docs into `docs/`, parity doc, this file.
-* Tests for each of the above; `pubspec.yaml` (`flutter_svg` is a dev
-  dependency now, `connectivity_plus`, `assets/map_badges/`).
+**App (`gate-closes-app-v2`)** — all committed on local `main`, **not
+pushed** (2026-10-01). Each commit builds and passes its tests alone:
+`6e6a8e7` feat(echo) echo card · `d0cdb40` feat(echo) feed airport search ·
+`6c44b14` feat(connections) DM draft · `32bdb70` feat(boarding-pass)
+boarding time + terminal · `c1da906` feat(map) Map Lighting ·
+`80eaf97` feat(nav) bottom nav + gate dialog · `9d33e2a` feat(map)
+map-first shell · `036789a` docs. Left uncommitted on purpose:
+`lib/l10n/generated/*` (line endings only).
 
-**API (`gate-closes-api`)** — suggested commits:
+**API (`gate-closes-api`)** — still uncommitted; suggested commits:
 * `fix(security)`: CORS open only when `NODE_ENV` is development/test
   (`config.ts`, `app.ts`).
 * `fix(ci)`: CI env uses `ACCESS_TOKEN_SECRET` / `REFRESH_TOKEN_SECRET`.
@@ -85,7 +74,7 @@ Claude attribution**. Never commit ticket PII or ticket images.
 
 ## 3. Verification (last run: all green)
 
-App: `flutter analyze` (clean) · `flutter test` (148 pass) ·
+App: `flutter analyze` (clean) · `flutter test` (152 pass) ·
 `dart format --output=none --set-exit-if-changed lib test tool` ·
 feature-isolation script from `.github/workflows/flutter_ci.yml` ·
 `flutter build apk --debug`.
