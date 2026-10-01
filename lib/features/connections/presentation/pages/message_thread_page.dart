@@ -21,9 +21,26 @@ import 'package:gate_closes/theme/tokens/spacing.dart';
 /// this user's own state — the backend has no live read-receipt broadcast
 /// for the other participant, so no "seen" indicator is shown for them.
 class MessageThreadPage extends ConsumerStatefulWidget {
-  const MessageThreadPage({required this.connection, super.key});
+  const MessageThreadPage({
+    required ConnectionEntity this.connection,
+    super.key,
+  })  : draftType = null,
+        draftOtherUserId = null;
 
-  final ConnectionEntity connection;
+  /// A conversation with [otherUserId] that may not exist yet — started from
+  /// a traveler's pin on the map. Opens the existing conversation if there is
+  /// one; otherwise it's created when the first message is sent.
+  const MessageThreadPage.draft({
+    required ConnectionType type,
+    required String otherUserId,
+    super.key,
+  })  : connection = null,
+        draftType = type,
+        draftOtherUserId = otherUserId;
+
+  final ConnectionEntity? connection;
+  final ConnectionType? draftType;
+  final String? draftOtherUserId;
 
   @override
   ConsumerState<MessageThreadPage> createState() => _MessageThreadPageState();
@@ -36,10 +53,19 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
   @override
   void initState() {
     super.initState();
+    // Deferred: loading writes provider state, which isn't allowed while the
+    // page is still being built (same pattern as ProfilePage).
+    final controller = ref.read(messageThreadControllerProvider.notifier);
+    final connection = widget.connection;
     unawaited(
-      ref
-          .read(messageThreadControllerProvider.notifier)
-          .openThread(widget.connection.id),
+      Future.microtask(
+        () => connection != null
+            ? controller.openThread(connection.id, connection: connection)
+            : controller.openDraft(
+                type: widget.draftType!,
+                otherUserId: widget.draftOtherUserId!,
+              ),
+      ),
     );
   }
 
@@ -115,16 +141,33 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final accent = widget.connection.type.accent;
     final currentUserId = ref.watch(authControllerProvider).user?.id ?? '';
 
     ref.listen(messageThreadControllerProvider, (previous, next) {
       if ((previous?.messages.length ?? 0) < next.messages.length) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
+      // A failed send (e.g. starting an ineligible conversation) keeps the
+      // thread on screen, so surface it as a snackbar instead.
+      final error = next.error;
+      if (error != null &&
+          error != previous?.error &&
+          (next.messages.isNotEmpty || next.isDraft)) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+      }
     });
 
     final state = ref.watch(messageThreadControllerProvider);
+    final connection = state.connection ?? widget.connection;
+    final type = connection?.type ?? state.draftType ?? widget.draftType!;
+    final accent = type.accent;
+    final name = connection?.otherUserName;
+    final title = (name?.isNotEmpty ?? false)
+        ? name!
+        : connection == null
+            ? 'New ${type.label}'
+            : 'Unknown traveler';
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -137,15 +180,13 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
               radius: 16,
               backgroundColor: accent.withValues(alpha: 0.18),
               child: Text(
-                (widget.connection.otherUserName?.isNotEmpty ?? false)
-                    ? widget.connection.otherUserName![0].toUpperCase()
-                    : '?',
+                (name?.isNotEmpty ?? false) ? name![0].toUpperCase() : '?',
                 style: TextStyle(color: accent, fontWeight: FontWeight.w700),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              widget.connection.otherUserName ?? 'Unknown traveler',
+              title,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -156,7 +197,9 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       ),
       body: Column(
         children: [
-          Expanded(child: _buildBody(state, currentUserId, colors, accent)),
+          Expanded(
+            child: _buildBody(state, currentUserId, colors, accent, type),
+          ),
           if (_isUploading)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -194,12 +237,17 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     String currentUserId,
     GateColors colors,
     Color accent,
+    ConnectionType type,
   ) {
     if (state.isLoading && state.messages.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.error != null && state.messages.isEmpty) {
+    final connection = state.connection ?? widget.connection;
+    if (state.error != null &&
+        state.messages.isEmpty &&
+        !state.isDraft &&
+        connection != null) {
       return AppStateView(
         kind: AppStateKind.error,
         title: 'Could not load this conversation',
@@ -207,15 +255,18 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
         actionLabel: 'Retry',
         onAction: () => ref
             .read(messageThreadControllerProvider.notifier)
-            .openThread(widget.connection.id),
+            .openThread(connection.id, connection: connection),
       );
     }
 
     if (state.messages.isEmpty) {
-      return const AppStateView(
+      return AppStateView(
         kind: AppStateKind.empty,
-        title: 'Say hello',
-        message: 'No messages yet — send a voice note to start.',
+        title: state.isDraft ? 'Start your ${type.label}' : 'Say hello',
+        message: state.isDraft
+            ? 'Send a voice note to start. They only see the conversation '
+                'once you do.'
+            : 'No messages yet — send a voice note to start.',
       );
     }
 
