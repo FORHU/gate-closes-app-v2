@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:gate_closes/features/terminal_echo/data/datasources/terminal_echo_socket_service.dart';
 import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_model.dart';
@@ -184,4 +185,27 @@ class TerminalEchoController extends Notifier<TerminalEchoState> {
 final terminalEchoControllerProvider =
     NotifierProvider<TerminalEchoController, TerminalEchoState>(
   TerminalEchoController.new,
+);
+
+/// The airport picked in the feed's search (Expo's `feedLocationOverride`);
+/// null means the feed follows the detected airport. Kept app-wide so it
+/// survives tab switches, as in Expo.
+class FeedAirportOverride extends Notifier<AirportEntity?> {
+  @override
+  AirportEntity? build() {
+    ref.watch(authControllerProvider.select((s) => s.user?.id));
+    return null;
+  }
+
+  /// Browses [airport]'s feed; picking the [detected] airport clears it.
+  void browse(AirportEntity airport, {required AirportEntity? detected}) {
+    state = airport.iata == detected?.iata ? null : airport;
+  }
+
+  void clear() => state = null;
+}
+
+final feedAirportOverrideProvider =
+    NotifierProvider<FeedAirportOverride, AirportEntity?>(
+  FeedAirportOverride.new,
 );

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/widgets/echo_card.dart';
@@ -17,9 +18,8 @@ import 'package:go_router/go_router.dart';
 /// detectAirport()` (Phase 6); the feed itself via `TerminalEchoController.
 /// loadFeed(iata)`.
 ///
-/// Not yet built (tracked in `FEATURE_PARITY_ROADMAP.md`): browsing a
-/// *different* airport's feed via search, and the reply-thread view — both
-/// need work beyond this page.
+/// Search browses another airport's feed (`feedAirportOverrideProvider`,
+/// Expo's `searchFeed`) until the user clears it.
 class FeedPage extends ConsumerStatefulWidget {
   const FeedPage({super.key});
 
@@ -38,7 +38,9 @@ class _FeedPageState extends ConsumerState<FeedPage> {
 
   Future<void> _init() async {
     await ref.read(airportControllerProvider.notifier).detectAirport();
-    final airport = ref.read(airportControllerProvider).airport;
+    if (!mounted) return;
+    final airport = ref.read(feedAirportOverrideProvider) ??
+        ref.read(airportControllerProvider).airport;
     if (airport != null) {
       await ref
           .read(terminalEchoControllerProvider.notifier)
@@ -46,10 +48,34 @@ class _FeedPageState extends ConsumerState<FeedPage> {
     }
   }
 
+  Future<void> _searchAirport() async {
+    final picked = await context.push<AirportEntity>(RouteNames.airportSearch);
+    if (picked == null || !mounted) return;
+    ref.read(feedAirportOverrideProvider.notifier).browse(
+          picked,
+          detected: ref.read(airportControllerProvider).airport,
+        );
+    await ref
+        .read(terminalEchoControllerProvider.notifier)
+        .loadFeed(picked.iata);
+  }
+
+  Future<void> _clearSearch() async {
+    ref.read(feedAirportOverrideProvider.notifier).clear();
+    final detected = ref.read(airportControllerProvider).airport;
+    if (detected != null) {
+      await ref
+          .read(terminalEchoControllerProvider.notifier)
+          .loadFeed(detected.iata);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final airportState = ref.watch(airportControllerProvider);
+    final browsed = ref.watch(feedAirportOverrideProvider);
+    final airport = browsed ?? airportState.airport;
     final echoState = ref.watch(terminalEchoControllerProvider);
 
     return Scaffold(
@@ -58,33 +84,59 @@ class _FeedPageState extends ConsumerState<FeedPage> {
         backgroundColor: colors.background,
         elevation: 0,
         title: Text(
-          airportState.airport != null
-              ? 'Terminal Echo — ${airportState.airport!.iata}'
-              : 'Terminal Echo',
+          airport != null ? 'Terminal Echo — ${airport.iata}' : 'Terminal Echo',
           style:
               TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700),
         ),
         actions: [
           IconButton(
             icon: Icon(Icons.search_rounded, color: colors.textPrimary),
-            onPressed: () => context.push(RouteNames.airportSearch),
+            onPressed: () => unawaited(_searchAirport()),
           ),
         ],
       ),
-      body: _buildBody(colors, airportState, echoState),
+      body: Column(
+        children: [
+          if (browsed != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                0,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: InputChip(
+                  avatar: const Icon(Icons.flight_rounded, size: 16),
+                  label: Text(
+                    browsed.name,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  deleteButtonTooltipMessage: 'Back to my airport',
+                  onDeleted: () => unawaited(_clearSearch()),
+                ),
+              ),
+            ),
+          Expanded(
+            child: _buildBody(colors, airportState, airport, echoState),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildBody(
     GateColors colors,
     AirportState airportState,
+    AirportEntity? airport,
     TerminalEchoState echoState,
   ) {
-    if (airportState.isDetecting) {
+    if (airport == null && airportState.isDetecting) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (airportState.airport == null) {
+    if (airport == null) {
       return AppStateView(
         kind: AppStateKind.empty,
         title: 'No airport detected',
@@ -121,7 +173,7 @@ class _FeedPageState extends ConsumerState<FeedPage> {
     return RefreshIndicator(
       onRefresh: () => ref
           .read(terminalEchoControllerProvider.notifier)
-          .loadFeed(airportState.airport!.iata),
+          .loadFeed(airport.iata),
       child: ListView.separated(
         padding: AppSpacing.edgeInsetsMd,
         itemCount: echoState.echoes.length,
