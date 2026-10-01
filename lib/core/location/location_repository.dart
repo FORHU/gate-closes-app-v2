@@ -11,4 +11,9 @@ abstract class LocationRepository {
 
   /// Checks if location services are enabled on the device.
   Future<bool> isLocationServiceEnabled();
+
+  /// Live position updates, emitted after moving at least [distanceFilter]
+  /// meters. Assumes permission was already granted (see
+  /// [getCurrentLocation]); errors are dropped rather than ending the stream.
+  Stream<LocationCoordinates> watchPosition({int distanceFilter = 25});
 }

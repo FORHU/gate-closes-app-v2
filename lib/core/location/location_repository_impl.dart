@@ -72,6 +72,23 @@ class LocationRepositoryImpl implements LocationRepository {
   @override
   Future<bool> isLocationServiceEnabled() =>
       Geolocator.isLocationServiceEnabled();
+
+  @override
+  Stream<LocationCoordinates> watchPosition({int distanceFilter = 25}) {
+    return Geolocator.getPositionStream(
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: distanceFilter,
+      ),
+    )
+        .map(
+          (p) => LocationCoordinates(
+            latitude: p.latitude,
+            longitude: p.longitude,
+          ),
+        )
+        .handleError((Object _) {});
+  }
 }
 
 final locationRepositoryProvider = Provider<LocationRepository>((ref) {

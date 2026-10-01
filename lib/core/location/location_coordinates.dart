@@ -25,6 +25,19 @@ class LocationCoordinates extends Equatable {
     );
   }
 
+  /// Great-circle distance to [other], in meters (haversine).
+  double distanceTo(LocationCoordinates other) {
+    const earthRadius = 6371e3;
+    double rad(double deg) => deg * math.pi / 180;
+    final dLat = rad(other.latitude - latitude);
+    final dLng = rad(other.longitude - longitude);
+    final a = math.pow(math.sin(dLat / 2), 2) +
+        math.cos(rad(latitude)) *
+            math.cos(rad(other.latitude)) *
+            math.pow(math.sin(dLng / 2), 2);
+    return earthRadius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
   @override
   List<Object?> get props => [latitude, longitude];
 }

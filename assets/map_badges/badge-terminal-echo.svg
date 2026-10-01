@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50" fill="none">
+    <circle cx="25" cy="25" r="25" fill="url(#gradient-terminal-echo)" />
+    <circle cx="25" cy="25" r="21" fill="#F3F3F3" />
+    <path
+      d="M21 15V35M17 19.4444V30.5556M25 18.3333V31.6667M29 21.6667V28.3333M33 19.4444V30.5556M37 23.8889V26.1111M13 23.8889V26.1111"
+      stroke="#BBE40A"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <defs>
+      <linearGradient id="gradient-terminal-echo" x1="25" y1="0" x2="25" y2="50" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#BBE40A" />
+        <stop offset="0.5" stop-color="#ABC92B" />
+        <stop offset="1" stop-color="#98B518" />
+      </linearGradient>
+    </defs>
+  </svg>

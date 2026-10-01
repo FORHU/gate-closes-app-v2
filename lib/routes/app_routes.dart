@@ -8,7 +8,9 @@ import 'package:gate_closes/features/auth/presentation/pages/onboarding_page.dar
 import 'package:gate_closes/features/auth/presentation/pages/register_page.dart';
 import 'package:gate_closes/features/boarding_pass/presentation/pages/add_boarding_pass_page.dart';
 import 'package:gate_closes/features/boarding_pass/presentation/widgets/boarding_pass_scanner_sheet.dart';
+import 'package:gate_closes/features/connections/domain/entities/connection_entity.dart';
 import 'package:gate_closes/features/connections/presentation/pages/connections_page.dart';
+import 'package:gate_closes/features/connections/presentation/pages/message_thread_page.dart';
 import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
 import 'package:gate_closes/features/profile/presentation/pages/change_password_page.dart';
 import 'package:gate_closes/features/profile/presentation/pages/profile_editor_page.dart';
@@ -16,10 +18,13 @@ import 'package:gate_closes/features/profile/presentation/pages/profile_page.dar
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/pages/airport_search_page.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/pages/create_echo_page.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/pages/echo_preview_dialog.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/pages/echo_thread_loader_page.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/pages/feed_page.dart';
+import 'package:gate_closes/features/worldMap/presentation/pages/map_lighting_page.dart';
 import 'package:gate_closes/features/worldMap/presentation/pages/world_map_page.dart';
 import 'package:gate_closes/routes/route_names.dart';
+import 'package:gate_closes/shared/widgets/dialog_page.dart';
 import 'package:gate_closes/shared/widgets/main_layout.dart';
 import 'package:go_router/go_router.dart';
 
@@ -120,6 +125,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AirportSearchPage(),
       ),
       GoRoute(
+        path: RouteNames.mapEcho,
+        // A dialog over the map, not a full page.
+        pageBuilder: (context, state) => DialogPage(
+          child: EchoPreviewDialog(
+            echoId: state.pathParameters['echoId']!,
+            affinity: state.uri.queryParameters['type'] ?? 'terminal_echo',
+          ),
+        ),
+      ),
+      GoRoute(
         path: RouteNames.addBoardingPass,
         builder: (context, state) {
           final extra = state.extra;
@@ -135,16 +150,29 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.changePassword,
         builder: (context, state) => const ChangePasswordPage(),
       ),
+      GoRoute(
+        path: RouteNames.mapLighting,
+        builder: (context, state) => const MapLightingPage(),
+      ),
+      GoRoute(
+        path: RouteNames.connectionDraft,
+        builder: (context, state) => MessageThreadPage.draft(
+          type: ConnectionType.fromApiKey(
+            state.uri.queryParameters['type'] ?? 'parallel_soul',
+          ),
+          otherUserId: state.pathParameters['otherUserId']!,
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),
         routes: [
           GoRoute(
             path: RouteNames.home,
-            builder: (context, state) => const ConnectionsPage(),
+            builder: (context, state) => const WorldMapPage(),
           ),
           GoRoute(
-            path: RouteNames.worldMap,
-            builder: (context, state) => const WorldMapPage(),
+            path: RouteNames.connections,
+            builder: (context, state) => const ConnectionsPage(),
           ),
           GoRoute(
             path: RouteNames.feed,

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50" fill="none">
+    <circle cx="25" cy="25" r="25" fill="url(#gradient-cluster)" />
+    <circle cx="25" cy="25" r="21" fill="#F3F3F3" />
+    <defs>
+      <linearGradient id="gradient-cluster" x1="25" y1="0" x2="25" y2="50" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#BBE40A" />
+        <stop offset="0.5" stop-color="#ABC92B" />
+        <stop offset="1" stop-color="#98B518" />
+      </linearGradient>
+    </defs>
+  </svg>

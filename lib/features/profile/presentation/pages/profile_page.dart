@@ -357,6 +357,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   ),
                   const _RowDivider(),
                   _SettingsRow(
+                    icon: Icons.wb_twilight_rounded,
+                    label: 'Map Lighting',
+                    onTap: () => context.push(RouteNames.mapLighting),
+                  ),
+                  const _RowDivider(),
+                  _SettingsRow(
                     icon: Icons.notifications_none_rounded,
                     label: 'Notifications',
                     onTap: () => showTopToast(

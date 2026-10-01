@@ -28,6 +28,7 @@ environment:
 dependencies:
   audioplayers: ^6.1.0
   cached_network_image: ^3.4.1
+  connectivity_plus: ^7.3.1
   cookie_jar: ^4.0.8
   cupertino_icons: ^1.0.8
   dio: ^5.7.0
@@ -59,6 +60,8 @@ dependencies:
   uuid: ^4.5.1
 
 dev_dependencies:
+  # Only for tool/render_map_badges.dart (badge SVG -> PNG).
+  flutter_svg: ^2.3.0
   flutter_test:
     sdk: flutter
 
@@ -87,6 +90,7 @@ flutter:
     - .env.dev
     - .env.prod
     - assets/data/
+    - assets/map_badges/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

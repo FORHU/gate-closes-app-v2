@@ -15,6 +15,9 @@ import 'package:gate_closes/features/worldMap/presentation/controllers/world_map
 import 'package:gate_closes/features/worldMap/presentation/pages/world_map_page.dart';
 import 'package:gate_closes/l10n/generated/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../helpers/map_test_overrides.dart';
 
 class MockLocationRepository extends Mock implements LocationRepository {}
 
@@ -25,174 +28,147 @@ class MockEchoMapRepository extends Mock implements EchoMapRepository {}
 const _tCoordinates = LocationCoordinates(latitude: 1.35, longitude: 103.99);
 
 void main() {
-  testWidgets(
-    'WorldMapPage renders the fetched nearby airports with no layout errors',
-    (tester) async {
-      final mockLocationRepository = MockLocationRepository();
-      final mockAirportRepository = MockAirportRepository();
-      final mockEchoMapRepository = MockEchoMapRepository();
+  late MockLocationRepository location;
+  late MockAirportRepository airports;
+  late MockEchoMapRepository echoMap;
 
-      when(
-        mockAirportRepository.getAirportGeoJson,
-      ).thenAnswer((_) async => const Right(<String, dynamic>{}));
-      when(
-        mockEchoMapRepository.getNodes,
-      ).thenAnswer(
-        (_) async => const Right(<TerminalEchoMapNodeEntity>[]),
-      );
-
-      when(
-        mockLocationRepository.getCurrentLocation,
-      ).thenAnswer((_) async => const Right(_tCoordinates));
-      when(
-        () => mockAirportRepository.findNearby(_tCoordinates),
-      ).thenAnswer(
-        (_) async => const Right([
-          AirportEntity(
-            id: 'SIN',
-            name: 'Singapore Changi Airport',
-            iata: 'SIN',
-            distanceKm: 0.8,
-          ),
-          AirportEntity(
-            id: 'JHB',
-            name: 'Senai International Airport',
-            iata: 'JHB',
-            distanceKm: 45.2,
-          ),
-        ]),
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            locationRepositoryProvider.overrideWithValue(
-              mockLocationRepository,
-            ),
-            airportRepositoryProvider.overrideWithValue(
-              mockAirportRepository,
-            ),
-            echoMapRepositoryProvider.overrideWithValue(
-              mockEchoMapRepository,
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: WorldMapPage(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // In spatial mode, current selected airport is displayed
-      expect(find.text('Singapore Changi Airport'), findsOneWidget);
-
-      // Switch to list view to verify both airports
-      await tester.tap(find.byIcon(Icons.view_list_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Singapore Changi Airport'), findsOneWidget);
-      expect(find.text('Senai International Airport'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'WorldMapPage shows an empty state with no results in list mode',
-    (tester) async {
-      final mockLocationRepository = MockLocationRepository();
-      final mockAirportRepository = MockAirportRepository();
-      final mockEchoMapRepository = MockEchoMapRepository();
-
-      when(
-        mockAirportRepository.getAirportGeoJson,
-      ).thenAnswer((_) async => const Right(<String, dynamic>{}));
-      when(
-        mockEchoMapRepository.getNodes,
-      ).thenAnswer(
-        (_) async => const Right(<TerminalEchoMapNodeEntity>[]),
-      );
-
-      when(
-        mockLocationRepository.getCurrentLocation,
-      ).thenAnswer((_) async => const Right(_tCoordinates));
-      when(
-        () => mockAirportRepository.findNearby(_tCoordinates),
-      ).thenAnswer((_) async => const Right([]));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            locationRepositoryProvider.overrideWithValue(
-              mockLocationRepository,
-            ),
-            airportRepositoryProvider.overrideWithValue(mockAirportRepository),
-            echoMapRepositoryProvider.overrideWithValue(
-              mockEchoMapRepository,
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: WorldMapPage(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Switch to list view to see empty state
-      await tester.tap(find.byIcon(Icons.view_list_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.text('No nearby airports'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-      'WorldMapPage shows a retry option when the fetch fails in list mode',
-      (tester) async {
-    final mockLocationRepository = MockLocationRepository();
-    final mockAirportRepository = MockAirportRepository();
-    final mockEchoMapRepository = MockEchoMapRepository();
-
-    when(
-      mockAirportRepository.getAirportGeoJson,
-    ).thenAnswer((_) async => const Right(<String, dynamic>{}));
-    when(
-      mockEchoMapRepository.getNodes,
-    ).thenAnswer(
+  setUp(() {
+    location = MockLocationRepository();
+    airports = MockAirportRepository();
+    echoMap = MockEchoMapRepository();
+    when(airports.getAirportGeoJson)
+        .thenAnswer((_) async => const Right(<String, dynamic>{}));
+    when(echoMap.getNodes).thenAnswer(
       (_) async => const Right(<TerminalEchoMapNodeEntity>[]),
     );
+    when(location.watchPosition).thenAnswer((_) => const Stream.empty());
+    when(() => airports.findNearby(_tCoordinates)).thenAnswer(
+      (_) async => const Right([
+        AirportEntity(id: 'SIN', name: 'Singapore Changi', iata: 'SIN'),
+      ]),
+    );
+  });
 
-    when(
-      mockLocationRepository.getCurrentLocation,
-    ).thenAnswer((_) async => const Left(NetworkFailure()));
-
+  Future<void> pumpMap(
+    WidgetTester tester, {
+    Map<String, Object> prefs = const {},
+  }) async {
+    final extra = await mapTestOverrides(prefs: prefs);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          locationRepositoryProvider.overrideWithValue(mockLocationRepository),
-          airportRepositoryProvider.overrideWithValue(mockAirportRepository),
-          echoMapRepositoryProvider.overrideWithValue(
-            mockEchoMapRepository,
-          ),
+          ...extra,
+          locationRepositoryProvider.overrideWithValue(location),
+          airportRepositoryProvider.overrideWithValue(airports),
+          echoMapRepositoryProvider.overrideWithValue(echoMap),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: WorldMapPage(),
+          home: Scaffold(body: WorldMapPage()),
         ),
       ),
     );
     await tester.pumpAndSettle();
+  }
 
-    // Switch to list view to see error/retry state
-    await tester.tap(find.byIcon(Icons.view_list_rounded));
+  testWidgets('shows the airport search pill over the map', (tester) async {
+    when(location.getCurrentLocation)
+        .thenAnswer((_) async => const Right(_tCoordinates));
+
+    await pumpMap(tester);
+
+    expect(find.text('SEARCH AIRPORT...'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('offers recenter once the user location is known', (
+    tester,
+  ) async {
+    when(location.getCurrentLocation)
+        .thenAnswer((_) async => const Right(_tCoordinates));
+
+    await pumpMap(tester);
+
+    expect(
+      find.byTooltip('Recenter map to your location'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('no recenter button without a location', (tester) async {
+    when(location.getCurrentLocation).thenAnswer(
+      (_) async => const Left(PermissionFailure('Location denied')),
+    );
+
+    await pumpMap(tester);
+
+    expect(find.byTooltip('Recenter map to your location'), findsNothing);
+    expect(find.text('SEARCH AIRPORT...'), findsOneWidget);
+  });
+
+  testWidgets('offline: explains that saved data is shown', (tester) async {
+    when(location.getCurrentLocation)
+        .thenAnswer((_) async => const Right(_tCoordinates));
+    final extra = await mapTestOverrides(offline: true);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...extra,
+          locationRepositoryProvider.overrideWithValue(location),
+          airportRepositoryProvider.overrideWithValue(airports),
+          echoMapRepositoryProvider.overrideWithValue(echoMap),
+        ],
+        child: const MaterialApp(home: Scaffold(body: WorldMapPage())),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('Retry'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    expect(find.text('NO INTERNET — SHOWING SAVED DATA'), findsOneWidget);
+  });
+
+  group('map render guard', () {
+    setUp(() {
+      when(location.getCurrentLocation)
+          .thenAnswer((_) async => const Right(_tCoordinates));
+    });
+
+    testWidgets('marks the attempt before the map starts', (tester) async {
+      await pumpMap(tester);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('map_render_pending'), 'pending');
+      expect(find.text('SEARCH AIRPORT...'), findsOneWidget);
+    });
+
+    testWidgets('last launch died loading the map: shows the notice', (
+      tester,
+    ) async {
+      await pumpMap(tester, prefs: {'map_render_pending': 'pending'});
+
+      expect(find.text("Map isn't available on this phone"), findsOneWidget);
+      expect(find.text('SEARCH AIRPORT...'), findsNothing);
+    });
+
+    testWidgets('try again brings the map back', (tester) async {
+      await pumpMap(tester, prefs: {'map_render_pending': 'pending'});
+
+      await tester.tap(find.text('Try the map again'));
+      await tester.pumpAndSettle();
+
+      expect(find.text("Map isn't available on this phone"), findsNothing);
+      expect(find.text('SEARCH AIRPORT...'), findsOneWidget);
+    });
+
+    testWidgets('map never finishes loading: shows the notice', (
+      tester,
+    ) async {
+      await pumpMap(tester);
+
+      await tester.pump(const Duration(seconds: 26));
+      await tester.pumpAndSettle();
+
+      expect(find.text("Map isn't available on this phone"), findsOneWidget);
+    });
   });
 }
