@@ -78,6 +78,11 @@ class _BoardingPassScannerSheetState
   DateTime? _parsedDepartureDate;
   DateTime? _returnDateTime;
 
+  /// Read from the ticket (OCR) or kept from the ticket being edited; saved
+  /// with the flight. Not editable in the form.
+  DateTime? _boardingDateTime;
+  String? _terminal;
+
   late BoardingPassEntryMode _mode;
 
   /// A camera scan was parsed; the preview is closed until "Scan again".
@@ -132,6 +137,9 @@ class _BoardingPassScannerSheetState
       );
       _departureDateTime = t.departureDateTime;
       _returnDateTime = t.returnDateTime;
+      // Keep fields the form doesn't show, so an edit doesn't erase them.
+      _boardingDateTime = t.boardingDateTime;
+      _terminal = t.terminal;
       if (t.seat != null) _seatController.text = t.seat!;
       if (t.gate != null) _gateController.text = t.gate!;
     }
@@ -190,6 +198,11 @@ class _BoardingPassScannerSheetState
     if (flight.gate != null && flight.gate!.isNotEmpty) {
       _gateController.text = flight.gate!;
     }
+    if (flight.boardingDateTime != null) {
+      _boardingDateTime = flight.boardingDateTime;
+    }
+    final terminal = flight.terminal?.trim();
+    if (terminal != null && terminal.isNotEmpty) _terminal = terminal;
     setState(() {
       _errorMessage = null;
       _showOcrInput = false;
@@ -464,6 +477,8 @@ class _BoardingPassScannerSheetState
               gate: _gateController.text.trim().isNotEmpty
                   ? _gateController.text.trim()
                   : null,
+              boardingDateTime: _boardingDateTime,
+              terminal: _terminal,
               idempotencyKey: _idempotencyKey,
             );
 
@@ -479,6 +494,11 @@ class _BoardingPassScannerSheetState
         _errorMessage = err ?? 'Failed to save flight ticket. Try again.';
       });
     }
+  }
+
+  String _hhmm(DateTime t) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.hour)}:${two(t.minute)}';
   }
 
   String _confidenceLabel(ParseConfidence confidence) {
@@ -1006,6 +1026,17 @@ class _BoardingPassScannerSheetState
               ),
             ],
           ),
+          if (_boardingDateTime != null || _terminal != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              [
+                if (_boardingDateTime != null)
+                  'Boarding ${_hhmm(_boardingDateTime!)}',
+                if (_terminal != null) 'Terminal $_terminal',
+              ].join(' · '),
+              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            ),
+          ],
 
           if (_errorMessage != null) ...[
             const SizedBox(height: AppSpacing.md),

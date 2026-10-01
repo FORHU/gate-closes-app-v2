@@ -20,7 +20,7 @@ class BcbpParserService {
     try {
       // Positions 2–29 hold the passenger name and booking reference (PNR).
       // Deliberately never read: Core Invariant 5 — passenger identity is not
-      // extracted, displayed or kept (see BOARDING_PASS_INTELLIGENCE_PLAN.md).
+      // extracted, displayed or kept (see docs/BOARDING_PASS_INTELLIGENCE_PLAN.md).
 
       // Origin Airport IATA (index 30, 3 chars)
       final fromAirport = trimmed.substring(30, 33).trim().toUpperCase();

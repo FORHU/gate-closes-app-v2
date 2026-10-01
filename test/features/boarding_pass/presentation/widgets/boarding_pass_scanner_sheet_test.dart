@@ -54,4 +54,25 @@ void main() {
     expect(find.byType(BoardingPassCameraView), findsNothing);
     expect(find.text('PR1847'), findsOneWidget);
   });
+
+  testWidgets('editing keeps and shows the ticket boarding time and terminal', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildSubject(
+        initialTicket: FlightTicketEntity(
+          id: 't1',
+          userId: 'u1',
+          flightNumber: 'PR1847',
+          fromAirport: 'MNL',
+          toAirport: 'CEB',
+          departureDateTime: DateTime(2026, 10, 2, 6, 35),
+          boardingDateTime: DateTime(2026, 10, 2, 5, 50),
+          terminal: '3',
+        ),
+      ),
+    );
+
+    expect(find.text('Boarding 05:50 · Terminal 3'), findsOneWidget);
+  });
 }
