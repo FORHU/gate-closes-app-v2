@@ -117,9 +117,14 @@ class _VoiceRecorderComposerState extends State<VoiceRecorderComposer> {
     setState(() => _isPlayingReview = true);
     await _player.play(ap.DeviceFileSource(path));
     unawaited(
-      _player.onPlayerComplete.first.then((_) {
-        if (mounted) setState(() => _isPlayingReview = false);
-      }),
+      _player.onPlayerComplete.first.then(
+        (_) {
+          if (mounted) setState(() => _isPlayingReview = false);
+        },
+        // The player was disposed (e.g. sent mid-preview) before playback
+        // ended: the stream closes without an event. Nothing to update.
+        onError: (Object _) {},
+      ),
     );
   }
 
