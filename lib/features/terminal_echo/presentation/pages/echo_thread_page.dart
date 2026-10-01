@@ -37,10 +37,14 @@ class _EchoThreadPageState extends ConsumerState<EchoThreadPage> {
   @override
   void initState() {
     super.initState();
+    // Deferred: loading writes provider state, which isn't allowed while the
+    // page is still being built (same pattern as ProfilePage).
     unawaited(
-      ref
-          .read(terminalEchoThreadControllerProvider.notifier)
-          .openThread(widget.echo.id),
+      Future.microtask(
+        () => ref
+            .read(terminalEchoThreadControllerProvider.notifier)
+            .openThread(widget.echo.id),
+      ),
     );
   }
 
