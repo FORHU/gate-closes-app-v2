@@ -165,12 +165,18 @@ Behavior follows the Expo app's map shell; full mapping and status in
 
 * **Engine**: `mapbox_maps_flutter` 2.31 (Mapbox Maps SDK v11), style
   `dark-v11`, globe projection.
-* **Airport boundaries** (`GET /api/airport/geojson`): fill `#7F8792` @ 16%,
-  glow outline, inner line `#C4CBD4`. Only polygons in the visible area are
-  sent to Mapbox (none below zoom 7, at most 300). Sending the whole
-  collection crashed Android with an out-of-memory error in the plugin's
-  JSON conversion.
-* **Echo pins** (`GET /api/terminal-echo/map`, fetched per visible area):
+* **Airport boundaries** (`GET /api/airport/geojson`): drawn as radar
+  scopes in the app's lime accent `#BBE40A`: faint fill, glow and outline;
+  from zoom 10 a grid (rings, spokes, edge ticks) on the 12 airports nearest
+  the view center and a rotating sweep (4 s per turn, ~15 fps) on the
+  nearest 6. No sweep on lite maps or in the background
+  (`AirportRadar`; uncommitted as of 2026-10-01). Only polygons in the
+  visible area are sent to Mapbox (none below zoom 7, at most 300). Sending
+  the whole collection crashed Android with an out-of-memory error in the
+  plugin's JSON conversion.
+* **Echo pins** (`GET /api/terminal-echo/map`, fetched per visible area;
+  bounds wrapped into -180..180 by `MapViewBounds`, `west > east` when the
+  view crosses the antimeridian, at most the 100 newest per view):
   clustered symbol layer (radius 45, max zoom 15) with Expo's per-type
   badges, and an activity heatmap. Tap a cluster to zoom in; tap a pin for
   its card with START CONVERSATION (PS / DT / BT).
@@ -332,7 +338,8 @@ human-readable `message`.
 | Airport detection, nearby, search, GeoJSON | Implemented |
 | Flight ticket (with boarding-pass fields, idempotent create) | Implemented |
 | Terminal Echo (create, feed, replies, reactions, listens) | Implemented |
-| Echo map pins (`id`, `type`, `createdAt`, listen / reaction counts) | Implemented (API, needs deploy) |
+| Echo map pins (`id`, `type`, `createdAt`, listen / reaction counts) | Implemented (API `6f2fa82`, pushed) |
+| Echo map pins for wide / antimeridian views (`west > east` accepted) | Implemented (API, uncommitted as of 2026-10-01) |
 | Conversations (create, messages, reactions, read) | Implemented |
 | Realtime `conversation:updated` to participants | Implemented (API `main`, needs deploy) |
 | Map pin `expiresAt` | Not applicable: echoes don't expire |
@@ -440,14 +447,17 @@ The Flutter codebase enforces strict verification routines before any merge:
 barcode / OCR / manual capture with privacy filtering, Terminal Echo,
 Connections (PS / DT / BT, starting conversations from map pins), the
 Expo-parity map shell, location tracking, offline map caching, Map Lighting.
-137 tests pass, `flutter analyze` is clean, the Android debug build succeeds.
+166 tests pass, `flutter analyze` is clean, the Android debug build succeeds
+(2026-10-02, including the uncommitted map work).
 
 **Pending:**
-* Physical Android device validation (first priority: the map, including the
-  out-of-memory fix).
+* Physical Android device validation: the map runs on a realme RMX3231 and a
+  Xiaomi 2201116SG (`HANDOFF.md` §1); the radar look and zoomed-out clusters
+  are not yet seen on a device.
 * iOS build and device validation (needs a Mac).
 * Production-scale map data testing.
-* API map metadata (§5.3) and deploying the `conversation:updated` change.
+* Confirm production runs the pushed API changes (`conversation:updated`,
+  map metadata, existence check id): pushing API `main` deploys.
 * 20+ real boarding-pass fixtures for parser accuracy.
 * GitHub Actions: blocked by an account billing lock.
 

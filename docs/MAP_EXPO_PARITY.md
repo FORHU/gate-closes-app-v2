@@ -43,7 +43,7 @@ time-of-day change is the canvas tint overlay; Flutter reproduces the overlay.
 | `MapBottomNav` + `AirportGateModal` | `shared/widgets/map_bottom_nav.dart`, `airport_gate_dialog.dart` |
 | `map/index.tsx` + `CentralMapCanvas` | `worldMap/presentation/pages/world_map_page.dart` (home route `/`) |
 | `MapHostContext` camera state | `WorldMapController` + page-local camera/follow state |
-| `AirportBoundariesLayer` | GeoJSON source; only on-screen polygons (`AirportBoundaryIndex`) |
+| `AirportBoundariesLayer` | GeoJSON source; only on-screen polygons (`AirportBoundaryIndex`); drawn as lime radar scopes (Flutter-only look, see below) |
 | `TerminalMapNodesLayer` | clustered GeoJSON source + badge symbol layers + heatmap |
 | Echo detail modal | `/map/echo/:echoId` dialog route (terminal_echo feature) |
 | `MapShellLocationTracker` | position stream → `AirportController.detectAirport` |
@@ -62,10 +62,12 @@ time-of-day change is the canvas tint overlay; Flutter reproduces the overlay.
    on-disk pin and boundary caches.
 4. **Map Lighting.** Settings page; realtime or fixed preset tint.
 
-## Status (Sept 29)
+## Status (Oct 2)
 
-All four phases are built. 137 tests pass, the analyzer is clean, and the
-debug APK builds. **Not yet tried on a device.**
+All four phases are built. 166 tests pass, the analyzer is clean, and the
+debug APK builds. **Run on two phones:** realme RMX3231 (lite map) and
+Xiaomi 2201116SG; see `HANDOFF.md` §1. The radar look and zoomed-out
+clusters are not yet seen on a device (`SESSION_2026-10-01_MAP_WORK.md`).
 
 - [x] Crash fix: only on-screen airport polygons reach Mapbox (Android ran
       out of memory converting the full collection in `setStyleSourceProperty`).
@@ -101,7 +103,12 @@ debug APK builds. **Not yet tried on a device.**
   counts aren't sent.
 - Expo's custom globe atmosphere colors have no API in `mapbox_maps_flutter`
   2.31; Mapbox's default atmosphere is used.
-- Expo's animated sweep/pulse effects over the map are not ported.
+- Expo's animated sweep/pulse effects over the map are not ported as-is.
+  Instead, airport circles are drawn as **radar scopes** (Flutter only,
+  uncommitted as of 2026-10-01): lime `#BBE40A` fill, grid of rings, spokes
+  and edge ticks, and a rotating sweep. From zoom 10, on the 12 / 6 airports
+  nearest the view center; no sweep on lite maps. Expo keeps the gray
+  fill + glow + outline.
 
 ## Low-end phones (Flutter only)
 

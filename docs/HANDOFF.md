@@ -5,8 +5,13 @@ Read this first to continue. Related docs in this folder:
 `FLUTTER_V2_SYSTEM_ARCHITECTURE.md` (system + API contracts),
 `BOARDING_PASS_INTELLIGENCE_PLAN.md` (frozen feature).
 
-Everything is committed and **pushed** in both repos (app `827f904`,
-API `945afed`). **Commit only when the user asks**: one conventional commit
+> **Map work from 2026-10-01/02 (map fixes, radar, zoomed-out pins,
+> Pacific bounds) was committed locally on 2026-10-05, not pushed:**
+> app `9871df9`, `93217c7`, `59bb98b`; API `0888f77`, `9c7040a`. Still to
+> check on a phone: the Pacific view and the sweep look. Details and the
+> next feature (load pins per airport) in `SESSION_2026-10-01_MAP_WORK.md`.
+
+Last pushed: app `827f904`, API `945afed`. **Commit only when the user asks**: one conventional commit
 per feature, **no Co-Authored-By / Claude attribution**, each commit tested
 before it is made. Never commit ticket PII or ticket images.
 
@@ -21,6 +26,7 @@ PowerVR GPU. Device id `0151312S28102753`. Package
 | Dart error at `_onStyleLoaded` → no pins/boundaries | Badges sent to Mapbox as raw RGBA; the plugin decodes image **files** | **Fixed**: badges ship as PNGs (`assets/map_badges/*.png`, built by `tool/render_map_badges.dart`) |
 | Native `SIGSEGV` in `libGLESv2_powervr.so`, thread `1.raster` | Flutter raster thread in the PowerVR driver | **Probably fixed**: no new crash entry on 2026-10-01 |
 | App didn't open (Mapbox `BufPoolFreeBuffer` spam) | Map too heavy for the GPU/RAM | **Mitigated**: lite map on 32-bit ARM + render guard |
+| "Map isn't available" on **Xiaomi 2201116SG** (Android 13), no boundaries/pins | Once the user is located the pulsing puck redraws every frame, so `onMapIdle` never fired; the guard and the viewport refresh both waited on it | **Fixed**: guard settles on `onMapLoaded` + layers added; viewport refresh runs off a debounced `onCameraChange`. Verified on device 2026-10-01 (not Impeller: opting out changed nothing) |
 | Voice note upload 500 | Local API had no S3 credentials (provider chain only) | **Fixed** in API `3b86956` (restart the local API) |
 | `Bad state: No element` in the voice composer | Preview player closed before playback ended | **Fixed** in app `827f904` |
 
@@ -94,15 +100,17 @@ users share it). Seeded voice notes point at fake S3 URLs and won't play.
 Reseed: `SEED_CONFIRM_DB=gate-closes npm run seed` — the seed wipes users,
 echoes and conversations, so it refuses without that confirmation.
 
-## 4. Verification (last run: all green)
+## 4. Verification (last run 2026-10-02 afternoon: all green)
 
-App: `flutter analyze` (clean) · `flutter test` (152 pass) ·
+Counts include the uncommitted 2026-10-01 map work.
+
+App: `flutter analyze` (clean) · `flutter test` (170 pass) ·
 `dart format --output=none --set-exit-if-changed lib test tool` ·
 feature-isolation script from `.github/workflows/flutter_ci.yml` ·
 `flutter build apk --debug`.
 
 API: `npx tsc --noEmit` · `npx eslint "src/**/*.ts"` (not `yarn lint`: it
-has `--fix`) · `npx vitest run` (190 pass). Prettier `--check` fails on
+has `--fix`) · `npx vitest run` (193 pass). Prettier `--check` fails on
 ~113 files from CRLF line endings — pre-existing, not in CI. Yarn isn't
 installed on this PC; `npm install` rewrites `yarn.lock` (restore it).
 
