@@ -11,6 +11,7 @@ import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/map_view_bounds.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/map_lighting_controller.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/map_render_guard.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/world_map_controller.dart';
@@ -675,10 +676,17 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         GesturesSettings(rotateEnabled: camera.zoom > _kGestureLockZoom),
       ),
     );
-    final west = bounds.southwest.coordinates.lng.toDouble();
-    final south = bounds.southwest.coordinates.lat.toDouble();
-    final east = bounds.northeast.coordinates.lng.toDouble();
-    final north = bounds.northeast.coordinates.lat.toDouble();
+    final view = MapViewBounds.normalize(
+      west: bounds.southwest.coordinates.lng.toDouble(),
+      south: bounds.southwest.coordinates.lat.toDouble(),
+      east: bounds.northeast.coordinates.lng.toDouble(),
+      north: bounds.northeast.coordinates.lat.toDouble(),
+      centerLng: camera.center.coordinates.lng.toDouble(),
+    );
+    final west = view.west;
+    final south = view.south;
+    final east = view.east;
+    final north = view.north;
     final controller = ref.read(worldMapControllerProvider.notifier)
       ..updateVisibleBoundaries(
         west: west,
