@@ -71,6 +71,7 @@ class WorldMapPage extends ConsumerStatefulWidget {
 class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   MapboxMap? _map;
   bool _styleReady = false;
+  bool _mapLoaded = false;
   Timer? _boundsDebounce;
 
   /// Re-evaluates realtime lighting every minute (Expo does the same).
@@ -121,6 +122,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     setState(() {
       _armed = true;
       _renderSettled = false;
+      _mapLoaded = false;
     });
     _loadTimeout?.cancel();
     _loadTimeout = Timer(_kMapLoadTimeout, () {
@@ -130,6 +132,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       _renderSettled = true;
       _map = null;
       _styleReady = false;
+      _mapLoaded = false;
       _guard.failed();
     });
   }
@@ -181,7 +184,10 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
               styleUri: MapboxStyles.DARK,
               onMapCreated: _onMapCreated,
               onStyleLoadedListener: _onStyleLoaded,
-              onMapIdleListener: _onMapIdle,
+              onMapLoadedListener: _onMapLoaded,
+              // Not onMapIdle: the pulsing location puck redraws every
+              // frame, so the map never goes idle once the user is located.
+              onCameraChangeListener: (_) => _scheduleViewportRefresh(),
               onScrollListener: (_) => _stopFollowing(),
             ),
           ),
@@ -452,6 +458,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       ref.read(worldMapControllerProvider).airportBoundariesGeoJson,
     );
     await _syncPins();
+    _settleRenderIfReady();
   }
 
   // --- Location tracking & connectivity ------------------------------------
@@ -625,14 +632,24 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     _flyToAirport(airport);
   }
 
-  void _onMapIdle(MapIdleEventData _) {
-    if (_styleReady && !_renderSettled) {
-      // Rendered. Clear the marker only after the map has stayed up a
-      // little, since weak GPUs can crash just after the first frame.
-      _renderSettled = true;
-      _loadTimeout?.cancel();
-      unawaited(Future<void>.delayed(_kMapStableFor, _guard.loaded));
-    }
+  void _onMapLoaded(MapLoadedEventData _) {
+    _mapLoaded = true;
+    _settleRenderIfReady();
+  }
+
+  /// Once the map has loaded and our layers are added, the map works here.
+  void _settleRenderIfReady() {
+    if (!_mapLoaded || !_styleReady || _renderSettled) return;
+    // Clear the marker only after the map has stayed up a little, since
+    // weak GPUs can crash just after the first frame.
+    _renderSettled = true;
+    _loadTimeout?.cancel();
+    unawaited(Future<void>.delayed(_kMapStableFor, _guard.loaded));
+    _scheduleViewportRefresh();
+  }
+
+  /// Loads boundaries and pins for the view once the camera settles.
+  void _scheduleViewportRefresh() {
     _boundsDebounce?.cancel();
     _boundsDebounce = Timer(
       const Duration(milliseconds: 300),
