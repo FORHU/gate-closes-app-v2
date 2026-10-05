@@ -10,6 +10,7 @@ import 'package:gate_closes/core/services/connectivity_service.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_radar.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_view_bounds.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/map_lighting_controller.dart';
@@ -28,6 +29,23 @@ const Map<String, Object> _kEmptyFeatureCollection = {
 };
 
 const _kBoundarySource = 'airport-boundaries-source';
+const _kRadarGridSource = 'airport-radar-grid-source';
+const _kRadarSweepSource = 'airport-radar-sweep-source';
+
+/// Radar color: the app's lime accent.
+const Color _kRadarColor = Color(0xFFBBE40A);
+
+/// Below this zoom an airport circle is a few dozen pixels wide: no radar.
+const double _kRadarMinZoom = 10;
+
+/// Radar only on the airports nearest the view center: the grid is re-sent
+/// on every camera move and the sweep on every frame, so both stay small.
+const int _kMaxRadarDiscs = 12;
+const int _kMaxSweepDiscs = 6;
+
+/// One full sweep turn and the beam's frame interval.
+const Duration _kSweepPeriod = Duration(seconds: 4);
+const Duration _kSweepFrame = Duration(milliseconds: 66);
 const _kHeatmapSource = 'echo-heatmap-source';
 const _kPinsSource = 'echo-symbols-source';
 const _kClusterLayer = 'echo-clusters';
@@ -75,6 +93,23 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   bool _mapLoaded = false;
   Timer? _boundsDebounce;
 
+  /// False when the radar layers couldn't be added or updated on this phone:
+  /// the radar is then hidden, never drawn half-way. Circles and pins stay.
+  bool _radarReady = false;
+
+  /// Airport circles that get the radar grid, nearest the view center first.
+  List<RadarDisc> _radarDiscs = const [];
+
+  /// The camera as of the last viewport refresh, to pick [_radarDiscs].
+  Point? _viewCenter;
+  double _viewZoom = 0;
+  Timer? _sweepTicker;
+  final Stopwatch _sweepClock = Stopwatch();
+
+  /// Pauses the sweep while the app is in the background.
+  late final AppLifecycleListener _lifecycle;
+  bool _appInForeground = true;
+
   /// Re-evaluates realtime lighting every minute (Expo does the same).
   Timer? _lightingTicker;
 
@@ -108,6 +143,12 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   void initState() {
     super.initState();
     _guard = ref.read(mapRenderGuardProvider.notifier);
+    _lifecycle = AppLifecycleListener(
+      onStateChange: (state) {
+        _appInForeground = state == AppLifecycleState.resumed;
+        _syncSweep();
+      },
+    );
     _lightingTicker = Timer.periodic(
       const Duration(minutes: 1),
       (_) => setState(() {}),
@@ -134,6 +175,9 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       _map = null;
       _styleReady = false;
       _mapLoaded = false;
+      _radarReady = false;
+      _sweepTicker?.cancel();
+      _sweepTicker = null;
       _guard.failed();
     });
   }
@@ -146,6 +190,8 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   @override
   void dispose() {
     _boundsDebounce?.cancel();
+    _sweepTicker?.cancel();
+    _lifecycle.dispose();
     _lightingTicker?.cancel();
     _slowTimer?.cancel();
     _loadTimeout?.cancel();
@@ -259,9 +305,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       previous?.airportBoundariesGeoJson,
       next.airportBoundariesGeoJson,
     )) {
-      unawaited(
-        _setSourceData(_kBoundarySource, next.airportBoundariesGeoJson),
-      );
+      unawaited(_setBoundaries(next.airportBoundariesGeoJson));
     }
     if (previous?.echoNodes != next.echoNodes) unawaited(_syncPins());
     if (next.userLocation != null && !_centeredOnUser) {
@@ -284,6 +328,86 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       'data',
       jsonEncode(data ?? _kEmptyFeatureCollection),
     );
+  }
+
+  /// Boundary circles plus their radar grid; restarts the sweep for them.
+  Future<void> _setBoundaries(Map<String, dynamic>? boundaries) async {
+    final center = _viewCenter?.coordinates;
+    _radarDiscs = !_radarReady || center == null || _viewZoom < _kRadarMinZoom
+        ? const []
+        : AirportRadar.nearest(
+            AirportRadar.discs(boundaries),
+            lng: center.lng.toDouble(),
+            lat: center.lat.toDouble(),
+            count: _kMaxRadarDiscs,
+          );
+    await _setSourceData(_kBoundarySource, boundaries);
+    if (_radarReady) {
+      try {
+        await _setSourceData(
+          _kRadarGridSource,
+          AirportRadar.grid(_radarDiscs),
+        );
+      } on Object catch (e) {
+        _disableRadar(e);
+        return;
+      }
+    }
+    _syncSweep();
+  }
+
+  /// Hides the radar for the rest of this map session after a failure, so
+  /// a phone that can't draw it shows plain circles instead of a broken one.
+  void _disableRadar(Object error) {
+    debugPrint('Map radar off: $error');
+    _radarReady = false;
+    _radarDiscs = const [];
+    _syncSweep();
+    unawaited(
+      _setSourceData(_kRadarGridSource, null).catchError((Object _) {}),
+    );
+  }
+
+  /// Runs the sweep only while circles are on screen and the app is in the
+  /// foreground, and never on lite maps, where per-frame updates are too heavy.
+  void _syncSweep() {
+    final run = !_kLiteMap &&
+        _radarReady &&
+        _appInForeground &&
+        _styleReady &&
+        _radarDiscs.isNotEmpty;
+    if (!run) {
+      _sweepTicker?.cancel();
+      _sweepTicker = null;
+      _sweepClock.stop();
+      unawaited(
+        _setSourceData(_kRadarSweepSource, null).catchError((Object _) {}),
+      );
+      return;
+    }
+    _sweepClock.start();
+    _sweepTicker ??= Timer.periodic(_kSweepFrame, (_) => _drawSweep());
+  }
+
+  bool _sweepInFlight = false;
+
+  Future<void> _drawSweep() async {
+    // Skip a frame rather than queue bridge calls behind a slow one.
+    if (_sweepInFlight) return;
+    _sweepInFlight = true;
+    final period = _kSweepPeriod.inMilliseconds;
+    final heading = (_sweepClock.elapsedMilliseconds % period) / period * 360;
+    final discs = _radarDiscs.take(_kMaxSweepDiscs).toList();
+    try {
+      await _setSourceData(
+        _kRadarSweepSource,
+        AirportRadar.sweep(discs, heading),
+      );
+    } on Object catch (e) {
+      _disableRadar(e);
+    } finally {
+      _sweepInFlight = false;
+    }
   }
 
   Future<void> _syncPins() async {
@@ -358,30 +482,79 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       debugPrint('Map theme skipped: $e');
     }
 
-    // Airport boundaries — fill, glow and outline, as AirportBoundariesLayer.
+    // Airport boundaries as radar scopes: tinted disc, sweep beam, grid
+    // (rings, spokes, edge ticks), then a glowing outline on top.
+    const radar = _kRadarColor;
     await style.addSource(GeoJsonSource(id: _kBoundarySource, data: empty));
     await style.addLayer(
       FillLayer(
         id: 'airport-boundaries-fill',
         sourceId: _kBoundarySource,
-        fillColor: const Color(0xFF7F8792).toARGB32(),
-        fillOpacity: 0.16,
+        fillColor: radar.toARGB32(),
+        fillOpacity: 0.05,
       ),
     );
+    // The radar is decoration too: if this phone can't add it, the circles
+    // and pins load without it (see [_disableRadar]).
+    try {
+      await style.addSource(
+        GeoJsonSource(id: _kRadarSweepSource, data: empty),
+      );
+      await style.addSource(GeoJsonSource(id: _kRadarGridSource, data: empty));
+      await style.addLayer(
+        FillLayer(
+          id: 'airport-radar-sweep',
+          sourceId: _kRadarSweepSource,
+          fillColor: radar.toARGB32(),
+          fillOpacityExpression: [
+            '*',
+            0.32,
+            ['get', 'alpha'],
+          ],
+          fillAntialias: false,
+        ),
+      );
+      await style.addLayer(
+        LineLayer(
+          id: 'airport-radar-grid',
+          sourceId: _kRadarGridSource,
+          lineColor: radar.toARGB32(),
+          lineOpacityExpression: [
+            'match', ['get', 'kind'], //
+            'tickMajor', 0.75,
+            'tick', 0.45,
+            'ring', 0.28,
+            0.18, // spoke
+          ],
+          lineWidthExpression: [
+            'match', ['get', 'kind'], //
+            'tickMajor', 1.6,
+            'tick', 1.0,
+            0.8, // ring, spoke
+          ],
+        ),
+      );
+      _radarReady = true;
+    } on Object catch (e) {
+      _radarReady = false;
+      debugPrint('Map radar skipped: $e');
+    }
     await style.addLayer(
       LineLayer(
         id: 'airport-boundaries-outline-glow',
         sourceId: _kBoundarySource,
-        lineColor: const Color(0xFF7F8792).toARGB32(),
-        lineOpacity: 0.34,
-        lineWidth: 6,
+        lineColor: radar.toARGB32(),
+        lineOpacity: 0.3,
+        lineWidth: 7,
+        lineBlur: 4,
       ),
     );
     await style.addLayer(
       LineLayer(
         id: 'airport-boundaries-outline',
         sourceId: _kBoundarySource,
-        lineColor: const Color(0xFFC4CBD4).toARGB32(),
+        lineColor: radar.toARGB32(),
+        lineOpacity: 0.9,
         lineWidth: 1.5,
       ),
     );
@@ -454,8 +627,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
 
     _styleReady = true;
     if (!mounted) return;
-    await _setSourceData(
-      _kBoundarySource,
+    await _setBoundaries(
       ref.read(worldMapControllerProvider).airportBoundariesGeoJson,
     );
     await _syncPins();
@@ -683,6 +855,8 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       north: bounds.northeast.coordinates.lat.toDouble(),
       centerLng: camera.center.coordinates.lng.toDouble(),
     );
+    _viewCenter = camera.center;
+    _viewZoom = camera.zoom;
     final west = view.west;
     final south = view.south;
     final east = view.east;
