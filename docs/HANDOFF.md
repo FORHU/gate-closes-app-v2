@@ -6,9 +6,9 @@ Read this first to continue. Related docs in this folder:
 `BOARDING_PASS_INTELLIGENCE_PLAN.md` (frozen feature).
 
 > **Start here (2026-10-07):** `SESSION_2026-10-06_OFFERS_RBAC.md`,
-> section "Resume here". Pins per airport, offers, roles and the admin
-> area are committed on feature branches (not pushed); API temporarily
-> on port **3101**.
+> section "Resume here (2026-10-07)". Pins, offers, roles, seeders and the
+> airport cleanup are committed on feature branches (not merged); the
+> per-airport radius admin is built but **uncommitted**. API on **3001**.
 >
 > **Map work from 2026-10-01/02 (map fixes, radar, zoomed-out pins,
 > Pacific bounds) was committed locally on 2026-10-05, not pushed:**

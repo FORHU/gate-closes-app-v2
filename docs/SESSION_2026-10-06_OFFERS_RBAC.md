@@ -1,26 +1,52 @@
 # Session 2026-10-06: map zoom tuning, offers, roles
 
-## Resume here
+## Resume here (2026-10-07)
 
-**Committed on branches, not pushed, not merged** (2026-10-06):
-- API `feat/airport-offers-and-access`: nodemon, echo map per airport,
-  login 401 fix, roles/permissions, offers.
-- App `feat/map-airport-pins-and-offers`: Impeller off, pins per airport
-  + heat clouds, offers, these notes.
-- Landing `feat/landing-revamp`: revamp, onboarding steps, admin area.
+**Stopped at:** per-airport radius in the admin (`/admin/airports`) built
+and live-tested, **not committed** (API + landing). Commit it first:
+- API `feat/airport-offers-and-access`: `feat(airports): admin sets one
+  airport's radius` (admin.airport controller/route/spec, airport model
+  `radiusManual`, repository `searchForAdmin` + upsert `$setOnInsert`,
+  service `setRadius`/`clearGeoJsonCache`, clean-airports keeps manual
+  radii, CONTEXT.md).
+- Landing `feat/landing-revamp`: `feat(admin): airports page to set each
+  airport's radius` (features/airports, airports page/screen, nav item).
+Commit only when the user says so; no Co-Authored-By.
 
-Pushing API `main` deploys production: merge/push only when the user
-says so. Still temporary: API on **3101**, app `.env.dev` → 3101 (see
-`SESSION_2026-10-05_AIRPORT_PINS.md`).
+**Next topic the user raised:** places beyond airports. They showed Paris
+Gare de Lyon (a train station) on the map; the product is meant to be
+"starting with airports", not airports only. Expect questions on how a
+station/port would work (data source, radius, echoes, matches).
+Step 3 of the airport cleanup is also open: real outlines from
+OpenStreetMap instead of circles (fixes Teterboro/Zahns too).
 
-`git status` in `gate-closes-api` still lists ~100 files whose only
-change is line endings (prettier, by mistake; `git diff` is empty for
-them, none were committed). To clean (Git Bash, in `gate-closes-api`):
-`for f in $(git status --short | awk '$1=="M"{print $2}'); do git diff --quiet -- "$f" && git checkout -- "$f"; done`
-
-**Next:** make the first super admin (`npm run seed:roles --
---super-admin <email>`), create an active offer at BAG in `/admin`, then
-device-test offers at Loakan from zoom 10.5.
+**State of everything**
+- Committed, not pushed, not merged (pushing API `main` deploys prod):
+  - API `feat/airport-offers-and-access` (on GitHub already: pushed from
+    outside Claude, likely VS Code sync; `main` untouched): nodemon, echo
+    map per airport, login 401 fix, roles/permissions, offers, seeders
+    refactor (`afe1f89`), airport cleanup (`0d67fe8`).
+  - App `feat/map-airport-pins-and-offers` (local): Impeller off, pins
+    per airport + heat clouds, offers, notes.
+  - Landing `feat/landing-revamp` (local): revamp, how-it-works steps,
+    SEO, admin area.
+- Database (Atlas `gate-closes`): roles seeded; staff test accounts
+  `superadmin@example.com` / `admin@` / `developer@` / `premium@` /
+  `user@example.com`, password in `src/seeders/staff-users.seeder.ts`;
+  3 sample offers (BAG ad + voucher, MNL voucher); airports cleaned
+  8004 -> 3478 (copies in `airport.removed`), circles 4 km large /
+  2.5 km medium. Loakan is at its default 2.5 km (posting needs you
+  within 2.5 km; set it larger in `/admin/airports` for testing).
+- Ports: back to normal. API `npm run dev` on **3001** (own cmd window);
+  app `.env.dev` → `:3001/api` (gitignored, never commit). Landing/admin
+  `npx next start -p 3000` after `npx next build` (3000 is in the API's
+  ALLOWED_ORIGINS). The Xiaomi has the 3001 build installed.
+- After a power cut: re-add the new public IP in Atlas Network Access,
+  then restart the API (it connects to Mongo only at start).
+- `gate-closes-api` `git status` lists ~100 files changed only in line
+  endings (old prettier mistake; never committed). To clean (Git Bash):
+  `for f in $(git status --short | awk '$1=="M"{print $2}'); do git diff --quiet -- "$f" && git checkout -- "$f"; done`
+- Landing has a stale `pnpm-lock.yaml` (packages added with npm).
 
 ## Power cut fallout (fixed)
 - Router got a new public IP → Atlas refused (TLS alert 80) → API said
