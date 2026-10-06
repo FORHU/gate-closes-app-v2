@@ -29,8 +29,9 @@ class AirportBoundaryIndex {
 
   static final empty = AirportBoundaryIndex._(const []);
 
-  /// Below this zoom, airport polygons are a few pixels wide: show none.
-  static const double minZoom = 7;
+  /// Below this zoom the map shows only the airport heat clouds: no
+  /// polygons, no pins (device test: 10 must still be cloud).
+  static const double minZoom = 10.5;
 
   /// Upper bound per update, in case a very wide view at [minZoom] still
   /// covers a dense region.

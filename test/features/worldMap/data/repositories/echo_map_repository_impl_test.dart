@@ -18,7 +18,7 @@ void main() {
     repository = EchoMapRepositoryImpl(api);
   });
 
-  test('parses GeoJSON features into map nodes', () async {
+  test('asks for one airport and parses its pins', () async {
     when(() => api.get(any(), query: any(named: 'query'))).thenAnswer(
       (_) async => {
         'data': {
@@ -37,8 +37,11 @@ void main() {
       },
     );
 
-    final result = await repository.getNodes();
+    final result = await repository.getAirportNodes('SIN');
 
+    verify(
+      () => api.get(ApiEndpoints.terminalEchoMap, query: {'airport': 'SIN'}),
+    ).called(1);
     final nodes = result.getOrElse((_) => fail('expected Right'));
     expect(nodes, hasLength(1));
     expect(nodes.single.id, 'e1');
@@ -47,22 +50,46 @@ void main() {
     expect(nodes.single.latitude, 1.35);
   });
 
-  test('sends the bounding box only when all four edges are given', () async {
-    when(
-      () => api.get(any(), query: any(named: 'query')),
-    ).thenAnswer((_) async => {'data': <String, dynamic>{}});
+  test('parses the per-airport counts, skipping unusable features', () async {
+    when(() => api.get(any(), query: any(named: 'query'))).thenAnswer(
+      (_) async => {
+        'data': {
+          'type': 'FeatureCollection',
+          'features': [
+            {
+              'id': 'MNL',
+              'geometry': {
+                'type': 'Point',
+                'coordinates': [121.019208, 14.511205],
+              },
+              'properties': {
+                'airportIata': 'MNL',
+                'airportName': 'Ninoy Aquino International Airport',
+                'count': 12,
+                'latestAt': '2026-10-05T01:00:00.000Z',
+              },
+            },
+            {
+              'id': 'XXX',
+              'geometry': null,
+              'properties': {'airportIata': 'XXX', 'count': 1},
+            },
+          ],
+        },
+      },
+    );
 
-    await repository.getNodes(west: 1, south: 2, east: 3, north: 4);
-    await repository.getNodes(west: 1);
+    final result = await repository.getAirportCounts();
 
-    final queries = verify(
-      () => api.get(
-        ApiEndpoints.terminalEchoMap,
-        query: captureAny(named: 'query'),
-      ),
-    ).captured;
-    expect(queries.first, {'west': 1, 'south': 2, 'east': 3, 'north': 4});
-    expect(queries.last, isNull);
+    verify(
+      () => api.get(ApiEndpoints.terminalEchoMapCounts),
+    ).called(1);
+    final counts = result.getOrElse((_) => fail('expected Right'));
+    expect(counts, hasLength(1));
+    expect(counts.single.airportIata, 'MNL');
+    expect(counts.single.count, 12);
+    expect(counts.single.longitude, 121.019208);
+    expect(counts.single.latestAt, DateTime.utc(2026, 10, 5, 1));
   });
 
   test('maps a network error to NetworkFailure', () async {
@@ -70,7 +97,7 @@ void main() {
       () => api.get(any(), query: any(named: 'query')),
     ).thenThrow(const NetworkException());
 
-    final result = await repository.getNodes();
+    final result = await repository.getAirportNodes('SIN');
 
     expect(result.getLeft().toNullable(), isA<NetworkFailure>());
   });

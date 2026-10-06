@@ -9,6 +9,7 @@ import 'package:gate_closes/core/location/location_repository_impl.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/airport/domain/repositories/airport_repository.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
 import 'package:gate_closes/features/worldMap/domain/repositories/echo_map_repository.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/world_map_controller.dart';
@@ -38,9 +39,11 @@ void main() {
     echoMap = MockEchoMapRepository();
     when(airports.getAirportGeoJson)
         .thenAnswer((_) async => const Right(<String, dynamic>{}));
-    when(echoMap.getNodes).thenAnswer(
+    when(() => echoMap.getAirportNodes(any())).thenAnswer(
       (_) async => const Right(<TerminalEchoMapNodeEntity>[]),
     );
+    when(echoMap.getAirportCounts)
+        .thenAnswer((_) async => const Right(<AirportEchoCount>[]));
     when(location.watchPosition).thenAnswer((_) => const Stream.empty());
     when(() => airports.findNearby(_tCoordinates)).thenAnswer(
       (_) async => const Right([

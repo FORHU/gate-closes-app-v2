@@ -12,6 +12,8 @@ import 'package:gate_closes/core/services/storage_service.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/airport/domain/repositories/airport_repository.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_pin_plan.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
 import 'package:gate_closes/features/worldMap/domain/repositories/echo_map_repository.dart';
@@ -32,6 +34,7 @@ void main() {
   late MockAirportRepository airports;
   late MockEchoMapRepository echoMap;
   late MemoryMapDiskCache cache;
+  late FakeMapEchoSocket socket;
 
   const tCoordinates = LocationCoordinates(latitude: 1.35, longitude: 103.99);
   const tAirports = [
@@ -49,6 +52,20 @@ void main() {
     latitude: 1.36,
     longitude: 103.98,
   );
+  const tCounts = [
+    AirportEchoCount(
+      airportIata: 'SIN',
+      count: 1,
+      latitude: 1.3644,
+      longitude: 103.9915,
+    ),
+    AirportEchoCount(
+      airportIata: 'MNL',
+      count: 12,
+      latitude: 14.5112,
+      longitude: 121.0192,
+    ),
+  ];
 
   setUpAll(
     () => registerFallbackValue(
@@ -61,11 +78,14 @@ void main() {
     airports = MockAirportRepository();
     echoMap = MockEchoMapRepository();
     cache = MemoryMapDiskCache();
+    socket = FakeMapEchoSocket();
 
     when(airports.getAirportGeoJson)
         .thenAnswer((_) async => const Right(<String, dynamic>{}));
-    when(echoMap.getNodes)
+    when(() => echoMap.getAirportNodes(any()))
         .thenAnswer((_) async => const Right(<TerminalEchoMapNodeEntity>[]));
+    when(echoMap.getAirportCounts)
+        .thenAnswer((_) async => const Right(tCounts));
   });
 
   tearDown(() => container.dispose());
@@ -73,7 +93,7 @@ void main() {
   Future<WorldMapState> run({Map<String, Object> prefs = const {}}) async {
     container = ProviderContainer(
       overrides: [
-        ...await mapTestOverrides(cache: cache, prefs: prefs),
+        ...await mapTestOverrides(cache: cache, prefs: prefs, socket: socket),
         locationRepositoryProvider.overrideWithValue(location),
         airportRepositoryProvider.overrideWithValue(airports),
         echoMapRepositoryProvider.overrideWithValue(echoMap),
@@ -135,85 +155,188 @@ void main() {
       expect(state.echoNodes.single.nodeKind, EchoNodeKind.parallelSoul);
     });
 
-    test('first load never requests pins without a map area', () async {
+    test('first load never requests pins or counts without a map area',
+        () async {
       when(location.getCurrentLocation)
           .thenAnswer((_) async => const Left(NetworkFailure()));
 
       await run();
 
-      verifyNever(echoMap.getNodes);
+      verifyNever(() => echoMap.getAirportNodes(any()));
+      verifyNever(echoMap.getAirportCounts);
     });
 
-    test('a viewport fetch shows and caches the pins', () async {
+    /// A view around Singapore at [zoom].
+    Future<void> viewSingapore(double zoom) =>
+        container.read(worldMapControllerProvider.notifier).refreshForView(
+              west: 103.5,
+              south: 1,
+              east: 104.5,
+              north: 2,
+              zoom: zoom,
+              centerLng: 104,
+              centerLat: 1.5,
+            );
+
+    test('zoomed out: shows per-airport counts, no pins', () async {
       when(location.getCurrentLocation)
           .thenAnswer((_) async => const Left(NetworkFailure()));
-      when(
-        () => echoMap.getNodes(
-          west: any(named: 'west'),
-          south: any(named: 'south'),
-          east: any(named: 'east'),
-          north: any(named: 'north'),
-        ),
-      ).thenAnswer((_) async => const Right([tPin]));
       await run();
 
-      await container
-          .read(worldMapControllerProvider.notifier)
-          .fetchEchoNodesForBounds(west: 103, south: 1, east: 104, north: 2);
+      await viewSingapore(4);
 
-      expect(container.read(worldMapControllerProvider).echoNodes, [tPin]);
+      final state = container.read(worldMapControllerProvider);
+      expect(state.pinMode, MapPinMode.counts);
+      expect(state.airportCounts, tCounts);
+      expect(state.isFetchingPins, isFalse);
+      verifyNever(() => echoMap.getAirportNodes(any()));
+      expect(socket.watched, isEmpty);
+    });
+
+    test('zoomed in: loads only the airports in view, caches and watches them',
+        () async {
+      when(location.getCurrentLocation)
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+      when(() => echoMap.getAirportNodes('SIN'))
+          .thenAnswer((_) async => const Right([tPin]));
+      await run();
+
+      await viewSingapore(12);
+      await viewSingapore(13);
+
+      final state = container.read(worldMapControllerProvider);
+      expect(state.pinMode, MapPinMode.pins);
+      expect(state.echoNodes, [tPin]);
+      // Fetched once (cached after), and never MNL: it's not in view.
+      verify(() => echoMap.getAirportNodes('SIN')).called(1);
+      verifyNever(() => echoMap.getAirportNodes('MNL'));
+      // Counts are fresh for a minute: one request for both views.
+      verify(echoMap.getAirportCounts).called(1);
+      expect(socket.watched, {'SIN'});
       final cached = cache.entries['pins']!['features'] as List;
       expect(cached, hasLength(1));
     });
 
-    test('a slow answer for an old viewport does not replace a newer one',
-        () async {
+    test('views refreshed at once share one request each', () async {
       when(location.getCurrentLocation)
           .thenAnswer((_) async => const Left(NetworkFailure()));
-      final oldViewport =
-          Completer<Either<Failure, List<TerminalEchoMapNodeEntity>>>();
+      when(() => echoMap.getAirportNodes('SIN'))
+          .thenAnswer((_) async => const Right([tPin]));
+      await run();
+
+      await Future.wait([viewSingapore(12), viewSingapore(12.5)]);
+
+      verify(echoMap.getAirportCounts).called(1);
+      verify(() => echoMap.getAirportNodes('SIN')).called(1);
+      expect(container.read(worldMapControllerProvider).echoNodes, [tPin]);
+    });
+
+    test('a new echo at a watched airport reloads its pins', () async {
+      when(location.getCurrentLocation)
+          .thenAnswer((_) async => const Left(NetworkFailure()));
       const newPin = TerminalEchoMapNodeEntity(
         id: 'e2',
         senderId: '',
         nodeKind: EchoNodeKind.terminalEcho,
-        latitude: 35.5,
-        longitude: 139.7,
+        latitude: 1.36,
+        longitude: 103.98,
       );
-      when(
-        () => echoMap.getNodes(
-          west: any(named: 'west'),
-          south: any(named: 'south'),
-          east: any(named: 'east'),
-          north: any(named: 'north'),
-        ),
-      ).thenAnswer(
-        (call) => call.namedArguments[#west] == 103.0
-            ? oldViewport.future
-            : Future.value(const Right([newPin])),
+      var answer = const [tPin];
+      when(() => echoMap.getAirportNodes('SIN'))
+          .thenAnswer((_) async => Right(answer));
+      await run();
+      await viewSingapore(12);
+
+      answer = const [newPin, tPin];
+      socket.emit('SIN');
+      await pumpEventQueue();
+
+      expect(
+        container.read(worldMapControllerProvider).echoNodes,
+        [newPin, tPin],
       );
+    });
+
+    test('a new echo elsewhere reloads nothing on screen', () async {
+      when(location.getCurrentLocation)
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+      when(() => echoMap.getAirportNodes('SIN'))
+          .thenAnswer((_) async => const Right([tPin]));
+      await run();
+      await viewSingapore(12);
+
+      socket.emit('MNL');
+      await pumpEventQueue();
+
+      verify(() => echoMap.getAirportNodes('SIN')).called(1);
+    });
+
+    test('a slow answer for an old view does not replace a newer one',
+        () async {
+      when(location.getCurrentLocation)
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+      final slowSin =
+          Completer<Either<Failure, List<TerminalEchoMapNodeEntity>>>();
+      when(() => echoMap.getAirportNodes('SIN'))
+          .thenAnswer((_) => slowSin.future);
       await run();
       final controller = container.read(worldMapControllerProvider.notifier);
 
-      final old = controller.fetchEchoNodesForBounds(
-        west: 103,
-        south: 1,
-        east: 104,
-        north: 2,
+      final old = viewSingapore(12);
+      await pumpEventQueue(); // now waiting on the SIN pins
+      await controller.refreshForView(
+        west: -180,
+        south: -85,
+        east: 180,
+        north: 85,
+        zoom: 3,
+        centerLng: 0,
+        centerLat: 0,
       );
-      await controller.fetchEchoNodesForBounds(
-        west: 139,
-        south: 35,
-        east: 140,
-        north: 36,
-      );
-      oldViewport.complete(
+      slowSin.complete(
         const Right<Failure, List<TerminalEchoMapNodeEntity>>([tPin]),
       );
       await old;
 
       final state = container.read(worldMapControllerProvider);
-      expect(state.echoNodes, [newPin]);
+      expect(state.pinMode, MapPinMode.counts);
+      expect(state.echoNodes, isEmpty);
       expect(state.isFetchingPins, isFalse);
+    });
+
+    test('offline: counts and pins come from the disk cache', () async {
+      when(location.getCurrentLocation)
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+      when(echoMap.getAirportCounts)
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+      when(() => echoMap.getAirportNodes(any()))
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+      cache.entries['counts'] = AirportEchoCount.collection(tCounts);
+      cache.entries['pins'] = EchoMapFeatures.collection([tPin]);
+      await run();
+
+      await viewSingapore(4);
+      expect(
+        container.read(worldMapControllerProvider).airportCounts.map(
+              (c) => c.airportIata,
+            ),
+        ['SIN', 'MNL'],
+      );
+
+      await viewSingapore(12);
+      expect(container.read(worldMapControllerProvider).echoNodes, [tPin]);
+    });
+
+    test('disposing the map closes the socket', () async {
+      when(location.getCurrentLocation)
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+      await run();
+      await viewSingapore(12);
+
+      container.dispose();
+
+      expect(socket.disposed, isTrue);
+      // tearDown disposes again: harmless.
     });
 
     test('a recent remembered location centers the map before GPS', () async {

@@ -43,6 +43,7 @@ class ApiEndpoints {
   /// Terminal Echo endpoints
   static const String terminalEcho = '/terminal-echo';
   static const String terminalEchoMap = '/terminal-echo/map';
+  static const String terminalEchoMapCounts = '/terminal-echo/map/counts';
   static String terminalEchoListen(String id) => '/terminal-echo/$id/listen';
   static String terminalEchoReaction(String id) =>
       '/terminal-echo/$id/reaction';

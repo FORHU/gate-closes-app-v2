@@ -67,7 +67,7 @@ void main() {
       south: -20,
       east: -179,
       north: -15,
-      zoom: 8,
+      zoom: AirportBoundaryIndex.minZoom,
     );
     expect(ids(fc), unorderedEquals(['SUV', 'TVU']));
   });
@@ -83,7 +83,7 @@ void main() {
       south: 14,
       east: 122,
       north: 15,
-      zoom: 9,
+      zoom: AirportBoundaryIndex.minZoom,
     );
     expect(fc['features'], hasLength(AirportBoundaryIndex.maxFeatures));
   });

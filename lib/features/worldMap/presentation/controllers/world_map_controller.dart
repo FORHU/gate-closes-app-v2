@@ -10,8 +10,11 @@ import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
 import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:gate_closes/features/worldMap/data/datasources/map_disk_cache.dart';
+import 'package:gate_closes/features/worldMap/data/datasources/map_echo_socket.dart';
 import 'package:gate_closes/features/worldMap/data/repositories/echo_map_repository_impl.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_boundary_index.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_pin_plan.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
 import 'package:gate_closes/features/worldMap/domain/repositories/echo_map_repository.dart';
@@ -26,6 +29,8 @@ class WorldMapState extends Equatable {
     this.airports = const [],
     this.airportBoundariesGeoJson,
     this.echoNodes = const [],
+    this.pinMode = MapPinMode.pins,
+    this.airportCounts = const [],
     this.selectedAirport,
     this.userLocation,
     this.isFetchingPins = false,
@@ -36,12 +41,17 @@ class WorldMapState extends Equatable {
   final List<AirportEntity> airports;
   final Map<String, dynamic>? airportBoundariesGeoJson;
   final List<TerminalEchoMapNodeEntity> echoNodes;
+
+  /// Pins ([echoNodes]) when zoomed in on airports, or one bubble per
+  /// airport ([airportCounts]) when zoomed out.
+  final MapPinMode pinMode;
+  final List<AirportEchoCount> airportCounts;
   final AirportEntity? selectedAirport;
 
   /// Where the user is, once resolved; the map opens centered here.
   final LocationCoordinates? userLocation;
 
-  /// A viewport pin fetch is in flight (drives the slow-connection banner).
+  /// A view's pins or counts are loading (drives the slow-connection banner).
   final bool isFetchingPins;
   final String? error;
 
@@ -50,6 +60,8 @@ class WorldMapState extends Equatable {
     List<AirportEntity>? airports,
     Map<String, dynamic>? airportBoundariesGeoJson,
     List<TerminalEchoMapNodeEntity>? echoNodes,
+    MapPinMode? pinMode,
+    List<AirportEchoCount>? airportCounts,
     AirportEntity? selectedAirport,
     LocationCoordinates? userLocation,
     bool? isFetchingPins,
@@ -61,6 +73,8 @@ class WorldMapState extends Equatable {
         airportBoundariesGeoJson:
             airportBoundariesGeoJson ?? this.airportBoundariesGeoJson,
         echoNodes: echoNodes ?? this.echoNodes,
+        pinMode: pinMode ?? this.pinMode,
+        airportCounts: airportCounts ?? this.airportCounts,
         selectedAirport: selectedAirport ?? this.selectedAirport,
         userLocation: userLocation ?? this.userLocation,
         isFetchingPins: isFetchingPins ?? this.isFetchingPins,
@@ -73,6 +87,8 @@ class WorldMapState extends Equatable {
         airports,
         airportBoundariesGeoJson,
         echoNodes,
+        pinMode,
+        airportCounts,
         selectedAirport,
         userLocation,
         isFetchingPins,
@@ -86,12 +102,32 @@ class WorldMapController extends Notifier<WorldMapState> {
   /// to Mapbox whole — see [AirportBoundaryIndex].
   AirportBoundaryIndex _boundaries = AirportBoundaryIndex.empty;
 
-  /// Counts viewport pin fetches, so a slow answer for an old viewport
-  /// can't overwrite a newer one.
-  int _pinRequest = 0;
+  /// Counts view refreshes, so a slow answer for an old view can't
+  /// overwrite a newer one.
+  int _viewRequest = 0;
+
+  /// Pins per airport code, fetched once and then kept fresh by the
+  /// airport's Socket.IO room while it's on screen.
+  final Map<String, List<TerminalEchoMapNodeEntity>> _airportPins = {};
+
+  /// Airports whose pins are on screen (and whose rooms are joined).
+  List<String> _shownAirports = const [];
+
+  List<AirportEchoCount> _counts = const [];
+  DateTime? _countsAt;
+
+  /// Requests in flight, shared: the camera fires several changes while
+  /// the map settles, and each must not start its own identical request.
+  Future<void>? _countsLoading;
+  final Map<String, Future<bool>> _pinsLoading = {};
+  MapEchoSocket? _socket;
+
+  /// Counts older than this are fetched again on the next view change.
+  static const countsMaxAge = Duration(minutes: 1);
 
   static const _boundariesCache = 'boundaries';
   static const _pinsCache = 'pins';
+  static const _countsCache = 'counts';
   static const _lastLocationKey = 'map_last_location';
 
   /// A remembered location this recent centers the map before GPS answers
@@ -100,6 +136,7 @@ class WorldMapController extends Notifier<WorldMapState> {
 
   @override
   WorldMapState build() {
+    ref.onDispose(() => _socket?.dispose());
     unawaited(Future.microtask(initMapData));
     return const WorldMapState(isLoading: true);
   }
@@ -123,8 +160,8 @@ class WorldMapController extends Notifier<WorldMapState> {
     );
     _boundaries = AirportBoundaryIndex.fromGeoJson(boundaries);
 
-    // 2. Echo pins: show the cached set now. Live pins are fetched for the
-    //    visible area once the camera settles — never an unbounded request.
+    // 2. Echo pins: show the cached set now. Live pins and counts are
+    //    fetched for the view once the camera settles (refreshForView).
     final echoNodes = await _cachedPins();
 
     // 3. Resolve user location and nearby airports
@@ -159,46 +196,160 @@ class WorldMapController extends Notifier<WorldMapState> {
     );
   }
 
-  Future<void> fetchEchoNodesForBounds({
+  /// Loads what the view shows: per-airport counts when zoomed out, or
+  /// the pins of the airports in view when zoomed in (see [AirportPinPlan]).
+  Future<void> refreshForView({
     required double west,
     required double south,
     required double east,
     required double north,
+    required double zoom,
+    required double centerLng,
+    required double centerLat,
   }) async {
-    final request = ++_pinRequest;
+    final request = ++_viewRequest;
     state = state.copyWith(isFetchingPins: true);
-    final nodes = await _loadPins(
+    await _ensureCounts();
+    if (request != _viewRequest) return;
+    final plan = AirportPinPlan.forView(
+      counts: _counts,
       west: west,
       south: south,
       east: east,
       north: north,
+      zoom: zoom,
+      centerLng: centerLng,
+      centerLat: centerLat,
     );
-    // A newer viewport was requested meanwhile; its answer wins.
-    if (request != _pinRequest) return;
-    state = state.copyWith(isFetchingPins: false, echoNodes: nodes);
+
+    if (plan.mode == MapPinMode.counts) {
+      _showAirports(const []);
+      state = state.copyWith(
+        isFetchingPins: false,
+        pinMode: MapPinMode.counts,
+        airportCounts: _counts,
+      );
+      return;
+    }
+
+    final missing = plan.airports.where((a) => !_airportPins.containsKey(a));
+    final loaded = await Future.wait(missing.map(_loadAirportPins));
+    // A newer view was requested meanwhile; its answer wins.
+    if (request != _viewRequest) return;
+    _showAirports(plan.airports);
+    var nodes = _pinsFor(plan.airports);
+    if (loaded.contains(false) && nodes.isEmpty) {
+      // Offline: the pins of the last successful load.
+      nodes = await _cachedPins() ?? state.echoNodes;
+      if (request != _viewRequest) return;
+    } else if (!loaded.contains(false)) {
+      unawaited(
+        ref
+            .read(mapDiskCacheProvider)
+            .write(_pinsCache, EchoMapFeatures.collection(nodes)),
+      );
+    }
+    state = state.copyWith(
+      isFetchingPins: false,
+      pinMode: MapPinMode.pins,
+      echoNodes: nodes,
+    );
   }
 
-  /// Pins from the API, cached on success; the cached set when offline.
-  Future<List<TerminalEchoMapNodeEntity>> _loadPins({
-    double? west,
-    double? south,
-    double? east,
-    double? north,
-  }) async {
+  /// Fetches the counts when missing or older than [countsMaxAge]; the
+  /// cached counts when offline.
+  Future<void> _ensureCounts() {
+    final at = _countsAt;
+    if (at != null && DateTime.now().difference(at) < countsMaxAge) {
+      return Future.value();
+    }
+    return _countsLoading ??= _fetchCounts().whenComplete(() {
+      _countsLoading = null;
+    });
+  }
+
+  Future<void> _fetchCounts() async {
     final cache = ref.read(mapDiskCacheProvider);
-    final result = await ref.read(echoMapRepositoryProvider).getNodes(
-          west: west,
-          south: south,
-          east: east,
-          north: north,
+    final result = await ref.read(echoMapRepositoryProvider).getAirportCounts();
+    await result.fold(
+      (_) async {
+        if (_counts.isEmpty) _counts = await _cachedCounts();
+      },
+      (counts) async {
+        _counts = counts;
+        _countsAt = DateTime.now();
+        unawaited(
+          cache.write(_countsCache, AirportEchoCount.collection(counts)),
         );
-    return result.fold(
-      (_) async => await _cachedPins() ?? state.echoNodes,
-      (nodes) {
-        unawaited(cache.write(_pinsCache, EchoMapFeatures.collection(nodes)));
-        return nodes;
       },
     );
+  }
+
+  Future<List<AirportEchoCount>> _cachedCounts() async {
+    final features =
+        (await ref.read(mapDiskCacheProvider).read(_countsCache))?['features'];
+    if (features is! List) return const [];
+    return features
+        .whereType<Map<dynamic, dynamic>>()
+        .map((f) => AirportEchoCount.fromGeoJsonFeature(f.cast()))
+        .whereType<AirportEchoCount>()
+        .toList();
+  }
+
+  /// True when the airport's pins were fetched (and are now cached).
+  Future<bool> _loadAirportPins(String airportIata) =>
+      _pinsLoading[airportIata] ??= _fetchAirportPins(airportIata);
+
+  Future<bool> _fetchAirportPins(String airportIata) async {
+    try {
+      final result = await ref
+          .read(echoMapRepositoryProvider)
+          .getAirportNodes(airportIata);
+      return result.fold((_) => false, (nodes) {
+        _airportPins[airportIata] = nodes;
+        return true;
+      });
+    } finally {
+      _pinsLoading.removeWhere((key, _) => key == airportIata);
+    }
+  }
+
+  List<TerminalEchoMapNodeEntity> _pinsFor(List<String> airports) => [
+        for (final a in airports) ...?_airportPins[a],
+      ];
+
+  /// Joins the rooms of the airports on screen and leaves the others.
+  void _showAirports(List<String> airports) {
+    _shownAirports = airports;
+    if (airports.isEmpty && _socket == null) return;
+    _socket ??= ref.read(mapEchoSocketFactoryProvider)(_onAirportChanged);
+    _socket!.watch(airports.toSet());
+  }
+
+  /// A new echo at [airportIata] (or somewhere, when unknown): drop the
+  /// stale pins and counts, and reload what's on screen.
+  Future<void> _onAirportChanged(String? airportIata) async {
+    _countsAt = null;
+    final changed = airportIata == null
+        ? List.of(_shownAirports)
+        : [if (_shownAirports.contains(airportIata)) airportIata];
+    if (airportIata == null) {
+      _airportPins.clear();
+    } else {
+      _airportPins.remove(airportIata);
+    }
+    final request = _viewRequest;
+    if (state.pinMode == MapPinMode.counts) {
+      await _ensureCounts();
+      if (request == _viewRequest) {
+        state = state.copyWith(airportCounts: _counts);
+      }
+      return;
+    }
+    if (changed.isEmpty) return;
+    await Future.wait(changed.map(_loadAirportPins));
+    if (request != _viewRequest) return;
+    state = state.copyWith(echoNodes: _pinsFor(_shownAirports));
   }
 
   Future<List<TerminalEchoMapNodeEntity>?> _cachedPins() async {

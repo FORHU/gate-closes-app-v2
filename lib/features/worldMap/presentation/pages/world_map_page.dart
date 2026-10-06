@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi' show Abi;
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/location/location_coordinates.dart';
@@ -10,13 +11,17 @@ import 'package:gate_closes/core/services/connectivity_service.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_pin_plan.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_radar.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_view_bounds.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/map_lighting_controller.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/map_render_guard.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/world_map_controller.dart';
 import 'package:gate_closes/features/worldMap/presentation/map_badges.dart';
+import 'package:gate_closes/features/worldMap/presentation/widgets/echo_stack_sheet.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/map_bottom_nav.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
@@ -46,14 +51,99 @@ const int _kMaxSweepDiscs = 6;
 /// One full sweep turn and the beam's frame interval.
 const Duration _kSweepPeriod = Duration(seconds: 4);
 const Duration _kSweepFrame = Duration(milliseconds: 66);
-const _kHeatmapSource = 'echo-heatmap-source';
+
+/// Zoomed out, the map shows no markers: a heat cloud per airport with
+/// echoes, bigger and hotter with more of them (AirportEchoCount).
+const _kCloudSource = 'airport-cloud-source';
+const _kCloudLayer = 'airport-cloud';
+
+/// A heatmap can't be tapped: an invisible circle the size of each cloud's
+/// core takes the tap and flies into that airport, where its pins show.
+const _kCloudTapLayer = 'airport-cloud-tap';
+const double _kCloudTapRadius = 22;
+
+/// Over the cloud, a radar "ping": a faint ring that pulses outward and
+/// fades, wider for busier airports. Animation only; lite maps skip it
+/// (a still ring would just look like a pin).
+const _kPingSource = 'airport-ping-source';
+const _kPingRingLayer = 'airport-ping-ring';
+const Duration _kPingPeriod = Duration(milliseconds: 2400);
+const Duration _kPingFrame = Duration(milliseconds: 66);
+const double _kPingMinRadius = 3;
+const double _kPingMaxRadius = 18;
 const _kPinsSource = 'echo-symbols-source';
 const _kClusterLayer = 'echo-clusters';
 const _kPinLayer = 'echo-symbols';
 
-/// Pin badge size, and the size of the one whose card is open (Expo).
-const double _kPinSize = 0.72;
-const double _kSelectedPinSize = 0.85;
+/// Pins cluster up to this zoom. Coordinates are rounded to ~110 m, so pins
+/// at different spots split by zoom 16; pins at the same spot never split,
+/// and staying clustered keeps them from stacking invisibly on one point.
+const double _kClusterMaxZoom = 19;
+
+/// A cluster that only splits beyond this zoom opens a list instead.
+const double _kStackZoom = 18;
+
+/// Marker sizes by zoom (pins and cluster bubbles show from zoom 7; below
+/// it the map shows only the heatmap cloud): small through the mid zooms,
+/// growing only once zoomed in (from ~12), and capped at the last stop
+/// (Mapbox holds it beyond). Pins reach Expo's 0.72 at zoom 16.
+const List<(double, double)> _kPinSizes = [
+  (6, 0.28),
+  (11, 0.34),
+  (14, 0.55),
+  (16, 0.72),
+];
+const List<(double, double)> _kBubbleSizes = [
+  (2, 0.28),
+  (8, 0.32),
+  (12, 0.4),
+  (14, 0.5),
+  (16, 0.55),
+];
+const List<(double, double)> _kBubbleTextSizes = [(2, 8), (12, 9), (15, 10)];
+
+/// The pin whose card is open is this much bigger than the others.
+const double _kSelectedPinScale = 1.18;
+
+/// A ping ring's radius, wider for airports with more echoes.
+List<Object> _pingRadius(double radius) => [
+      '*',
+      radius,
+      [
+        'coalesce',
+        ['get', 'heatWeight'],
+        1,
+      ],
+    ];
+
+/// `['interpolate', ['linear'], ['zoom'], z, size(v), …]` over [stops].
+List<Object> _byZoom(
+  List<(double, double)> stops, [
+  Object Function(double v)? size,
+]) =>
+    [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      for (final (z, v) in stops) ...[z, size?.call(v) ?? v],
+    ];
+
+/// Pin size by zoom; the pin [selectedId] a little bigger.
+List<Object> _pinSize(String? selectedId) => selectedId == null
+    ? _byZoom(_kPinSizes)
+    : _byZoom(
+        _kPinSizes,
+        (v) => [
+          'case',
+          [
+            '==',
+            ['get', 'id'],
+            selectedId,
+          ],
+          v * _kSelectedPinScale,
+          v,
+        ],
+      );
 
 /// 32-bit ARM Android phones are low-end (small RAM, weak GPUs such as
 /// PowerVR GE8320); terrain and 3D buildings stop the map opening there.
@@ -75,7 +165,7 @@ const double _kAirportZoom = 13;
 
 /// The map tab — home of the app, as in the Expo map shell
 /// (`app/(tabs)/map/index.tsx`): a full-screen Mapbox canvas with airport
-/// boundaries, an activity heatmap and clustered echo pins, a search pill on
+/// boundaries, airport heat clouds and clustered echo pins, a search pill on
 /// top and a recenter button above the navigation bar.
 ///
 /// Tapping a pin opens its card (`/map/echo/:id`); tapping a cluster zooms
@@ -106,7 +196,14 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   Timer? _sweepTicker;
   final Stopwatch _sweepClock = Stopwatch();
 
-  /// Pauses the sweep while the app is in the background.
+  /// False when the ping layers couldn't be added or updated on this phone:
+  /// the pings are then hidden; the heatmap cloud stays.
+  bool _pingReady = false;
+  Timer? _pingTicker;
+  final Stopwatch _pingClock = Stopwatch();
+  bool _pingInFlight = false;
+
+  /// Pauses the sweep and the pings while the app is in the background.
   late final AppLifecycleListener _lifecycle;
   bool _appInForeground = true;
 
@@ -147,6 +244,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       onStateChange: (state) {
         _appInForeground = state == AppLifecycleState.resumed;
         _syncSweep();
+        _syncPing();
       },
     );
     _lightingTicker = Timer.periodic(
@@ -178,6 +276,9 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       _radarReady = false;
       _sweepTicker?.cancel();
       _sweepTicker = null;
+      _pingReady = false;
+      _pingTicker?.cancel();
+      _pingTicker = null;
       _guard.failed();
     });
   }
@@ -191,6 +292,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   void dispose() {
     _boundsDebounce?.cancel();
     _sweepTicker?.cancel();
+    _pingTicker?.cancel();
     _lifecycle.dispose();
     _lightingTicker?.cancel();
     _slowTimer?.cancel();
@@ -307,7 +409,11 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     )) {
       unawaited(_setBoundaries(next.airportBoundariesGeoJson));
     }
-    if (previous?.echoNodes != next.echoNodes) unawaited(_syncPins());
+    if (previous?.echoNodes != next.echoNodes ||
+        previous?.pinMode != next.pinMode ||
+        previous?.airportCounts != next.airportCounts) {
+      unawaited(_syncPins());
+    }
     if (next.userLocation != null && !_centeredOnUser) {
       _centerOnUser(next.userLocation!, animated: false);
     } else if (previous?.selectedAirport != next.selectedAirport &&
@@ -410,12 +516,79 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     }
   }
 
+  /// Zoomed in: the airports' pins, no heat.
+  /// Zoomed out: no markers, only the airport clouds (and pings).
   Future<void> _syncPins() async {
-    final pins = EchoMapFeatures.collection(
-      ref.read(worldMapControllerProvider).echoNodes,
-    );
+    final state = ref.read(worldMapControllerProvider);
+    final counts = state.pinMode == MapPinMode.counts;
+    final pins = counts ? null : EchoMapFeatures.collection(state.echoNodes);
+    final airports =
+        counts ? AirportEchoCount.collection(state.airportCounts) : null;
     await _setSourceData(_kPinsSource, pins);
-    await _setSourceData(_kHeatmapSource, pins);
+    await _setSourceData(_kCloudSource, airports);
+    if (_pingReady) {
+      try {
+        await _setSourceData(_kPingSource, airports);
+      } on Object catch (e) {
+        _disablePing(e);
+      }
+    }
+    _syncPing();
+  }
+
+  /// Animates the ping rings only while airports are pinged, the app is in
+  /// the foreground, and never on lite maps (static ring there).
+  void _syncPing() {
+    final state = ref.read(worldMapControllerProvider);
+    final run = !_kLiteMap &&
+        _pingReady &&
+        _appInForeground &&
+        _styleReady &&
+        state.pinMode == MapPinMode.counts &&
+        state.airportCounts.isNotEmpty;
+    if (!run) {
+      _pingTicker?.cancel();
+      _pingTicker = null;
+      _pingClock.stop();
+      return;
+    }
+    _pingClock.start();
+    _pingTicker ??= Timer.periodic(_kPingFrame, (_) => _drawPing());
+  }
+
+  Future<void> _drawPing() async {
+    final map = _map;
+    // Skip a frame rather than queue bridge calls behind a slow one.
+    if (map == null || _pingInFlight) return;
+    _pingInFlight = true;
+    final period = _kPingPeriod.inMilliseconds;
+    final t = (_pingClock.elapsedMilliseconds % period) / period;
+    final radius = _kPingMinRadius + (_kPingMaxRadius - _kPingMinRadius) * t;
+    try {
+      await map.style.setStyleLayerProperty(
+        _kPingRingLayer,
+        'circle-radius',
+        _pingRadius(radius),
+      );
+      await map.style.setStyleLayerProperty(
+        _kPingRingLayer,
+        'circle-stroke-opacity',
+        0.85 * (1 - t),
+      );
+    } on Object catch (e) {
+      _disablePing(e);
+    } finally {
+      _pingInFlight = false;
+    }
+  }
+
+  /// Hides the pings for the rest of this map session after a failure, so
+  /// a phone that can't draw them shows just the cloud.
+  void _disablePing(Object error) {
+    debugPrint('Map pings off: $error');
+    _pingReady = false;
+    _syncPing();
+    unawaited(_setSourceData(_kPingSource, null).catchError((Object _) {}));
   }
 
   // --- Map setup -----------------------------------------------------------
@@ -459,6 +632,13 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
           (feature, _) => _onPinTap(feature),
         ),
         interactionID: 'tap-echo-pins',
+      )
+      ..addInteraction(
+        TapInteraction(
+          FeaturesetDescriptor(layerId: _kCloudTapLayer),
+          (feature, _) => unawaited(_onCloudTap(feature)),
+        ),
+        interactionID: 'tap-airport-clouds',
       );
   }
 
@@ -559,19 +739,57 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       ),
     );
 
-    // Activity heatmap under the pins (TerminalMapNodesLayer).
-    await style.addSource(GeoJsonSource(id: _kHeatmapSource, data: empty));
+    // Zoomed out only: one heat cloud per airport, tuned to show from a
+    // single point.
+    await style.addSource(GeoJsonSource(id: _kCloudSource, data: empty));
     await style.addLayer(
       HeatmapLayer(
-        id: 'echo-heatmap',
-        sourceId: _kHeatmapSource,
-        heatmapWeightExpression: _heatmapWeight,
-        heatmapIntensityExpression: _heatmapIntensity,
-        heatmapRadiusExpression: _heatmapRadius,
-        heatmapOpacityExpression: _heatmapOpacity,
-        heatmapColorExpression: _heatmapColor,
+        id: _kCloudLayer,
+        sourceId: _kCloudSource,
+        heatmapWeightExpression: [
+          'coalesce',
+          ['get', 'heatWeight'],
+          1,
+        ],
+        heatmapIntensityExpression: _cloudIntensity,
+        heatmapRadiusExpression: _cloudRadius,
+        heatmapOpacity: 0.9,
+        heatmapColorExpression: _cloudColor,
       ),
     );
+    await style.addLayer(
+      CircleLayer(
+        id: _kCloudTapLayer,
+        sourceId: _kCloudSource,
+        circleRadiusExpression: ['*', _kCloudTapRadius, _cloudScale],
+        circleColor: Colors.transparent.toARGB32(),
+        circleOpacity: 0,
+      ),
+    );
+
+    // Radar pings over the clouds. Decoration, and animation only: lite
+    // maps skip them, and if this phone can't add them the clouds and pins
+    // load without them (see [_disablePing]).
+    if (!_kLiteMap) {
+      try {
+        await style.addSource(GeoJsonSource(id: _kPingSource, data: empty));
+        await style.addLayer(
+          CircleLayer(
+            id: _kPingRingLayer,
+            sourceId: _kPingSource,
+            circleRadiusExpression: _pingRadius(_kPingMinRadius),
+            circleColor: Colors.transparent.toARGB32(),
+            circleStrokeColor: _kRadarColor.toARGB32(),
+            circleStrokeWidth: 1.4,
+            circleStrokeOpacity: 0,
+          ),
+        );
+        _pingReady = true;
+      } on Object catch (e) {
+        _pingReady = false;
+        debugPrint('Map pings skipped: $e');
+      }
+    }
 
     // Clustered pins with per-type badges.
     await style.addSource(
@@ -580,7 +798,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         data: empty,
         cluster: true,
         clusterRadius: 45,
-        clusterMaxZoom: 15,
+        clusterMaxZoom: _kClusterMaxZoom,
       ),
     );
     await style.addLayer(
@@ -589,10 +807,10 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         sourceId: _kPinsSource,
         filter: ['has', 'point_count'],
         iconImage: MapBadges.cluster,
-        iconSize: 0.72,
+        iconSizeExpression: _byZoom(_kBubbleSizes),
         iconAllowOverlap: true,
         textFieldExpression: ['get', 'point_count_abbreviated'],
-        textSize: 12,
+        textSizeExpression: _byZoom(_kBubbleTextSizes),
         textColor: const Color(0xFF060606).toARGB32(),
         textHaloColor: Colors.white.withValues(alpha: 0.9).toARGB32(),
         textHaloWidth: 1.2,
@@ -620,7 +838,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
           MapBadges.batonTouch,
           MapBadges.terminalEcho,
         ],
-        iconSize: _kPinSize,
+        iconSizeExpression: _pinSize(null),
         iconAllowOverlap: true,
       ),
     );
@@ -857,6 +1075,13 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     );
     _viewCenter = camera.center;
     _viewZoom = camera.zoom;
+    if (kDebugMode) {
+      debugPrint(
+        'Map view: zoom ${camera.zoom.toStringAsFixed(1)} at '
+        '${camera.center.coordinates.lat.toStringAsFixed(3)}, '
+        '${camera.center.coordinates.lng.toStringAsFixed(3)}',
+      );
+    }
     final west = view.west;
     final south = view.south;
     final east = view.east;
@@ -869,11 +1094,14 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         north: north,
         zoom: camera.zoom,
       );
-    await controller.fetchEchoNodesForBounds(
+    await controller.refreshForView(
       west: west,
       south: south,
       east: east,
       north: north,
+      zoom: camera.zoom,
+      centerLng: camera.center.coordinates.lng.toDouble(),
+      centerLat: camera.center.coordinates.lat.toDouble(),
     );
   }
 
@@ -901,26 +1129,26 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     await map.style.setStyleLayerProperty(
       _kPinLayer,
       'icon-size',
-      id == null
-          ? _kPinSize
-          : [
-              'case',
-              [
-                '==',
-                ['get', 'id'],
-                id,
-              ],
-              _kSelectedPinSize,
-              _kPinSize,
-            ],
+      _pinSize(id),
     );
   }
 
   /// Zooms into a cluster far enough to split it (Mapbox's expansion zoom).
+  /// Echoes on one spot never split: those open a list instead.
   Future<void> _onClusterTap(FeaturesetFeature feature) async {
     final map = _map;
     final coords = feature.geometry['coordinates'];
     if (map == null || coords is! List || coords.length < 2) return;
+    final cluster = <String?, Object?>{
+      'type': 'Feature',
+      'geometry': feature.geometry,
+      'properties': feature.properties,
+    };
+    final echoes = await _clusterEchoes(map, cluster);
+    if (echoes != null && _onOneSpot(echoes)) {
+      await _openStack(echoes);
+      return;
+    }
     final center = Point(
       coordinates: Position(
         (coords[0]! as num).toDouble(),
@@ -930,14 +1158,15 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     final current = (await map.getCameraState()).zoom;
     var zoom = current + 2;
     try {
-      final expansion = await map.getGeoJsonClusterExpansionZoom(_kPinsSource, {
-        'type': 'Feature',
-        'geometry': feature.geometry,
-        'properties': feature.properties,
-      });
+      final expansion =
+          await map.getGeoJsonClusterExpansionZoom(_kPinsSource, cluster);
       zoom = double.tryParse(expansion.value ?? '') ?? zoom;
     } on Object catch (_) {
       // Fall back to a fixed step in.
+    }
+    if (zoom > _kStackZoom && echoes != null) {
+      await _openStack(echoes);
+      return;
     }
     setState(() => _following = false);
     await map.easeTo(
@@ -945,51 +1174,92 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       MapAnimationOptions(duration: 320),
     );
   }
+
+  /// The echoes inside a cluster (at most 100), or null if Mapbox can't
+  /// list them on this phone.
+  Future<List<TerminalEchoMapNodeEntity>?> _clusterEchoes(
+    MapboxMap map,
+    Map<String?, Object?> cluster,
+  ) async {
+    try {
+      final leaves =
+          await map.getGeoJsonClusterLeaves(_kPinsSource, cluster, 100, 0);
+      final features = leaves.featureCollection;
+      if (features == null || features.isEmpty) return null;
+      return [
+        for (final f in features.nonNulls)
+          TerminalEchoMapNodeEntity.fromGeoJsonFeature(
+            {for (final e in f.entries) e.key.toString(): e.value},
+          ),
+      ];
+    } on Object catch (_) {
+      return null;
+    }
+  }
+
+  static bool _onOneSpot(List<TerminalEchoMapNodeEntity> echoes) =>
+      echoes.every(
+        (e) =>
+            e.latitude == echoes.first.latitude &&
+            e.longitude == echoes.first.longitude,
+      );
+
+  /// Flies from an airport's cloud into the airport, where its pins load.
+  Future<void> _onCloudTap(FeaturesetFeature feature) async {
+    final map = _map;
+    final coords = feature.geometry['coordinates'];
+    if (map == null || coords is! List || coords.length < 2) return;
+    setState(() => _following = false);
+    await map.flyTo(
+      CameraOptions(
+        center: Point(
+          coordinates: Position(
+            (coords[0]! as num).toDouble(),
+            (coords[1]! as num).toDouble(),
+          ),
+        ),
+        zoom: _kAirportZoom,
+      ),
+      MapAnimationOptions(duration: 1200),
+    );
+  }
+
+  Future<void> _openStack(List<TerminalEchoMapNodeEntity> echoes) async {
+    final picked = await EchoStackSheet.show(context, echoes);
+    if (picked == null || !mounted) return;
+    await _openPin(picked.id, EchoMapFeatures.typeKey(picked.nodeKind));
+  }
 }
 
-// --- Heatmap expressions, verbatim from TerminalMapNodesLayer.tsx -----------
+// --- Airport cloud (zoomed out) ------------------------------------------
 
-const List<Object> _freshness = [
+/// Cloud size grows with the airport's echoes (`cloudScale`).
+const List<Object> _cloudScale = [
   'coalesce',
-  ['get', 'freshnessScore'],
+  ['get', 'cloudScale'],
   1,
 ];
-const List<Object> _activity = [
-  'coalesce',
-  ['get', 'activityScore'],
-  0,
-];
-const List<Object> _heatmapWeight = [
-  'min',
-  1.55,
-  [
-    '+',
-    0.72,
-    ['*', _activity, 0.16],
-    ['*', _freshness, 0.05],
-  ],
-];
-const List<Object> _heatmapIntensity = [
+const List<Object> _cloudRadius = [
   'interpolate', ['linear'], ['zoom'], //
-  2, 0.45, 5, 0.6, 8, 0.9, 11, 1.08, 13, 1.02, 16, 0.78,
+  1, ['*', 22, _cloudScale],
+  3, ['*', 30, _cloudScale],
+  6, ['*', 46, _cloudScale],
 ];
-const List<Object> _heatmapRadius = [
+const List<Object> _cloudIntensity = [
   'interpolate', ['linear'], ['zoom'], //
-  2, 24, 5, 30, 8, 40, 11, 50, 13, 46, 16, 30,
+  1, 1.3, 6, 1.6,
 ];
-const List<Object> _heatmapOpacity = [
-  'interpolate', ['linear'], ['zoom'], //
-  2, 0.34, 5, 0.44, 8, 0.58, 11, 0.68, 13, 0.58, 16, 0.34, 18, 0.14,
-];
-const List<Object> _heatmapColor = [
+
+/// Expo's pin heatmap colors, more opaque: a single point must show.
+const List<Object> _cloudColor = [
   'interpolate', ['linear'], ['heatmap-density'], //
   0, 'rgba(0,0,0,0)',
-  0.12, 'rgba(50, 120, 255, 0.14)',
-  0.28, 'rgba(38, 198, 255, 0.24)',
-  0.48, 'rgba(0, 224, 153, 0.34)',
-  0.66, 'rgba(187, 228, 10, 0.5)',
-  0.82, 'rgba(255, 183, 84, 0.62)',
-  0.93, 'rgba(255, 123, 54, 0.72)',
+  0.08, 'rgba(50, 120, 255, 0.25)',
+  0.25, 'rgba(38, 198, 255, 0.45)',
+  0.45, 'rgba(0, 224, 153, 0.6)',
+  0.65, 'rgba(187, 228, 10, 0.72)',
+  0.82, 'rgba(255, 183, 84, 0.82)',
+  0.95, 'rgba(255, 123, 54, 0.9)',
 ];
 
 // --- Overlays --------------------------------------------------------------
