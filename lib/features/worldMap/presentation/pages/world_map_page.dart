@@ -16,17 +16,22 @@ import 'package:gate_closes/features/worldMap/domain/entities/airport_pin_plan.d
 import 'package:gate_closes/features/worldMap/domain/entities/airport_radar.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_view_bounds.dart';
+import 'package:gate_closes/features/worldMap/domain/repositories/offer_map_repository.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/map_lighting_controller.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/map_render_guard.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/world_map_controller.dart';
 import 'package:gate_closes/features/worldMap/presentation/map_badges.dart';
 import 'package:gate_closes/features/worldMap/presentation/widgets/echo_stack_sheet.dart';
+import 'package:gate_closes/features/worldMap/presentation/widgets/offer_banner.dart';
+import 'package:gate_closes/features/worldMap/presentation/widgets/offer_sheet.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/map_bottom_nav.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const Map<String, Object> _kEmptyFeatureCollection = {
   'type': 'FeatureCollection',
@@ -74,6 +79,10 @@ const double _kPingMaxRadius = 18;
 const _kPinsSource = 'echo-symbols-source';
 const _kClusterLayer = 'echo-clusters';
 const _kPinLayer = 'echo-symbols';
+
+/// Offers (ads, vouchers): unclustered, their own badge, above echo pins.
+const _kOfferSource = 'offer-pins-source';
+const _kOfferLayer = 'offer-pins';
 
 /// Pins cluster up to this zoom. Coordinates are rounded to ~110 m, so pins
 /// at different spots split by zoom 16; pins at the same spot never split,
@@ -180,6 +189,15 @@ class WorldMapPage extends ConsumerStatefulWidget {
 class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   MapboxMap? _map;
   bool _styleReady = false;
+
+  /// The offer layer was added. False on a phone that can't add it: offers
+  /// are then simply not shown and the map works as before.
+  bool _offersReady = false;
+
+  /// Offer cards hidden with × (for this session), and offers already
+  /// counted as seen (one view per offer per session).
+  final Set<String> _dismissedOffers = {};
+  final Set<String> _seenOffers = {};
   bool _mapLoaded = false;
   Timer? _boundsDebounce;
 
@@ -378,6 +396,20 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
               ),
             ),
           ),
+          if (_visibleOfferCard(state) case final card?)
+            Positioned(
+              left: AppSpacing.md,
+              // Clear of the recenter button on the right.
+              right: state.userLocation != null
+                  ? AppSpacing.md + 56 + AppSpacing.sm
+                  : AppSpacing.md,
+              bottom: navClearance + AppSpacing.md,
+              child: OfferBanner(
+                offer: card,
+                onOpen: () => unawaited(_openOffer(card)),
+                onDismiss: () => setState(() => _dismissedOffers.add(card.id)),
+              ),
+            ),
           if (state.userLocation != null)
             Positioned(
               right: AppSpacing.md,
@@ -413,6 +445,14 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         previous?.pinMode != next.pinMode ||
         previous?.airportCounts != next.airportCounts) {
       unawaited(_syncPins());
+    }
+    if (previous?.offerPins != next.offerPins ||
+        previous?.pinMode != next.pinMode) {
+      unawaited(_syncOffers());
+    }
+    final card = _visibleOfferCard(next);
+    if (card != null && card != _visibleOfferCard(previous)) {
+      _trackSeen(card);
     }
     if (next.userLocation != null && !_centeredOnUser) {
       _centerOnUser(next.userLocation!, animated: false);
@@ -534,6 +574,37 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       }
     }
     _syncPing();
+    await _syncOffers();
+  }
+
+  /// Offer pins of the airports in view; none when zoomed out.
+  Future<void> _syncOffers() async {
+    if (!_offersReady) return;
+    final state = ref.read(worldMapControllerProvider);
+    final offers = state.pinMode == MapPinMode.pins
+        ? OfferMapFeatures.collection(state.offerPins)
+        : null;
+    try {
+      await _setSourceData(_kOfferSource, offers);
+    } on Object catch (e) {
+      // Offers are extra: drop them rather than disturb the map.
+      debugPrint('Map offers disabled: $e');
+      _offersReady = false;
+    }
+  }
+
+  /// The offer card to show over the map, unless hidden with ×.
+  MapOffer? _visibleOfferCard(WorldMapState? state) {
+    final card = state?.offerCard;
+    if (card == null || state?.pinMode != MapPinMode.pins) return null;
+    return _dismissedOffers.contains(card.id) ? null : card;
+  }
+
+  void _trackSeen(MapOffer offer) {
+    if (!_seenOffers.add(offer.id)) return;
+    ref
+        .read(worldMapControllerProvider.notifier)
+        .trackOffer(offer, OfferEvent.view);
   }
 
   /// Animates the ping rings only while airports are pinged, the app is in
@@ -639,6 +710,13 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
           (feature, _) => unawaited(_onCloudTap(feature)),
         ),
         interactionID: 'tap-airport-clouds',
+      )
+      ..addInteraction(
+        TapInteraction(
+          FeaturesetDescriptor(layerId: _kOfferLayer),
+          (feature, _) => _onOfferTap(feature),
+        ),
+        interactionID: 'tap-offer-pins',
       );
   }
 
@@ -842,6 +920,24 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         iconAllowOverlap: true,
       ),
     );
+
+    // Offers are extra: if this phone can't add their layer, the echo pins
+    // and everything else still load (offers just aren't shown).
+    try {
+      await style.addSource(GeoJsonSource(id: _kOfferSource, data: empty));
+      await style.addLayer(
+        SymbolLayer(
+          id: _kOfferLayer,
+          sourceId: _kOfferSource,
+          iconImage: MapBadges.offer,
+          iconSizeExpression: _byZoom(_kPinSizes),
+          iconAllowOverlap: true,
+        ),
+      );
+      _offersReady = true;
+    } on Object catch (e) {
+      debugPrint('Map offers skipped: $e');
+    }
 
     _styleReady = true;
     if (!mounted) return;
@@ -1113,6 +1209,39 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     if (id == null || id.isEmpty) return;
     final type = props['type']?.toString() ?? 'terminal_echo';
     unawaited(_openPin(id, type));
+  }
+
+  void _onOfferTap(FeaturesetFeature feature) {
+    final id = (feature.properties['id'] ?? feature.id?.id)?.toString();
+    final offers = ref.read(worldMapControllerProvider).offerPins;
+    final offer = offers.where((o) => o.id == id).firstOrNull;
+    if (offer != null) unawaited(_openOffer(offer));
+  }
+
+  /// The offer's sheet; opening it counts as seeing it, its button as a
+  /// click.
+  Future<void> _openOffer(MapOffer offer) async {
+    final controller = ref.read(worldMapControllerProvider.notifier);
+    _trackSeen(offer);
+    await OfferSheet.show(
+      context,
+      offer: offer,
+      onOpenLink: () async {
+        controller.trackOffer(offer, OfferEvent.click);
+        final url = Uri.tryParse(offer.ctaUrl ?? '');
+        if (url == null) return;
+        final opened = await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!opened && mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(content: Text("Couldn't open the link")),
+          );
+        }
+      },
+      onClaim: () => controller.claimOffer(offer),
+    );
   }
 
   /// Opens the pin's card, enlarging its badge until the card closes.

@@ -16,7 +16,9 @@ import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count
 import 'package:gate_closes/features/worldMap/domain/entities/airport_pin_plan.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
 import 'package:gate_closes/features/worldMap/domain/repositories/echo_map_repository.dart';
+import 'package:gate_closes/features/worldMap/domain/repositories/offer_map_repository.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/world_map_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -90,10 +92,18 @@ void main() {
 
   tearDown(() => container.dispose());
 
-  Future<WorldMapState> run({Map<String, Object> prefs = const {}}) async {
+  Future<WorldMapState> run({
+    Map<String, Object> prefs = const {},
+    FakeOfferMapRepository? offers,
+  }) async {
     container = ProviderContainer(
       overrides: [
-        ...await mapTestOverrides(cache: cache, prefs: prefs, socket: socket),
+        ...await mapTestOverrides(
+          cache: cache,
+          prefs: prefs,
+          socket: socket,
+          offers: offers,
+        ),
         locationRepositoryProvider.overrideWithValue(location),
         airportRepositoryProvider.overrideWithValue(airports),
         echoMapRepositoryProvider.overrideWithValue(echoMap),
@@ -177,6 +187,94 @@ void main() {
               centerLng: 104,
               centerLat: 1.5,
             );
+
+    group('offers', () {
+      const card = MapOffer(
+        id: 'card1',
+        airportIata: 'SIN',
+        kind: 'voucher',
+        title: 'Coffee 20% off',
+      );
+      const pin = MapOffer(
+        id: 'pin1',
+        airportIata: 'SIN',
+        kind: 'ad',
+        title: 'Lounge',
+        longitude: 103.99,
+        latitude: 1.36,
+      );
+      FakeOfferMapRepository sinOffers() => FakeOfferMapRepository(
+            offers: {
+              'SIN': const AirportOffers(card: card, pins: [pin]),
+            },
+          );
+
+      test('zoomed in: the airports in view get their pins and card', () async {
+        when(location.getCurrentLocation)
+            .thenAnswer((_) async => const Left(NetworkFailure()));
+        final offers = sinOffers();
+        await run(offers: offers);
+
+        await viewSingapore(12);
+        await pumpEventQueue();
+
+        final state = container.read(worldMapControllerProvider);
+        expect(state.offerPins, [pin]);
+        expect(state.offerCard, card);
+        expect(offers.requested, ['SIN']);
+      });
+
+      test('fetched once while fresh, and cleared when zoomed out', () async {
+        when(location.getCurrentLocation)
+            .thenAnswer((_) async => const Left(NetworkFailure()));
+        final offers = sinOffers();
+        await run(offers: offers);
+
+        await viewSingapore(12);
+        await pumpEventQueue();
+        await viewSingapore(13);
+        await pumpEventQueue();
+        expect(offers.requested, ['SIN']);
+
+        await viewSingapore(4);
+        final state = container.read(worldMapControllerProvider);
+        expect(state.offerPins, isEmpty);
+        expect(state.offerCard, isNull);
+      });
+
+      test('failing offers leave the echo pins as they are', () async {
+        when(location.getCurrentLocation)
+            .thenAnswer((_) async => const Left(NetworkFailure()));
+        when(() => echoMap.getAirportNodes('SIN'))
+            .thenAnswer((_) async => const Right([tPin]));
+        await run(offers: FakeOfferMapRepository(fail: true));
+
+        await viewSingapore(12);
+        await pumpEventQueue();
+
+        final state = container.read(worldMapControllerProvider);
+        expect(state.echoNodes, [tPin]);
+        expect(state.offerPins, isEmpty);
+        expect(state.offerCard, isNull);
+        expect(state.error, isNull);
+      });
+
+      test('tracking and claiming go to the repository', () async {
+        final offers = sinOffers();
+        when(location.getCurrentLocation)
+            .thenAnswer((_) async => const Left(NetworkFailure()));
+        await run(offers: offers);
+        final controller = container.read(worldMapControllerProvider.notifier)
+          ..trackOffer(card, OfferEvent.view);
+
+        final reward = await controller.claimOffer(card);
+        await pumpEventQueue();
+
+        expect(offers.events, [('card1', OfferEvent.view)]);
+        expect(offers.claims, ['card1']);
+        expect(reward.getOrElse((_) => fail('expected Right')).code, 'GATE20');
+      });
+    });
 
     test('zoomed out: shows per-airport counts, no pins', () async {
       when(location.getCurrentLocation)

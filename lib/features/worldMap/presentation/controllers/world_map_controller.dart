@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/core/location/location_repository_impl.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
@@ -12,16 +14,27 @@ import 'package:gate_closes/features/auth/presentation/controllers/auth_controll
 import 'package:gate_closes/features/worldMap/data/datasources/map_disk_cache.dart';
 import 'package:gate_closes/features/worldMap/data/datasources/map_echo_socket.dart';
 import 'package:gate_closes/features/worldMap/data/repositories/echo_map_repository_impl.dart';
+import 'package:gate_closes/features/worldMap/data/repositories/offer_map_repository_impl.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_boundary_index.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_pin_plan.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
 import 'package:gate_closes/features/worldMap/domain/repositories/echo_map_repository.dart';
+import 'package:gate_closes/features/worldMap/domain/repositories/offer_map_repository.dart';
 
 final echoMapRepositoryProvider = Provider<EchoMapRepository>((ref) {
   return EchoMapRepositoryImpl(ref.watch(apiServiceProvider));
 });
+
+final offerMapRepositoryProvider = Provider<OfferMapRepository>((ref) {
+  return OfferMapRepositoryImpl(ref.watch(apiServiceProvider));
+});
+
+/// [WorldMapState.copyWith] value meaning "leave unchanged", so `null` can
+/// still clear a nullable field.
+const _keep = Object();
 
 class WorldMapState extends Equatable {
   const WorldMapState({
@@ -34,6 +47,8 @@ class WorldMapState extends Equatable {
     this.selectedAirport,
     this.userLocation,
     this.isFetchingPins = false,
+    this.offerPins = const [],
+    this.offerCard,
     this.error,
   });
 
@@ -53,6 +68,13 @@ class WorldMapState extends Equatable {
 
   /// A view's pins or counts are loading (drives the slow-connection banner).
   final bool isFetchingPins;
+
+  /// Offers (ads, vouchers) of the airports in view, when zoomed in: pins at
+  /// their spots, and one card for the airport nearest the view center.
+  /// Empty when zoomed out or when offers couldn't load: never in the way
+  /// of the echo pins.
+  final List<MapOffer> offerPins;
+  final MapOffer? offerCard;
   final String? error;
 
   WorldMapState copyWith({
@@ -65,6 +87,8 @@ class WorldMapState extends Equatable {
     AirportEntity? selectedAirport,
     LocationCoordinates? userLocation,
     bool? isFetchingPins,
+    List<MapOffer>? offerPins,
+    Object? offerCard = _keep,
     String? error,
   }) =>
       WorldMapState(
@@ -78,6 +102,10 @@ class WorldMapState extends Equatable {
         selectedAirport: selectedAirport ?? this.selectedAirport,
         userLocation: userLocation ?? this.userLocation,
         isFetchingPins: isFetchingPins ?? this.isFetchingPins,
+        offerPins: offerPins ?? this.offerPins,
+        offerCard: identical(offerCard, _keep)
+            ? this.offerCard
+            : offerCard as MapOffer?,
         error: error,
       );
 
@@ -92,6 +120,8 @@ class WorldMapState extends Equatable {
         selectedAirport,
         userLocation,
         isFetchingPins,
+        offerPins,
+        offerCard,
         error,
       ];
 }
@@ -121,6 +151,15 @@ class WorldMapController extends Notifier<WorldMapState> {
   Future<void>? _countsLoading;
   final Map<String, Future<bool>> _pinsLoading = {};
   MapEchoSocket? _socket;
+
+  /// Offers per airport and when they were fetched. Pin spots are fixed per
+  /// traveler for the day, so a short cache is enough.
+  final Map<String, AirportOffers> _airportOffers = {};
+  final Map<String, DateTime> _offersAt = {};
+  final Map<String, Future<void>> _offersLoading = {};
+
+  /// Offers older than this are fetched again when their airport is shown.
+  static const offersMaxAge = Duration(minutes: 10);
 
   /// Counts older than this are fetched again on the next view change.
   static const countsMaxAge = Duration(minutes: 1);
@@ -228,6 +267,8 @@ class WorldMapController extends Notifier<WorldMapState> {
         isFetchingPins: false,
         pinMode: MapPinMode.counts,
         airportCounts: _counts,
+        offerPins: const [],
+        offerCard: null,
       );
       return;
     }
@@ -254,7 +295,58 @@ class WorldMapController extends Notifier<WorldMapState> {
       pinMode: MapPinMode.pins,
       echoNodes: nodes,
     );
+    // After the echo pins, never before them: offers are extra.
+    unawaited(_refreshOffers(plan.airports, request));
   }
+
+  /// Loads the shown airports' offers (missing or stale ones) and shows
+  /// their pins and the nearest airport's card. Failures leave offers out.
+  Future<void> _refreshOffers(List<String> airports, int request) async {
+    final now = DateTime.now();
+    final stale = airports.where((a) {
+      final at = _offersAt[a];
+      return at == null || now.difference(at) > offersMaxAge;
+    });
+    await Future.wait(stale.map(_loadAirportOffers));
+    // Offers load after the pins, so the map may have closed meanwhile.
+    if (!ref.mounted) return;
+    if (request != _viewRequest || state.pinMode != MapPinMode.pins) return;
+    final offers = airports.map((a) => _airportOffers[a]).nonNulls.toList();
+    state = state.copyWith(
+      offerPins: [for (final o in offers) ...o.pins],
+      // [airports] is nearest-first, so this is the nearest airport's card.
+      offerCard: offers.map((o) => o.card).nonNulls.firstOrNull,
+    );
+  }
+
+  Future<void> _loadAirportOffers(String airportIata) =>
+      _offersLoading[airportIata] ??= _fetchAirportOffers(airportIata);
+
+  Future<void> _fetchAirportOffers(String airportIata) async {
+    try {
+      final result = await ref
+          .read(offerMapRepositoryProvider)
+          .getAirportOffers(airportIata);
+      result.match((_) {}, (offers) {
+        _airportOffers[airportIata] = offers;
+        _offersAt[airportIata] = DateTime.now();
+      });
+    } finally {
+      _offersLoading.removeWhere((key, _) => key == airportIata);
+    }
+  }
+
+  /// A traveler saw or opened [offer]; for the offer's stats only.
+  void trackOffer(MapOffer offer, OfferEvent event) => unawaited(
+        ref
+            .read(offerMapRepositoryProvider)
+            .track(offer.id, event, airportIata: offer.airportIata),
+      );
+
+  /// Claims [offer] (a voucher...): its reward, or why it was refused.
+  Future<Either<Failure, OfferReward>> claimOffer(MapOffer offer) => ref
+      .read(offerMapRepositoryProvider)
+      .claim(offer.id, airportIata: offer.airportIata);
 
   /// Fetches the counts when missing or older than [countsMaxAge]; the
   /// cached counts when offline.

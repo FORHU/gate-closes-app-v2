@@ -40,6 +40,11 @@ class ApiEndpoints {
   /// Terminal Echo's composer and Messaging's voice messages.
   static const String s3Upload = '/s3/upload';
 
+  /// Offers (ads, vouchers) at an airport, for the map.
+  static const String offers = '/offers';
+  static String offerEvents(String id) => '/offers/$id/events';
+  static String offerClaim(String id) => '/offers/$id/claim';
+
   /// Terminal Echo endpoints
   static const String terminalEcho = '/terminal-echo';
   static const String terminalEchoMap = '/terminal-echo/map';

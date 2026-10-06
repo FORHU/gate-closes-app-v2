@@ -18,6 +18,7 @@ const _ids = [
   'badge-destination-thread',
   'badge-baton-touch',
   'badge-cluster',
+  'badge-offer',
 ];
 
 /// Logical badge size (Expo's 50×50) times the shipped scale.
