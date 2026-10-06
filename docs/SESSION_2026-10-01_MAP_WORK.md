@@ -16,6 +16,24 @@ airport), one bubble per airport, short cache. Also enforce the radius
 on the server: `createTerminalEcho` computes `insideRadius` but saves
 the echo anyway. All 21 echoes in the DB have an `airportIata`.
 
+**Built 2026-10-05 (committed 2026-10-06; the switch zoom later moved from 7 to 10.5):**
+- API: `GET /terminal-echo/map?airport=MNL` (uses `idx_airportIata_createdAt`,
+  max 100), `GET /terminal-echo/map/counts` (GeoJSON point per airport at
+  the airport's location), `POST /terminal-echo` answers **422** outside
+  every radius (`EchoOutsideAirportError`). `npm run dev` now watches
+  `src` (`--watch *.ts` never reloaded on Windows). tsc/eslint clean,
+  205 tests. Checked live: counts 7 airports, `?airport=mnl` 12 pins.
+- App: `AirportPinPlan` (zoom < 7 → counts; else pins of the ≤ 8 airports
+  with echoes in view + 0.5° margin, nearest first), per-airport pin cache,
+  counts fresh for 1 min, `MapEchoSocket` joins the shown airports' rooms
+  and reloads one on `terminal_echo:changed`. Count bubbles feed the
+  heatmap when zoomed out. Same-spot echoes: pins cluster up to zoom 19,
+  and a bubble whose echoes share one point (or that only splits past
+  zoom 18) opens `EchoStackSheet`. analyze clean, 190 tests, APK builds.
+- Not on a device yet. Known gap: an airport with **no** echoes isn't
+  watched, so its first echo shows after the next counts refresh
+  (≤ 1 min, on the next camera move).
+
 ## Status at a glance
 
 | Work | Code | Tests | On device |
