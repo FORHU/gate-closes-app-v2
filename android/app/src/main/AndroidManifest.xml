@@ -37,6 +37,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Impeller crashes the PowerVR driver (realme RMX3231) on the
+             raster thread; use Skia. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
 
         <!-- Google Maps API Key (Replace YOUR_API_KEY with an actual key) -->
         <meta-data android:name="com.google.android.geo.API_KEY"
