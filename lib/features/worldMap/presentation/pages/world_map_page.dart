@@ -166,6 +166,10 @@ const Duration _kMapStableFor = Duration(seconds: 5);
 /// At or below this zoom, rotation is locked (Expo's gesture lock).
 const double _kGestureLockZoom = 3.5;
 
+/// The compass sits this far below the safe area: under the search pill
+/// (its top gap + ~48 height), not over the status bar or the pill.
+const double _kCompassTop = AppSpacing.sm + 48 + AppSpacing.sm;
+
 /// Expo map-shell zoom levels.
 const double _kMinZoom = 2.8;
 const double _kUserZoom = 14;
@@ -678,6 +682,18 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     unawaited(
       map.gestures.updateSettings(
         GesturesSettings(pitchEnabled: false, rotateEnabled: false),
+      ),
+    );
+    // Mapbox draws its ornaments under the status bar. Expo hid the scale
+    // bar (it also showed miles); the compass moves below the search pill.
+    unawaited(map.scaleBar.updateSettings(ScaleBarSettings(enabled: false)));
+    unawaited(
+      map.compass.updateSettings(
+        CompassSettings(
+          position: OrnamentPosition.TOP_RIGHT,
+          marginTop: MediaQuery.viewPaddingOf(context).top + _kCompassTop,
+          marginRight: AppSpacing.md,
+        ),
       ),
     );
     unawaited(
