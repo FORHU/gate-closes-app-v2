@@ -79,9 +79,9 @@ class _FeedPageState extends ConsumerState<FeedPage> {
     final echoState = ref.watch(terminalEchoControllerProvider);
 
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: colors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
           airport != null ? 'Terminal Echo — ${airport.iata}' : 'Terminal Echo',

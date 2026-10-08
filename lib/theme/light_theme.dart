@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gate_closes/theme/components/button_theme.dart';
 import 'package:gate_closes/theme/components/card_theme.dart';
 import 'package:gate_closes/theme/components/input_theme.dart';
+import 'package:gate_closes/theme/components/surface_theme.dart';
 import 'package:gate_closes/theme/tokens/colors.dart';
 import 'package:gate_closes/theme/tokens/typography.dart';
 
@@ -27,6 +28,9 @@ class LightTheme {
         onSurface: colors.textPrimary,
         onSurfaceVariant: colors.textSecondary,
         surfaceContainerHighest: colors.surfaceElevated,
+        surfaceContainerHigh: colors.surfaceElevated,
+        surfaceContainer: colors.surface,
+        outlineVariant: colors.border,
         outline: colors.border,
         error: colors.error,
         onError: colors.textPrimary,
@@ -48,6 +52,10 @@ class LightTheme {
       elevatedButtonTheme: AppButtonTheme.build(colors),
       inputDecorationTheme: AppInputTheme.build(colors),
       cardTheme: AppCardTheme.build(colors),
+      bottomSheetTheme: AppSurfaceTheme.bottomSheet(colors),
+      dialogTheme: AppSurfaceTheme.dialog(colors),
+      snackBarTheme: AppSurfaceTheme.snackBar(colors),
+      dividerTheme: AppSurfaceTheme.divider(colors),
     );
   }
 }

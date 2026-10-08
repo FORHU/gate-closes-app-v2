@@ -24,7 +24,7 @@ class ConnectionsPage extends StatelessWidget {
     return DefaultTabController(
       length: _tabs.length,
       child: Scaffold(
-        backgroundColor: colors.background,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text(
             context.l10n.connections,
@@ -33,7 +33,7 @@ class ConnectionsPage extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          backgroundColor: colors.background,
+          backgroundColor: Colors.transparent,
           elevation: 0,
           bottom: TabBar(
             isScrollable: true,

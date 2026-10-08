@@ -116,9 +116,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           width: isActive ? 28 : 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: isActive
-                                ? colors.accent
-                                : colors.border.withValues(alpha: 0.6),
+                            color:
+                                isActive ? colors.accent : colors.borderStrong,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         );

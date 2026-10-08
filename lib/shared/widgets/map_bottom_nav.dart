@@ -63,7 +63,7 @@ class MapBottomNav extends StatelessWidget {
             child: CustomPaint(
               painter: _DomeBarPainter(
                 color: colors.surface,
-                borderColor: colors.border,
+                borderColor: colors.hairline,
                 domeWidth: _domeWidth,
                 domeRise: _domeRise,
               ),
@@ -140,12 +140,18 @@ class _NavTab extends StatelessWidget {
               child: active
                   ? Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        tab.label,
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                      // One line always: a long label ("Connections")
+                      // shrinks to fit instead of wrapping under the icon.
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          tab.label,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     )
