@@ -131,26 +131,30 @@ abstract final class EchoBeacons {
     DateTime at,
   ) {
     final feature = EchoMapFeatures.feature(b.node, at, lng: b.lng, lat: b.lat);
-    final disc = _discAround(b, radar);
-    if (disc != null) {
-      (feature['properties'] as Map<String, dynamic>)['radarBearing'] =
-          bearingDeg(b.lng, b.lat, fromLng: disc.lng, fromLat: disc.lat);
+    final bearing = radarBearing(b.lng, b.lat, radar);
+    if (bearing != null) {
+      (feature['properties'] as Map<String, dynamic>)['radarBearing'] = bearing;
     }
     return feature;
   }
 
-  /// The radar disc [b] stands in (the nearest center if several), or null.
-  static RadarDisc? _discAround(EchoBeacon b, List<RadarDisc> radar) {
+  /// A point's direction from the center of the [radar] disc it stands in
+  /// (the nearest if several), clockwise from north as the sweep measures
+  /// its heading; null outside every disc. Anything on the map the radar
+  /// detects (echoes, offers) carries it as `radarBearing`.
+  static double? radarBearing(double lng, double lat, List<RadarDisc> radar) {
     RadarDisc? best;
     var bestMeters = double.infinity;
     for (final d in radar) {
-      final m = distanceMeters(b.lng, b.lat, d.lng, d.lat);
+      final m = distanceMeters(lng, lat, d.lng, d.lat);
       if (m <= d.radiusKm * 1000 && m < bestMeters) {
         best = d;
         bestMeters = m;
       }
     }
-    return best;
+    return best == null
+        ? null
+        : bearingDeg(lng, lat, fromLng: best.lng, fromLat: best.lat);
   }
 
   /// Direction of a point from another, degrees clockwise from north

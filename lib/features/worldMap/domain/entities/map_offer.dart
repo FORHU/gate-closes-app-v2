@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_radar.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/echo_beacons.dart';
 
 /// Something promoted at an airport (an ad, a voucher...), as the map shows
 /// it (`GET /offers?airport=MNL`). The API places pins at a random spot
@@ -174,11 +176,38 @@ class OfferReward extends Equatable {
   List<Object?> get props => [fields];
 }
 
+/// The three families the map shows offers in. `kind` is free text set by
+/// the admin; vouchers and gifts are recognised by name, everything else
+/// (ads, lounge passes, new kinds) counts as an ad.
+enum OfferGroup {
+  voucher('🎟', 'Vouchers'),
+  gift('🎁', 'Gifts'),
+  ad('📢', 'Offers');
+
+  const OfferGroup(this.emoji, this.label);
+
+  final String emoji;
+  final String label;
+
+  static OfferGroup of(String kind) {
+    final k = kind.toLowerCase();
+    if (k.contains('voucher') || k.contains('coupon')) return voucher;
+    if (k.contains('gift')) return gift;
+    return ad;
+  }
+}
+
 /// GeoJSON for the map's offer pin layer, built at the edge like
-/// `EchoMapFeatures`: only what the layer and taps need (the page looks the
-/// offer up by `id`). Offers without a spot are left out.
+/// `EchoMapFeatures`: only what the layers and taps need (the page looks
+/// the offer up by `id`), its `group` for the glow color, and inside a
+/// `radar` disc its `radarBearing`, so the sweep detects offers as it does
+/// echoes. Offers without a spot are left out.
 abstract final class OfferMapFeatures {
-  static Map<String, dynamic> collection(List<MapOffer> offers) => {
+  static Map<String, dynamic> collection(
+    List<MapOffer> offers, {
+    List<RadarDisc> radar = const [],
+  }) =>
+      {
         'type': 'FeatureCollection',
         'features': [
           for (final offer in offers)
@@ -190,7 +219,17 @@ abstract final class OfferMapFeatures {
                   'type': 'Point',
                   'coordinates': [offer.longitude, offer.latitude],
                 },
-                'properties': {'id': offer.id},
+                'properties': {
+                  'id': offer.id,
+                  'group': OfferGroup.of(offer.kind).name,
+                  if (EchoBeacons.radarBearing(
+                    offer.longitude!,
+                    offer.latitude!,
+                    radar,
+                  )
+                      case final bearing?)
+                    'radarBearing': bearing,
+                },
               },
         ],
       };

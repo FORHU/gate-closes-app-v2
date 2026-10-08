@@ -39,6 +39,8 @@ class OfferSheet extends StatefulWidget {
   }) {
     return showModalBottomSheet<void>(
       context: context,
+      // Above the map's navigation bar, which would cover its bottom.
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => OfferSheet(

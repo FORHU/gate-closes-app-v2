@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_radar.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
 
 void main() {
@@ -72,7 +73,7 @@ void main() {
     expect(offers, AirportOffers.empty);
   });
 
-  test('map features carry only the id, and only for offers with a spot', () {
+  test('map features carry the id and group, only for offers with a spot', () {
     final offers = AirportOffers.fromJson(response, airportIata: 'MNL');
     final collection =
         OfferMapFeatures.collection([offers.card!, ...offers.pins]);
@@ -80,8 +81,24 @@ void main() {
     final features = collection['features'] as List;
     expect(features, hasLength(1));
     final feature = features.single as Map<String, dynamic>;
-    expect(feature['properties'], {'id': 'pin1'});
+    final pin = offers.pins.single;
+    expect(feature['properties'], {
+      'id': 'pin1',
+      'group': OfferGroup.of(pin.kind).name,
+    });
     expect((feature['geometry'] as Map)['coordinates'], [121.02, 14.5]);
+  });
+
+  test('inside a radar disc an offer carries its bearing for the sweep', () {
+    final offers = AirportOffers.fromJson(response, airportIata: 'MNL');
+    final collection = OfferMapFeatures.collection(
+      offers.pins,
+      radar: const [RadarDisc(lng: 121.02, lat: 14.49, radiusKm: 3)],
+    );
+    final props = ((collection['features'] as List).single
+        as Map<String, dynamic>)['properties'] as Map;
+    // The pin is due north of the disc's center.
+    expect(props['radarBearing'] as double, closeTo(0, 0.01));
   });
 
   test('a reward exposes its voucher code', () {
