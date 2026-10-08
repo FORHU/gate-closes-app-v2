@@ -18,6 +18,7 @@ import 'package:gate_closes/features/worldMap/data/repositories/offer_map_reposi
 import 'package:gate_closes/features/worldMap/domain/entities/airport_boundary_index.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_pin_plan.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_point.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
@@ -44,6 +45,7 @@ class WorldMapState extends Equatable {
     this.echoNodes = const [],
     this.pinMode = MapPinMode.pins,
     this.airportCounts = const [],
+    this.allAirports = const [],
     this.selectedAirport,
     this.userLocation,
     this.isFetchingPins = false,
@@ -61,6 +63,9 @@ class WorldMapState extends Equatable {
   /// airport ([airportCounts]) when zoomed out.
   final MapPinMode pinMode;
   final List<AirportEchoCount> airportCounts;
+
+  /// Every airport the map knows, echoes or not (from the airport circles).
+  final List<AirportPoint> allAirports;
   final AirportEntity? selectedAirport;
 
   /// Where the user is, once resolved; the map opens centered here.
@@ -84,6 +89,7 @@ class WorldMapState extends Equatable {
     List<TerminalEchoMapNodeEntity>? echoNodes,
     MapPinMode? pinMode,
     List<AirportEchoCount>? airportCounts,
+    List<AirportPoint>? allAirports,
     AirportEntity? selectedAirport,
     LocationCoordinates? userLocation,
     bool? isFetchingPins,
@@ -99,6 +105,7 @@ class WorldMapState extends Equatable {
         echoNodes: echoNodes ?? this.echoNodes,
         pinMode: pinMode ?? this.pinMode,
         airportCounts: airportCounts ?? this.airportCounts,
+        allAirports: allAirports ?? this.allAirports,
         selectedAirport: selectedAirport ?? this.selectedAirport,
         userLocation: userLocation ?? this.userLocation,
         isFetchingPins: isFetchingPins ?? this.isFetchingPins,
@@ -117,6 +124,7 @@ class WorldMapState extends Equatable {
         echoNodes,
         pinMode,
         airportCounts,
+        allAirports,
         selectedAirport,
         userLocation,
         isFetchingPins,
@@ -198,6 +206,9 @@ class WorldMapController extends Notifier<WorldMapState> {
       },
     );
     _boundaries = AirportBoundaryIndex.fromGeoJson(boundaries);
+    state = state.copyWith(
+      allAirports: AirportPoint.fromBoundaries(boundaries),
+    );
 
     // 2. Echo pins: show the cached set now. Live pins and counts are
     //    fetched for the view once the camera settles (refreshForView).
