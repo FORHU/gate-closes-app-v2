@@ -354,7 +354,7 @@ const List<Object> _kOfferGlowColor = [
 /// out over [_kBlipFadeDeg] to nothing until the next pass: the glow shows
 /// only while the radar is detecting. Echoes outside a radar disc keep a
 /// steady, faint glow.
-const double _kBlipRiseDeg = 18;
+const double _kBlipRiseDeg = 26;
 const double _kBlipFadeDeg = 180;
 const double _kBlipPeak = 0.9;
 
@@ -1098,6 +1098,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   }
 
   bool _sweepInFlight = false;
+  int _sweepFrame = 0;
 
   Future<void> _drawSweep() async {
     // Skip a frame rather than queue bridge calls behind a slow one.
@@ -1111,7 +1112,10 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         _kRadarSweepSource,
         AirportRadar.sweep(discs, heading),
       );
-      await _drawBlips(heading);
+      // The glow fades over ~2 s, so half the sweep's frames are plenty;
+      // each update re-paints every echo and offer (measured: the full
+      // rate tripled the janky frames on the Xiaomi).
+      if ((_sweepFrame++).isEven) await _drawBlips(heading);
     } on Object catch (e) {
       _disableRadar(e);
     } finally {
