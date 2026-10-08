@@ -2,6 +2,9 @@
 
 ## Resume here (2026-10-09)
 
+> Superseded: start from `NEXT_SESSION.md`. Kept as the record of
+> 2026-10-07/08.
+
 **The 2026-10-07 plan, status at the end of 2026-10-08:**
 
 | Planned | Status |

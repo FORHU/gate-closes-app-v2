@@ -5,15 +5,10 @@ Read this first to continue. Related docs in this folder:
 `FLUTTER_V2_SYSTEM_ARCHITECTURE.md` (system + API contracts),
 `BOARDING_PASS_INTELLIGENCE_PLAN.md` (frozen feature).
 
-> **Start here (2026-10-09):** `SESSION_2026-10-07_DESIGN_3D_MAP.md`,
-> section "Resume here (2026-10-09)". New design, 3D dusk map, radar,
-> cloud glow, tags for every airport, human-sized echoes and the device
-> ladder are committed on `feat/design-3d-map` (app-v2, 7 commits, not
-> pushed); the afternoon's work (tighter heat, detection glow with a lit
-> core, hidden vouchers/gifts/ads, banner and offer badge removed) is
-> **uncommitted** on the same branch. API `039d028` (airport GeoJSON
-> carries `iata`) on `feat/airport-offers-and-access`, not pushed. The
-> current map design is in `FLUTTER_V2_SYSTEM_ARCHITECTURE.md`.
+> **Start here:** [`NEXT_SESSION.md`](NEXT_SESSION.md) — state of all
+> repos, how to resume, and the open work (task 1: System Discovery &
+> Connection Audit). The current design is in
+> `FLUTTER_V2_SYSTEM_ARCHITECTURE.md`; history in the `SESSION_*` notes.
 >
 > **Previous start (2026-10-07):** `SESSION_2026-10-06_OFFERS_RBAC.md`,
 > section "Resume here (2026-10-07)". Pins, offers, roles, seeders and the
