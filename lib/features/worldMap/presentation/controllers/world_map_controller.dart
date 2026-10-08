@@ -394,10 +394,11 @@ class WorldMapController extends Notifier<WorldMapState> {
       final result = await ref
           .read(echoMapRepositoryProvider)
           .getAirportNodes(airportIata);
-      return result.fold((_) => false, (nodes) {
+      final loaded = result.fold<bool>((_) => false, (nodes) {
         _airportPins[airportIata] = nodes;
         return true;
       });
+      return loaded;
     } finally {
       _pinsLoading.removeWhere((key, _) => key == airportIata);
     }

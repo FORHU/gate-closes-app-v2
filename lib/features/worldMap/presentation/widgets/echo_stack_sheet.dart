@@ -62,10 +62,10 @@ class EchoStackSheet extends StatelessWidget {
         age(echo.createdAt, now),
         if (echo.listenCount > 0)
           '${echo.listenCount} listen${echo.listenCount == 1 ? '' : 's'}',
-        if (echo.reactionCount > 0)
-          echo.reactionCount == 1
-              ? '1 reaction'
-              : '${echo.reactionCount} reactions',
+        if (echo.reactionCount == 1)
+          '1 reaction'
+        else if (echo.reactionCount > 1)
+          '${echo.reactionCount} reactions',
       ].where((s) => s.isNotEmpty).join(' · ');
 
   @override
