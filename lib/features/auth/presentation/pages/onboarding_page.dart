@@ -44,11 +44,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   void _nextStep() {
     if (_currentStep < 2) {
-      unawaited(
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
-        ),
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
       );
     } else {
       unawaited(_completeOnboarding());
@@ -57,11 +55,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   void _previousStep() {
     if (_currentStep > 0) {
-      unawaited(
-        _pageController.previousPage(
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
-        ),
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
       );
     }
   }
@@ -116,9 +112,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           width: isActive ? 28 : 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: isActive
-                                ? colors.accent
-                                : colors.border.withValues(alpha: 0.6),
+                            color:
+                                isActive ? colors.accent : colors.borderStrong,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         );
@@ -240,7 +235,7 @@ class _RadarPulseHeroState extends State<_RadarPulseHero>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     );
-    unawaited(_controller.repeat());
+    _controller.repeat();
   }
 
   @override

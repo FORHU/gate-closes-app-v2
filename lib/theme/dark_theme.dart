@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:gate_closes/theme/components/button_theme.dart';
 import 'package:gate_closes/theme/components/card_theme.dart';
 import 'package:gate_closes/theme/components/input_theme.dart';
+import 'package:gate_closes/theme/components/surface_theme.dart';
 import 'package:gate_closes/theme/tokens/colors.dart';
 import 'package:gate_closes/theme/tokens/typography.dart';
 
-/// Gate Closes dark theme — the primary/default identity, ported from
-/// `gate-closes-app` (dark background, lime accent, glass surfaces).
+/// Gate Closes dark theme — the primary/default identity: the Chumme
+/// design language (maroon layers, glass, hairlines) with the lime accent.
 class DarkTheme {
   DarkTheme._();
 
@@ -26,6 +27,9 @@ class DarkTheme {
         onSurface: colors.textPrimary,
         onSurfaceVariant: colors.textSecondary,
         surfaceContainerHighest: colors.surfaceElevated,
+        surfaceContainerHigh: colors.surfaceElevated,
+        surfaceContainer: colors.surface,
+        outlineVariant: colors.border,
         outline: colors.border,
         error: colors.error,
         onError: colors.textPrimary,
@@ -47,6 +51,10 @@ class DarkTheme {
       elevatedButtonTheme: AppButtonTheme.build(colors),
       inputDecorationTheme: AppInputTheme.build(colors),
       cardTheme: AppCardTheme.build(colors),
+      bottomSheetTheme: AppSurfaceTheme.bottomSheet(colors),
+      dialogTheme: AppSurfaceTheme.dialog(colors),
+      snackBarTheme: AppSurfaceTheme.snackBar(colors),
+      dividerTheme: AppSurfaceTheme.divider(colors),
     );
   }
 }

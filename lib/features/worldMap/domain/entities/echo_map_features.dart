@@ -52,29 +52,36 @@ abstract final class EchoMapFeatures {
     final at = now ?? DateTime.now();
     return {
       'type': 'FeatureCollection',
-      'features': [
-        for (final node in nodes)
-          {
-            'type': 'Feature',
-            'id': node.id,
-            'geometry': {
-              'type': 'Point',
-              'coordinates': [node.longitude, node.latitude],
-            },
-            'properties': {
-              'id': node.id,
-              'type': typeKey(node.nodeKind),
-              'freshnessScore': freshnessScore(node, at),
-              'activityScore': activityScore(node),
-              // Raw fields, so the offline cache restores them intact.
-              if (node.createdAt != null)
-                'createdAt': node.createdAt!.toIso8601String(),
-              'replyCount': node.replyCount,
-              'listenCount': node.listenCount,
-              'reactionCount': node.reactionCount,
-            },
-          },
-      ],
+      'features': [for (final node in nodes) feature(node, at)],
     };
   }
+
+  /// One pin's feature, at the echo's own position unless [lng]/[lat] move
+  /// it (EchoBeacons spreads echoes that share one spot).
+  static Map<String, dynamic> feature(
+    TerminalEchoMapNodeEntity node,
+    DateTime at, {
+    double? lng,
+    double? lat,
+  }) =>
+      {
+        'type': 'Feature',
+        'id': node.id,
+        'geometry': {
+          'type': 'Point',
+          'coordinates': [lng ?? node.longitude, lat ?? node.latitude],
+        },
+        'properties': {
+          'id': node.id,
+          'type': typeKey(node.nodeKind),
+          'freshnessScore': freshnessScore(node, at),
+          'activityScore': activityScore(node),
+          // Raw fields, so the offline cache restores them intact.
+          if (node.createdAt != null)
+            'createdAt': node.createdAt!.toIso8601String(),
+          'replyCount': node.replyCount,
+          'listenCount': node.listenCount,
+          'reactionCount': node.reactionCount,
+        },
+      };
 }

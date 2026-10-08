@@ -1,3 +1,8 @@
+> ⚠️ **Probably legacy (2026-10-08):** this describes a template backend
+> (Express + Prisma + PostgreSQL), not `gate-closes-api` (Express +
+> MongoDB + Redis + Socket.IO). Kept until the System Discovery audit
+> (`NEXT_SESSION.md`) classifies it.
+
 # Flutter ↔ Node.js Backend Integration Guide
 
 This guide documents how `flutter_template_v1` connects to `node-postg-backend-template` — the production Express + Prisma + PostgreSQL backend.

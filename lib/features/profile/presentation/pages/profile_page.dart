@@ -10,6 +10,7 @@ import 'package:gate_closes/features/flight/presentation/controllers/flight_cont
 import 'package:gate_closes/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/top_toast.dart';
+import 'package:gate_closes/theme/tokens/effects.dart';
 import 'package:gate_closes/theme/tokens/radius.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 import 'package:go_router/go_router.dart';
@@ -197,7 +198,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
 
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(
           'Settings',
@@ -206,7 +207,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        backgroundColor: colors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: RefreshIndicator(
@@ -322,7 +323,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: colors.border.withValues(alpha: 0.3),
+                            color: colors.surfacePressed,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -482,7 +483,8 @@ class _SettingsGroup extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.border.withValues(alpha: 0.5)),
+        border: Border.all(color: colors.hairline),
+        boxShadow: AppEffects.cardShadow,
       ),
       child: Column(children: children),
     );
@@ -514,7 +516,7 @@ class _SettingsRow extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: colors.border.withValues(alpha: 0.3),
+                color: colors.surfacePressed,
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 18, color: colors.textSecondary),
@@ -552,7 +554,7 @@ class _RowDivider extends StatelessWidget {
       height: 1,
       thickness: 1,
       indent: 62,
-      color: colors.border.withValues(alpha: 0.3),
+      color: colors.border,
     );
   }
 }
@@ -732,7 +734,7 @@ class _FlightTicketCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Divider(color: colors.border.withValues(alpha: 0.4), height: 1),
+          Divider(color: colors.border, height: 1),
           const SizedBox(height: AppSpacing.sm),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

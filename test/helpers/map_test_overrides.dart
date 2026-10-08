@@ -3,10 +3,13 @@ import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/core/services/connectivity_service.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/features/worldMap/data/datasources/device_capabilities_source.dart';
 import 'package:gate_closes/features/worldMap/data/datasources/map_disk_cache.dart';
 import 'package:gate_closes/features/worldMap/data/datasources/map_echo_socket.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/map_tier.dart';
 import 'package:gate_closes/features/worldMap/domain/repositories/offer_map_repository.dart';
+import 'package:gate_closes/features/worldMap/presentation/controllers/map_tier_controller.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/world_map_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -78,9 +81,24 @@ class FakeOfferMapRepository implements OfferMapRepository {
   }
 }
 
+/// [DeviceCapabilitiesSource] for tests: a capable phone, no platform
+/// channel (the 3D map's tier).
+class FakeDeviceCapabilitiesSource implements DeviceCapabilitiesSource {
+  const FakeDeviceCapabilitiesSource();
+
+  @override
+  Future<DeviceCapabilities> read() async => const DeviceCapabilities(
+        is64Bit: true,
+        totalRamMb: 8000,
+        lowRam: false,
+        sdk: 34,
+      );
+}
+
 /// Overrides the world map needs beyond its repositories: device storage
 /// (last location, Map Lighting), the disk cache, connectivity, the
-/// live-update socket and offers (none unless [offers] has some).
+/// live-update socket, offers (none unless [offers] has some) and a
+/// capable device (the 3D map).
 Future<List<Override>> mapTestOverrides({
   MapDiskCache? cache,
   bool offline = false,
@@ -100,6 +118,9 @@ Future<List<Override>> mapTestOverrides({
     }),
     offerMapRepositoryProvider.overrideWithValue(
       offers ?? FakeOfferMapRepository(),
+    ),
+    deviceCapabilitiesSourceProvider.overrideWithValue(
+      const FakeDeviceCapabilitiesSource(),
     ),
   ];
 }

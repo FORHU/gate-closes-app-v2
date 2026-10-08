@@ -11,16 +11,12 @@ abstract final class MapBadges {
   static const batonTouch = 'badge-baton-touch';
   static const cluster = 'badge-cluster';
 
-  /// Offers (ads, vouchers): not an echo, so its own orange tag badge.
-  static const offer = 'badge-offer';
-
   static const List<String> all = [
     terminalEcho,
     parallelSoul,
     destinationThread,
     batonTouch,
     cluster,
-    offer,
   ];
 
   /// Scale the PNGs are rendered at: 150×150 px for Expo's 50×50 badge.

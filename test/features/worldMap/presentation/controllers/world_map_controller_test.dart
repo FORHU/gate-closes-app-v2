@@ -209,7 +209,7 @@ void main() {
             },
           );
 
-      test('zoomed in: the airports in view get their pins and card', () async {
+      test('zoomed in: the airports in view get their offer pins', () async {
         when(location.getCurrentLocation)
             .thenAnswer((_) async => const Left(NetworkFailure()));
         final offers = sinOffers();
@@ -220,7 +220,6 @@ void main() {
 
         final state = container.read(worldMapControllerProvider);
         expect(state.offerPins, [pin]);
-        expect(state.offerCard, card);
         expect(offers.requested, ['SIN']);
       });
 
@@ -239,7 +238,6 @@ void main() {
         await viewSingapore(4);
         final state = container.read(worldMapControllerProvider);
         expect(state.offerPins, isEmpty);
-        expect(state.offerCard, isNull);
       });
 
       test('failing offers leave the echo pins as they are', () async {
@@ -255,7 +253,6 @@ void main() {
         final state = container.read(worldMapControllerProvider);
         expect(state.echoNodes, [tPin]);
         expect(state.offerPins, isEmpty);
-        expect(state.offerCard, isNull);
         expect(state.error, isNull);
       });
 

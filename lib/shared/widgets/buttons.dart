@@ -35,13 +35,14 @@ class PrimaryButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.accent,
         borderRadius: AppRadius.brPill,
-        boxShadow: AppEffects.accentGlow(colors.accentGlow15),
+        boxShadow: AppEffects.buttonGlow(colors.accent),
       ),
     );
   }
 }
 
-/// Gradient / Primary CTA button with pill shape — for hero actions.
+/// Gradient CTA button with pill shape — for hero actions (Chumme's
+/// `gradient.brandBtn`, in the accent).
 class GradientButton extends StatelessWidget {
   const GradientButton({
     required this.label,
@@ -69,9 +70,9 @@ class GradientButton extends StatelessWidget {
       icon: icon,
       foreground: colors.accentOn,
       decoration: BoxDecoration(
-        color: colors.accent,
+        gradient: AppEffects.brandButton(colors.accent),
         borderRadius: AppRadius.brPill,
-        boxShadow: AppEffects.accentGlow(colors.accentGlow15),
+        boxShadow: AppEffects.buttonGlow(colors.accent),
       ),
     );
   }

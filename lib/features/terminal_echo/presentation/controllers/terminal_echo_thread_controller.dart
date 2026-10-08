@@ -116,9 +116,10 @@ class TerminalEchoThreadController extends Notifier<TerminalEchoThreadState> {
           state = state.copyWith(
             replies: [
               for (final reply in state.replies)
-                reply.id == replyId
-                    ? reply.withReactionDelta(reactionKey, action)
-                    : reply,
+                if (reply.id == replyId)
+                  reply.withReactionDelta(reactionKey, action)
+                else
+                  reply,
             ],
           );
         },

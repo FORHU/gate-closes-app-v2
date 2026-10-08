@@ -291,7 +291,7 @@ class _EchoThreadPageState extends ConsumerState<EchoThreadPage> {
       decoration: BoxDecoration(
         color: colors.surface,
         border: Border(
-          top: BorderSide(color: colors.border.withValues(alpha: 0.2)),
+          top: BorderSide(color: colors.hairline),
         ),
       ),
       child: SafeArea(

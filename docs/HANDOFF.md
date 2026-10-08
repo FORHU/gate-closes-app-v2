@@ -5,7 +5,12 @@ Read this first to continue. Related docs in this folder:
 `FLUTTER_V2_SYSTEM_ARCHITECTURE.md` (system + API contracts),
 `BOARDING_PASS_INTELLIGENCE_PLAN.md` (frozen feature).
 
-> **Start here (2026-10-07):** `SESSION_2026-10-06_OFFERS_RBAC.md`,
+> **Start here:** [`NEXT_SESSION.md`](NEXT_SESSION.md) — state of all
+> repos, how to resume, and the open work (task 1: System Discovery &
+> Connection Audit). The current design is in
+> `FLUTTER_V2_SYSTEM_ARCHITECTURE.md`; history in the `SESSION_*` notes.
+>
+> **Previous start (2026-10-07):** `SESSION_2026-10-06_OFFERS_RBAC.md`,
 > section "Resume here (2026-10-07)". Pins, offers, roles, seeders and the
 > airport cleanup are committed on feature branches (not merged); the
 > per-airport radius admin is built but **uncommitted**. API on **3001**.
@@ -32,6 +37,7 @@ PowerVR GPU. Device id `0151312S28102753`. Package
 | Native `SIGSEGV` in `libGLESv2_powervr.so`, thread `1.raster` | Flutter raster thread in the PowerVR driver | **Probably fixed**: no new crash entry on 2026-10-01 |
 | App didn't open (Mapbox `BufPoolFreeBuffer` spam) | Map too heavy for the GPU/RAM | **Mitigated**: lite map on 32-bit ARM + render guard |
 | "Map isn't available" on **Xiaomi 2201116SG** (Android 13), no boundaries/pins | Once the user is located the pulsing puck redraws every frame, so `onMapIdle` never fired; the guard and the viewport refresh both waited on it | **Fixed**: guard settles on `onMapLoaded` + layers added; viewport refresh runs off a debounced `onCameraChange`. Verified on device 2026-10-01 (not Impeller: opting out changed nothing) |
+| "Map isn't available" after opening the app with the phone **locked** (2026-10-08) | The 25 s render timeout ran while the map couldn't draw | **Fixed**: the timeout waits while the app isn't in the foreground (`_startLoadTimeout`) |
 | Voice note upload 500 | Local API had no S3 credentials (provider chain only) | **Fixed** in API `3b86956` (restart the local API) |
 | `Bad state: No element` in the voice composer | Preview player closed before playback ended | **Fixed** in app `827f904` |
 

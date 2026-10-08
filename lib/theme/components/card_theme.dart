@@ -10,7 +10,7 @@ class AppCardTheme {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.card),
-          side: BorderSide(color: colors.border),
+          side: BorderSide(color: colors.hairline),
         ),
         elevation: 0,
         clipBehavior: Clip.antiAlias,

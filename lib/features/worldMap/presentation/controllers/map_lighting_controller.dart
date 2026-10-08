@@ -14,14 +14,12 @@ enum MapTimeOfDay {
   dusk,
   night;
 
-  /// Expo `resolveRealtimeMapLightingPreset`: dawn 5–8, day 8–17,
-  /// dusk 17–19, night otherwise (device local time).
+  /// Realtime lighting (device local time): dusk through the day, 5–19,
+  /// for the map's formal look, and night after dark. Dawn and day stay
+  /// available as fixed presets.
   static MapTimeOfDay at(DateTime time) {
     final h = time.hour;
-    if (h >= 5 && h < 8) return MapTimeOfDay.dawn;
-    if (h >= 8 && h < 17) return MapTimeOfDay.day;
-    if (h >= 17 && h < 19) return MapTimeOfDay.dusk;
-    return MapTimeOfDay.night;
+    return h >= 5 && h < 19 ? MapTimeOfDay.dusk : MapTimeOfDay.night;
   }
 
   /// The atmosphere tint Expo's `CentralMapCanvas` lays over the map for

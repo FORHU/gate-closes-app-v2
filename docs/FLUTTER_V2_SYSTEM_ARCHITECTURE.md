@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary & Purpose
 
-**`gate-closes-app-v2`** is the production-oriented Flutter rewrite of the Gate Closes native client (automated checks pass; physical-device validation of the map is pending). It replaces the legacy React Native/Expo application with a strictly enforced Clean Architecture system designed for deterministic state transitions, modularity, offline-first parsing, and reliable real-time networking.
+**`gate-closes-app-v2`** is the production-oriented Flutter rewrite of the Gate Closes native client (automated checks pass; the map is checked on two Android phones, a 3D-capable Xiaomi and a weak realme). It replaces the legacy React Native/Expo application with a strictly enforced Clean Architecture system designed for deterministic state transitions, modularity, offline-first parsing, and reliable real-time networking.
 
 The application serves travelers throughout the airport lifecycle across four core paradigms:
 1. **Terminal Echo (Public Spatial Broadcast)**: Ephemeral voice memos (up to 10 seconds) anchored to synthetic airport circular boundaries.
@@ -28,14 +28,14 @@ The application serves travelers throughout the airport lifecycle across four co
 | **Networking** | Dio + Retry | `dio: ^5.7.0`, `dio_smart_retry: ^7.0.1` | Interceptors for JWT auth, automatic token rotation, and retries. |
 | **Error Modeling** | Functional Dart | `fpdart: ^1.2.0` | `Either<Failure, T>` functional return types (no raw UI `try/catch`). |
 | **Secure Persistence** | OS Keychain | `flutter_secure_storage: ^10.3.1` | Encrypted JWT token and session storage. |
-| **Geospatial & Maps** | Mapbox Maps | `mapbox_maps_flutter: ^2.31.0` | Vector rendering of 32-sided geodesic boundaries and echo pins. |
+| **Geospatial & Maps** | Mapbox Maps | `mapbox_maps_flutter: ^2.31.0` | Standard 3D or `dark-v11` lite map, airport circles and radar, tags, echoes, offers, country boundaries tileset. |
 | **Audio Capture/Playback**| Record / AudioPlayers | `record: ^6.0.0`, `audioplayers: ^6.1.0` | 48kHz mono voice recording, amplitude stream, waveform playback. |
 | **Realtime WebSockets** | Socket.IO Client | `socket_io_client: ^3.1.6` | WSS event streams for live echo feeds, message delivery, and reactions. |
 | **Boarding Pass Capture** | Camera + ML Kit | `mobile_scanner`, `google_mlkit_text_recognition`, `image_picker` | On-device barcode scan and photo text recognition; nothing is uploaded. |
 | **Ticket Parsing** | Pure Dart | BCBP + OCR text heuristics | Offline parsing into flight fields, with confidence scores. |
 | **Location** | Geolocator | `geolocator: ^14.0.3` | Current position and live position stream (airport re-detection). |
 | **Connectivity & Caching** | Connectivity / Files | `connectivity_plus: ^7.3.1`, `path_provider: ^2.1.5` | Offline banner; on-disk map data cache. |
-| **Map Badges** | SVG | `flutter_svg: ^2.3.0` | Rasterizes the Expo pin badges into Mapbox icons. |
+| **Map Badges** | SVG | `flutter_svg: ^2.3.0` | Echo-type badges (PNG, rendered by `tool/render_map_badges.dart`) for the stack sheet; map pins themselves are now circles. |
 | **Idempotency Keys** | UUID | `uuid: ^4.5.1` | Keys that make create requests safe to retry. |
 
 ---
@@ -61,11 +61,11 @@ gate-closes-app-v2/lib/
 │   ├── flight/                     # Active flight ticket lifecycle management
 │   ├── profile/                    # User profile hero, editor, password change, settings
 │   ├── terminal_echo/              # Feed view, audio composer, thread views, emoji reactions
-│   └── worldMap/                   # Home map: boundaries, clustered pins, heatmap, lighting
+│   └── worldMap/                   # Home map: 3D/lite tiers, radar, airport tags, cloud heat, echoes, hidden offers
 ├── l10n/                           # Localized strings (en, es)
 ├── routes/                         # GoRouter route table (composition root) and redirect guards
 ├── shared/                         # Cross-feature widgets (map nav bar, airport gate dialog, pickers)
-└── theme/                          # Ink-on-white minimalist design system & tokens
+└── theme/                          # Dark maroon + lime design system (Poppins, glass, tokens)
 ```
 
 ### The Unidirectional Request Lifecycle
@@ -160,51 +160,104 @@ graph LR
 ---
 
 ### 4.5 Map (home screen)
-Behavior follows the Expo app's map shell; full mapping and status in
-[MAP_EXPO_PARITY.md](MAP_EXPO_PARITY.md).
+Started as a port of the Expo map shell ([MAP_EXPO_PARITY.md](MAP_EXPO_PARITY.md),
+now history); redesigned on 2026-10-07/08 as below.
 
-* **Engine**: `mapbox_maps_flutter` 2.31 (Mapbox Maps SDK v11), style
-  `dark-v11`, globe projection.
-* **Airport boundaries** (`GET /api/airport/geojson`): drawn as radar
-  scopes in the app's lime accent `#BBE40A`: faint fill, glow and outline;
-  from zoom 10 a grid (rings, spokes, edge ticks) on the 12 airports nearest
-  the view center and a rotating sweep (4 s per turn, ~15 fps) on the
-  nearest 6. No sweep on lite maps or in the background
-  (`AirportRadar`; uncommitted as of 2026-10-01). Only polygons in the
-  visible area are sent to Mapbox (none below zoom 7, at most 300). Sending
-  the whole collection crashed Android with an out-of-memory error in the
-  plugin's JSON conversion.
-* **Echo pins** (`GET /api/terminal-echo/map`, fetched per visible area;
-  bounds wrapped into -180..180 by `MapViewBounds`, `west > east` when the
-  view crosses the antimeridian, at most the 100 newest per view):
-  clustered symbol layer (radius 45, max zoom 15) with Expo's per-type
-  badges, and an activity heatmap. Tap a cluster to zoom in; tap a pin for
-  its card with START CONVERSATION (PS / DT / BT).
+* **Engine**: `mapbox_maps_flutter` (Mapbox Maps SDK v11), globe
+  projection. A **device ladder** (`MapTierPolicy`, `MapTierController`)
+  picks the map before it is created: capable phones get **Mapbox
+  Standard** (3D city, dusk/night lighting from Map Lighting, no street,
+  place, POI or transit names); weak ones (32-bit, < ~5 GB RAM, low-RAM
+  flag, Android < 10, or measured too slow by `FrameBudgetMonitor`) get
+  the **lite** `dark-v11` map in a green/blue palette. Every feature works
+  on both; 3D-only decoration (lit buildings, airport glow, sweep) is
+  skipped on lite.
+* **Zoom stages.**
+  * *Zoomed out* (< 10.5): a faint, cloud-shaped glow per airport with
+    echoes (3D) or faint cloud heat (lite), tight around each airport and
+    growing as you zoom in (`AirportClouds`: ten seeded puffs per airport);
+    a **tag for every airport** (`AirportTags`: airports with echoes get
+    their own glass plate with name, code, echo count and a leader line;
+    the rest share one stretchable plate with name and code); the
+    airports-in-view panel (`AirportVisibility` keeps far-side airports
+    out). Tags are Mapbox symbols, so they stay on their airport while the
+    map moves.
+  * *Airport zoom* (10.5–16): a green radar on every airport circle (grid
+    on the 12 nearest, sweep on the nearest 6, 4 s per turn), lit
+    airport buildings (3D), and a "N ECHOES HERE · ZOOM IN" chip that
+    flies to the busiest spot (`EchoBeacons.hotspot`). No pins yet.
+  * *Close up* (16+): **human-sized echoes** (`EchoBeacons`): a floor disc
+    of at least 7 pt that settles to ~1.2 m; echoes sharing a rounded spot
+    stand 2.5 m apart; finger-sized taps, and a tap that covers several
+    opens the stack list. No clusters.
+* **Radar detection.** Echoes and offers inside a radar disc carry their
+  bearing from its center (`radarBearing`); as the arm crosses one it
+  gets a dark, rich halo of its own color and a small core in its true
+  color that lights up, both fading to nothing before the next pass
+  (from the airport zoom). The glow is updated every other sweep frame
+  (~7.5×/s): every frame tripled the janky frames on the Xiaomi. The lite
+  map has no sweep, so there the cores glow steadily (offers fainter).
+* **Offers** (`GET /api/offers?airport=`; vouchers, gifts, ads by the
+  admin's `kind`, `OfferGroup`): hidden discoveries like the records.
+  Nothing at the airport gives them away (no banner, no counts); close up
+  an offer is a small faint dot in its group's color, found mostly through
+  the radar glow; tapping it opens `OfferSheet` (claim, link). Offers the
+  admin placed only as an airport "card" (no spot) do not show on the map.
+* **Country tap.** Zoomed out, tapping a country's land (Mapbox's
+  `country-boundaries-v1` tileset, an invisible hit layer, one worldview)
+  outlines it in lime and opens `CountryAirportsSheet`: its airports
+  busiest first (`AirportPoint.inCountry`, by the airport's
+  `country_code`); the one picked is flown into. Airport tags keep their
+  own taps.
+* **Colors.** 3D: Standard's land #4C7656, greenspace #5C8F62, water
+  #1D4A70 (lighter than the lite map's, since Standard's dusk/night light
+  darkens them). Lite: the same green/blue palette on `dark-v11`.
+* **Airport boundaries** (`GET /api/airport/geojson`, which now carries
+  each airport's `iata`): only polygons in the visible area are sent to
+  Mapbox (none below zoom 7, at most 300); the whole collection crashed
+  Android with an out-of-memory error in the plugin's JSON conversion.
+  `AirportPoint` turns them into one point per airport for the tags.
 * **Location**: user puck; position stream re-detects the airport every
   250 m; last location (quantized, ~110 m) remembered 15 minutes.
-* **Look**: Expo's theming over dark-v11 (terrain, dark water with a sheen,
-  3D buildings from zoom 13); flat camera, rotation locked at zoom 3.5 and
-  below; the tapped pin grows (0.85 vs 0.72) while its card is open.
 * **Offline**: boundaries and pins cached on disk; offline / slow banner.
-* **Map Lighting**: realtime or static time-of-day tint (Settings).
+* **Render guard**: if a phone can't draw the map within 25 s (only
+  counted while the app is on screen) the map is turned off with a retry.
 
 **Data contract.**
-* Map features carry `id`, `type` (affinity), `createdAt`, `listenCount`
-  and `reactionCount`; no sender id. The app derives freshness ("new" under
-  20 minutes) and heatmap weight from them.
+* Zoomed out (< 10.5): `GET /terminal-echo/map/counts`, one point per
+  airport with `airportIata`, `airportName`, `count`, `latestAt`.
+* Zoomed in: `GET /terminal-echo/map?airport=MNL`, one call per airport in
+  view (at most 8, nearest first; `AirportPinPlan`). The bounds form
+  (`west/south/east/north`) still exists in the API but the app no longer
+  uses it.
+* Echo features carry `id`, `type` (the viewer's affinity with the sender:
+  terminal_echo / parallel_soul / destination_thread / baton_touch),
+  `createdAt`, `listenCount` and `reactionCount`; no sender id. The app
+  derives freshness ("new" under 20 minutes) from them.
+* Offers: `GET /offers?airport=MNL` → `{card, pins}`; pins are placed by
+  the API at a random spot inside the airport, fixed per traveler per day.
+  The map uses pins only.
 * Not available: `expiresAt` (echoes don't expire, so no pin is "fading")
   and reply counts (would cost an extra lookup per pin).
 
 **Layering.**
 ```
-API GeoJSON ─► EchoMapRepository ─► TerminalEchoMapNodeEntity (domain)
-                                          │
-WorldMapController (what to show) ◄───────┘
-        │  airports, pins, visible boundaries, user location
-        ▼
-WorldMapPage (Mapbox rendering: sources, layers, camera, taps)
-        ▲
-EchoMapFeatures / AirportBoundaryIndex build the GeoJSON sent to Mapbox
+API ─► EchoMapRepository / OfferMapRepository / AirportRepository
+           │ entities: TerminalEchoMapNodeEntity, AirportEchoCount, MapOffer
+           ▼
+WorldMapController (what to show: pin mode, counts, echo nodes, offer
+           │         pins, all airports, visible boundaries, user location)
+           ▼
+WorldMapPage (only place that touches Mapbox: sources, layers, camera, taps)
+           ▲
+Pure domain helpers build the GeoJSON at the edge:
+  EchoBeacons (echo discs, spread, radar bearing, hotspot)
+  AirportClouds (heat puffs) · AirportPoint (airport points, countries)
+  AirportRadar (radar grid/sweep) · AirportBoundaryIndex (visible circles)
+  OfferMapFeatures / OfferGroup · AirportVisibility (far-side cull)
+  MapTierPolicy (3D or lite)
+Presentation helpers: AirportTags (tag images), sheets (EchoStackSheet,
+OfferSheet, CountryAirportsSheet), AirportsInViewPanel.
 ```
 The controller decides what is shown; only the page touches the Mapbox API.
 GeoJSON is a rendering format, never a domain model: entities hold typed
@@ -216,14 +269,57 @@ out of memory (it did). Therefore:
 * Never send an unbounded collection to a Mapbox source. Filter to the
   visible area first.
 * Airport boundaries: none below zoom 7, at most 300 per update.
-* Pins: fetched per visible area. First load shows only cached pins; the
-  API caps the unbounded (no-bounds) query at 200.
+* Pins: fetched per airport (at most 8 airports per view). First load
+  shows only cached pins.
+* Tags: airports with echoes get one image each; the ~3,500 others share
+  one stretchable image (per-airport images would not fit in memory).
 * Viewport-driven updates are debounced (300 ms after the camera stops).
 
-**Current vs target rendering.** Today `WorldMapPage` owns sources, layers,
-camera and taps. Target: a `WorldMapRenderer` (sources, layers, camera,
-interactions) that the page drives. The extraction is deliberately deferred
-until physical-device testing confirms current behavior.
+**Current vs target rendering.** Today `WorldMapPage` (~2,600 lines) owns
+sources, layers, camera, taps and the radar/glow animation. Target: a
+`WorldMapRenderer` the page drives. Deferred: the System Discovery audit
+(see `NEXT_SESSION.md`) comes first, and no refactor before it.
+
+### 4.6 Offers (vouchers, gifts, ads) and admin
+* **Admin** (landing app, `/admin`): create, edit, pause, delete offers per
+  airport or all airports (`["*"]`), with `kind` (free text; vouchers and
+  gifts recognised by name, the rest are ads), `status`
+  (draft / active / paused / ended), start/end dates, `weight`, limits,
+  public `data` and a private `reward` revealed on claim. Also roles,
+  users' roles and each airport's radius.
+* **App**: offers are hidden discoveries on the map (§4.5); tapping one
+  opens `OfferSheet`; opening counts a `view`, the button a `click`
+  (`POST /offers/:id/events`), Claim calls `POST /offers/:id/claim` and
+  reveals the reward (once per user; limits enforced by the API).
+
+### 4.7 How the features connect
+```
+Sign up / login ─► session (tokens) ─► every API call and socket
+       │
+Boarding pass (barcode / OCR / manual) ─► POST /flight-ticket
+       │  the tickets decide the affinity with each other traveler
+       │  (API TerminalEchoSvc.computeType, checked in this order):
+       │  same from + to = Parallel Soul; same destination, arrivals within
+       │  24 h, different flight and origin = Destination Thread; one's
+       │  destination is the other's origin = Baton Touch; else (or no
+       │  ticket) = Terminal Echo
+       ▼
+Location ─► airport detection (check-inside-airport) ─► current airport
+       │                                │
+       │                                ├─► Feed: that airport's echoes,
+       │                                │   live via socket room airport:<IATA>
+       │                                └─► Post an echo (needs being inside
+       │                                    the airport's radius)
+       ▼
+Map ─► counts (zoomed out) / echoes + offers per airport (zoomed in)
+       │  echo color = the affinity type above
+       ├─► tap an echo ─► echo card ─► START CONVERSATION (PS / DT / BT)
+       │                                   └─► Connections inbox + voice chat,
+       │                                       live via conversation:updated
+       └─► tap an offer ─► offer sheet ─► claim ─► reward
+Admin (landing) ─► offers, roles, airport radius ─► what the map and
+                   posting rules use
+```
 
 ---
 
@@ -330,6 +426,22 @@ human-readable `message`.
 
 ---
 
+#### 6. Map & Offers
+* `GET /terminal-echo/map/counts` → FeatureCollection, one point per
+  airport: `airportIata`, `airportName`, `count`, `latestAt`.
+* `GET /terminal-echo/map?airport=MNL` (or `west&south&east&north`, not
+  both) → the airport's echoes (see §4.5 data contract).
+* `GET /airport/geojson` → airport circles with `airport`, `iata`,
+  `country_code` (cached 10 min in Redis, key `airport:geojson:v2`).
+* `GET /airport/search?name=`, `GET /airport/nearby`.
+* `GET /offers?airport=MNL` → `{ card, pins }`; `POST /offers/:id/events`
+  `{event: view|click}`; `POST /offers/:id/claim` → reward.
+
+#### 7. Admin (`/api/admin`, staff roles only)
+* `/admin/offers` (list, create, get, patch, delete, `:id/stats`)
+* `/admin/users` (list, `:id/role`), `/admin/roles` (CRUD by name),
+  `/admin/permissions`, `/admin/airports` (list, `:id/radius`)
+
 ### 5.3 API Contract Status
 
 | Contract | Status |
@@ -339,7 +451,10 @@ human-readable `message`.
 | Flight ticket (with boarding-pass fields, idempotent create) | Implemented |
 | Terminal Echo (create, feed, replies, reactions, listens) | Implemented |
 | Echo map pins (`id`, `type`, `createdAt`, listen / reaction counts) | Implemented (API `6f2fa82`, pushed) |
-| Echo map pins for wide / antimeridian views (`west > east` accepted) | Implemented (API, uncommitted as of 2026-10-01) |
+| Echo map pins for wide / antimeridian views (`west > east` accepted) | Implemented; the app now loads pins per airport instead |
+| Echo map per airport, counts per airport | Implemented (API `feat/airport-offers-and-access`, pushed, not merged) |
+| Offers (public + admin), roles, airport radius admin | Implemented (same branch) |
+| Airport GeoJSON with `iata` | Implemented (`039d028`, same branch) |
 | Conversations (create, messages, reactions, read) | Implemented |
 | Realtime `conversation:updated` to participants | Implemented (API `main`, needs deploy) |
 | Map pin `expiresAt` | Not applicable: echoes don't expire |
@@ -406,9 +521,13 @@ human-readable `message`.
   images are never committed.
 
 ### 6.5 Performance Budgets
-No measured numbers yet; to be set after device testing. Constraints already
-enforced: bounded Mapbox payloads (§4.5), debounced viewport updates, pin and
-boundary sources updated in place rather than recreated.
+Measured on the Xiaomi 2201116SG with profile builds (`gfxinfo`), MNL at
+airport zoom with the radar running: **3.5–3.9% janky frames idle, ~10%
+panning** (2026-10-08). Debug builds are not used for performance. Weak
+phones get the lite map (device ladder) and a 3D phone measured too slow
+(≥ 50% of 300 frames over 33 ms) moves to lite from the next launch.
+Constraints: bounded Mapbox payloads (§4.5), debounced viewport updates,
+sources updated in place, glow updated every other sweep frame.
 
 ---
 
@@ -426,13 +545,13 @@ The Flutter codebase enforces strict verification routines before any merge:
    ```bash
    flutter test
    ```
-   * **137 automated tests currently passing** (the full `flutter test` suite), covering:
+   * **247 automated tests currently passing** (the full `flutter test` suite, 2026-10-08), covering:
      * Model JSON serialization/deserialization contracts.
      * Repository error mapping (`AppException` $\rightarrow$ `Failure`).
      * Controller Riverpod state transitions.
      * Onboarding wizard page navigation and form submission.
      * Boarding pass parsing, extraction pipeline and fixture harness.
-     * Map pins, boundary filtering, lighting and offline caches.
+     * Map: echo beacons (spread, sizing, radar bearing, hotspot), cloud puffs, airport points and countries, visibility culling, offers and groups, device tier, boundary filtering, lighting and offline caches; country and offer sheets.
      * Quantized geographic coordinates privacy formatting.
 3. **Android Gradle Engine**:
    * Android Gradle Plugin 9.0.1, Gradle 9.1, Kotlin 2.3.20; debug APK builds with the Mapbox Maps v11 SDK.
@@ -446,14 +565,16 @@ The Flutter codebase enforces strict verification routines before any merge:
 **Built and passing automated checks:** auth and onboarding, boarding-pass
 barcode / OCR / manual capture with privacy filtering, Terminal Echo,
 Connections (PS / DT / BT, starting conversations from map pins), the
-Expo-parity map shell, location tracking, offline map caching, Map Lighting.
-166 tests pass, `flutter analyze` is clean, the Android debug build succeeds
-(2026-10-02, including the uncommitted map work).
+3D/lite map with radar, airport tags, cloud heat, human-sized echoes and
+hidden offers, country tap, location tracking, offline map caching, Map
+Lighting. 247 tests pass and `flutter analyze` is clean (2026-10-08).
+Branches: app `feat/design-3d-map`, API `feat/airport-offers-and-access`,
+landing `feat/landing-revamp` — all pushed, none merged to `main`.
 
 **Pending:**
-* Physical Android device validation: the map runs on a realme RMX3231 and a
-  Xiaomi 2201116SG (`HANDOFF.md` §1); the radar look and zoomed-out clusters
-  are not yet seen on a device.
+* System Discovery & Connection Audit (next priority, `NEXT_SESSION.md`).
+* Device checks still open: the ad and offer dots at z16, the non-lime
+  echo types (need a viewer with a matching flight ticket).
 * iOS build and device validation (needs a Mac).
 * Production-scale map data testing.
 * Confirm production runs the pushed API changes (`conversation:updated`,

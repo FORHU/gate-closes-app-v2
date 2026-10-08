@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
-import 'package:gate_closes/features/worldMap/presentation/widgets/offer_banner.dart';
 import 'package:gate_closes/features/worldMap/presentation/widgets/offer_sheet.dart';
 
 void main() {
@@ -90,24 +89,9 @@ void main() {
     expect(opened, 1);
   });
 
-  testWidgets('the banner opens the offer and can be hidden', (tester) async {
-    var opened = 0;
-    var dismissed = 0;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: OfferBanner(
-            offer: voucher,
-            onOpen: () => opened++,
-            onDismiss: () => dismissed++,
-          ),
-        ),
-      ),
-    );
-
-    expect(find.text('Lounge pass at MNL'), findsOneWidget);
-    await tester.tap(find.text('Lounge day pass'));
-    await tester.tap(find.byTooltip('Hide offer'));
-    expect((opened, dismissed), (1, 1));
+  test('offer groups: vouchers and gifts by name, the rest are offers', () {
+    expect(OfferGroup.of('voucher'), OfferGroup.voucher);
+    expect(OfferGroup.of('Gift_card'), OfferGroup.gift);
+    expect(OfferGroup.of('lounge_pass'), OfferGroup.ad);
   });
 }

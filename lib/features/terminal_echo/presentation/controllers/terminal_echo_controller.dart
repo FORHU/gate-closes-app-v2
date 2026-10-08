@@ -122,7 +122,10 @@ class TerminalEchoController extends Notifier<TerminalEchoState> {
         state = state.copyWith(
           echoes: [
             for (final e in state.echoes)
-              e.id == echoId ? e.withReactionDelta(reactionKey, action) : e,
+              if (e.id == echoId)
+                e.withReactionDelta(reactionKey, action)
+              else
+                e,
           ],
         );
       },

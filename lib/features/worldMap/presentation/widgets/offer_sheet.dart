@@ -6,7 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:fpdart/fpdart.dart' show Either;
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
+
+/// The map is always dark, so its sheets use the dark palette whatever
+/// the app theme.
+const GateColors _kUi = GateColors.dark;
 
 /// Accent for offers: the orange of their map badge.
 const kOfferAccent = Color(0xFFF2994A);
@@ -34,6 +39,8 @@ class OfferSheet extends StatefulWidget {
   }) {
     return showModalBottomSheet<void>(
       context: context,
+      // Above the map's navigation bar, which would cover its bottom.
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => OfferSheet(
@@ -78,7 +85,7 @@ class _OfferSheetState extends State<OfferSheet> {
     final offer = widget.offer;
     final link = offer.ctaUrl;
     return Material(
-      color: const Color(0xFF111418),
+      color: _kUi.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -101,7 +108,7 @@ class _OfferSheetState extends State<OfferSheet> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: _kUi.borderStrong,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -133,8 +140,8 @@ class _OfferSheetState extends State<OfferSheet> {
               AppSpacing.v(AppSpacing.xs),
               Text(
                 offer.title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: _kUi.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
@@ -143,7 +150,7 @@ class _OfferSheetState extends State<OfferSheet> {
                 AppSpacing.v(AppSpacing.sm),
                 Text(
                   offer.body!,
-                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                  style: TextStyle(color: _kUi.textSecondary, height: 1.4),
                 ),
               ],
               for (final MapEntry(:key, :value) in offer.details.entries)
@@ -151,7 +158,7 @@ class _OfferSheetState extends State<OfferSheet> {
                   padding: const EdgeInsets.only(top: AppSpacing.xs),
                   child: Text(
                     '${OfferSheet.kindLabel(key)}: $value',
-                    style: const TextStyle(color: Colors.white60, fontSize: 13),
+                    style: TextStyle(color: _kUi.textSecondary, fontSize: 13),
                   ),
                 ),
               if (offer.endsAt != null) ...[
@@ -160,7 +167,7 @@ class _OfferSheetState extends State<OfferSheet> {
                   'Until ${MaterialLocalizations.of(context).formatMediumDate(
                     offer.endsAt!.toLocal(),
                   )}',
-                  style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  style: TextStyle(color: _kUi.textMuted, fontSize: 12),
                 ),
               ],
               AppSpacing.v(AppSpacing.lg),
@@ -181,15 +188,15 @@ class _OfferSheetState extends State<OfferSheet> {
                 Text(
                   _error!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFFFF8A80)),
+                  style: TextStyle(color: _kUi.error),
                 ),
               ],
               if (link != null) ...[
                 AppSpacing.v(AppSpacing.sm),
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white24),
+                    foregroundColor: _kUi.textPrimary,
+                    side: BorderSide(color: _kUi.borderStrong),
                     minimumSize: const Size.fromHeight(48),
                   ),
                   onPressed: widget.onOpenLink,
@@ -231,8 +238,8 @@ class _RewardBox extends StatelessWidget {
             AppSpacing.v(AppSpacing.sm),
             SelectableText(
               code,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: _kUi.textPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2,
@@ -252,7 +259,7 @@ class _RewardBox extends StatelessWidget {
           for (final MapEntry(:key, :value) in others)
             Text(
               '${OfferSheet.kindLabel(key)}: $value',
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: _kUi.textSecondary),
             ),
         ],
       ),
