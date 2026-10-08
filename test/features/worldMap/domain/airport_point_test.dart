@@ -6,8 +6,9 @@ Map<String, dynamic> circle(
   String? iata,
   String name,
   double lng,
-  double lat,
-) =>
+  double lat, {
+  String? country,
+}) =>
     {
       'type': 'Feature',
       'geometry': {
@@ -22,7 +23,11 @@ Map<String, dynamic> circle(
           ],
         ],
       },
-      'properties': {'airport': name, 'iata': iata},
+      'properties': {
+        'airport': name,
+        'iata': iata,
+        if (country != null) 'country_code': country,
+      },
     };
 
 void main() {
@@ -73,6 +78,27 @@ void main() {
     final features = (fc['features'] as List).cast<Map<String, dynamic>>();
     expect(features, hasLength(1));
     expect((features.single['properties'] as Map)['name'], 'LOAKAN');
+  });
+
+  test('a country lists its airports, busiest first, then by name', () {
+    final all = AirportPoint.fromBoundaries({
+      'features': [
+        circle('BAG', 'Loakan Airport', 120.62, 16.38, country: 'ph'),
+        circle('SIN', 'Changi Airport', 103.99, 1.36, country: 'SG'),
+        circle('CRK', 'Clark Airport', 120.56, 15.19, country: 'PH'),
+        circle(
+          'MNL',
+          'Ninoy Aquino International Airport',
+          121.02,
+          14.51,
+          country: 'PH',
+        ),
+      ],
+    });
+    expect(all.first.countryCode, 'PH');
+    final ph = AirportPoint.inCountry(all, 'ph', counts: {'MNL': 12, 'BAG': 1});
+    expect(ph.map((a) => a.iata), ['MNL', 'BAG', 'CRK']);
+    expect(AirportPoint.inCountry(all, 'JP'), isEmpty);
   });
 
   test('shortName drops "(International) Airport"', () {

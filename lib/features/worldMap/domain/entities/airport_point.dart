@@ -10,10 +10,15 @@ class AirportPoint extends Equatable {
     required this.name,
     required this.longitude,
     required this.latitude,
+    this.countryCode,
   });
 
   final String iata;
   final String name;
+
+  /// ISO 3166-1 alpha-2, uppercase (the airport's `country_code`); null
+  /// when the airport has none.
+  final String? countryCode;
   final double longitude;
   final double latitude;
 
@@ -56,11 +61,15 @@ class AirportPoint extends Equatable {
     }
     if (n == 0) return null;
     final name = props is Map ? props['airport']?.toString().trim() : null;
+    final country =
+        props is Map ? props['country_code']?.toString().trim() : null;
     return AirportPoint(
       iata: iata,
       name: name == null || name.isEmpty ? iata : name,
       longitude: lng / n,
       latitude: lat / n,
+      countryCode:
+          country == null || country.isEmpty ? null : country.toUpperCase(),
     );
   }
 
@@ -104,6 +113,23 @@ class AirportPoint extends Equatable {
     };
   }
 
+  /// The airports of the country [iso2] (ISO 3166-1 alpha-2), busiest
+  /// first by [counts] (echoes per airport code), then by name.
+  static List<AirportPoint> inCountry(
+    List<AirportPoint> all,
+    String iso2, {
+    Map<String, int> counts = const {},
+  }) {
+    final code = iso2.toUpperCase();
+    return [
+      for (final a in all)
+        if (a.countryCode == code) a,
+    ]..sort((a, b) {
+        final byCount = (counts[b.iata] ?? 0).compareTo(counts[a.iata] ?? 0);
+        return byCount != 0 ? byCount : a.name.compareTo(b.name);
+      });
+  }
+
   /// "Ninoy Aquino International Airport" → "NINOY AQUINO".
   static String shortName(String name) => name
       .replaceAll(
@@ -113,5 +139,5 @@ class AirportPoint extends Equatable {
       .toUpperCase();
 
   @override
-  List<Object?> get props => [iata, name, longitude, latitude];
+  List<Object?> get props => [iata, name, longitude, latitude, countryCode];
 }
