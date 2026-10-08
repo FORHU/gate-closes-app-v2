@@ -75,6 +75,16 @@ const List<(String, String, String)> _kBasemapPalette = [
   ('waterway', 'line-color', 'hsl(205, 55%, 20%)'),
 ];
 
+/// The 3D map's land and water (Standard's color config): the lite map's
+/// green and blue (picked by the user over Standard's own blue-grey and a
+/// near-black night). Lighter than the lite map's: Standard's dusk and
+/// night light darken them, and the first try read near-black close up.
+const Map<String, String> _kStandardColors = {
+  'colorWater': '#1D4A70',
+  'colorLand': '#4C7656',
+  'colorGreenspace': '#5C8F62',
+};
+
 /// Chumme's atmosphere: an unlit slate rim, near-black space, faint stars.
 const Map<String, Object> _kAtmosphere = {
   'color': '#2e323e',
@@ -2077,6 +2087,15 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       });
     } on Object catch (e) {
       debugPrint('Map basemap config skipped: $e');
+    }
+    // Land and water in the lite map's green and blue, so both maps look
+    // alike. Decoration: a color this Standard version lacks is skipped.
+    for (final MapEntry(key: name, value: color) in _kStandardColors.entries) {
+      try {
+        await style.setStyleImportConfigProperty('basemap', name, color);
+      } on Object catch (e) {
+        debugPrint('Map basemap $name skipped: $e');
+      }
     }
     await _applyLightPreset(
       ref.read(mapLightingControllerProvider).presetAt(DateTime.now()),
