@@ -3,6 +3,15 @@
 Goal: the Flutter map behaves like the Expo app's (`gate-closes-app`) map shell.
 Status is kept current as each phase lands.
 
+> **Since 2026-10-08 the map has moved past Expo parity** (the Expo app is
+> retired). Replaced: clustered badge pins → human-sized echoes from zoom 16
+> (`EchoBeacons`); the heatmap circle → faint cloud heat / airport glow
+> (`AirportClouds`); the offer banner and badges → hidden offers found by
+> the radar. Added: device ladder (3D Standard or lite), green radar with
+> detection glows, tags for every airport. The current design is in
+> `FLUTTER_V2_SYSTEM_ARCHITECTURE.md` (World Map) and
+> `SESSION_2026-10-07_DESIGN_3D_MAP.md`; the phases below are history.
+
 ## Expo architecture (reference)
 
 ```

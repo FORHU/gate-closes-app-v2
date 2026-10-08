@@ -2,6 +2,32 @@
 
 ## Resume here (2026-10-09)
 
+**The 2026-10-07 plan, status at the end of 2026-10-08:**
+
+| Planned | Status |
+| :--- | :--- |
+| Human-sized echo pins, only from a close zoom | **Done**: z16, floor disc (column tried, rejected as "a tower"), hint chip flies in, finger taps, crowd → stack list |
+| Country tap → its airports | **Done** (2026-10-08, seen on the realme): Mapbox `country-boundaries-v1` tileset (no asset), invisible hit layer + lime outline below z10.5, `CountryAirportsSheet` busiest first → fly in; `AirportPoint.countryCode`/`inCountry` |
+| Live clouds (weather) | **Dropped** by the user |
+| Land/water color tuning on Standard | **Open** (nice to have) |
+| realme gets the lite map | **Done**: realme opens the lite map, chip, radar, country tap work. Fix: lite has no sweep, so echo/offer glow cores now glow steadily there (echo 0.6, offer 0.3) instead of never showing |
+| Airport search by code/city | **Open** (name search accepted for now; needs API work) |
+| Radar sweep cost (~15 GeoJSON sends/s) | **Open**, now plus 2–4 glow updates per frame; unmeasured |
+
+**Added on 2026-10-08 (not in the plan):** airport tags anchored to the
+map and on every airport, the far-side label bug, green radar, radar
+detection glow (dark halo + lit core) for records and offers, cloud heat
+(tight per airport, faint), airport glow instead of the light-beam
+towers, hidden vouchers/gifts/ads (banner, offer indicator and badge
+removed), lock-screen render-guard fix, `iata` in the airport GeoJSON.
+
+adb on the realme: each `input` call takes ~1.3 s, so quick-zoom needs
+`input tap X Y & sleep 0.12; input motionevent DOWN…` in one shell call.
+
+**Not checked on a phone:** several echoes on one spot (spread + stack
+sheet; no such data), the other echo type colors, an offer's dot at z16
+(its spot is random per traveler per day), perf after the glow cores.
+
 **All committed on `feat/design-3d-map` (app-v2, not pushed)**, analyze
 clean, 245 tests pass. One commit per feature:
 
@@ -22,8 +48,43 @@ under vitest; `npm test` (mocha, Node 24) cannot load the ESM `kdbush`
 (pre-existing, not from this work). `AirportRadar.area` was dropped
 (unused since the lit buildings use a `distance` filter).
 
-**Next:** push/PR when the user says so; realme (lite map on a real weak
-phone); country tap; crowd test (several echoes on one spot); other echo
+**After the commits (2026-10-08 afternoon, uncommitted):** the user's
+"Map Content & Heat Map" spec:
+- Heat: tight zoomed out, growing in (`AirportClouds.zoomScale` 0.35→1
+  by z9; heat kernel 4→17 pt; 3D halo 4→15 pt), each airport its own.
+- Radar glow: dark rich shade of the record's color (`_kEchoGlowColor`),
+  human-sized feathered halo (5 pt at z10.5 → 14 pt at z16), nothing
+  between detections (rest 0); darker and with a lit core below.
+- **Detection glows** (user: "darker when detected", then "it's like a
+  fading color", "make it glow when detected"): the halo is ~40% darker
+  (echo #455A00/#11506A/#6E4610/#591331, offer #5A4100/#451A54/#672C10)
+  at peak 0.9, and a small core (0.4× the halo, blur 0.6) in the item's
+  own true color lights up only at detection (`echo-blip-core`,
+  `offer-blip-core`, peak 0.85, 0 between passes). Dark halo + lit core
+  reads as glowing. Costs two more `circle-opacity` updates per sweep
+  frame (four with offers); not measured.
+- **Offers are hidden discoveries, like records** (user: "the voucher
+  must be like the records so it's hard to detect"): `OfferMapFeatures`
+  carries `group` (`OfferGroup` voucher/gift/ad by kind name) and
+  `radarBearing`; close up (z15.9+) an offer is a small faint dot (0.45,
+  0.75× an echo disc) in its group color (voucher #C9A227, gift #A35BC0,
+  ad #D9733A) with a finger-sized tap target → OfferSheet; the radar
+  glow (`offer-glow`, dark group colors) reveals it from the airport
+  zoom. The orange offer badge (asset + MapBadges.offer) is deleted.
+- **Removed** (user's choices): the offer banner, and the airport offer
+  indicator + list sheet built earlier the same afternoon (they gave the
+  hidden offers away). `offerCard`/card offers are no longer kept: an
+  admin "card" placement has no spot, so it doesn't show on the map.
+  OfferSheet opens on the root navigator (the nav bar covered it).
+- Seen on the Xiaomi at MNL z13: no indicator/banner; echo and offer
+  glows small and dark behind the arm. The offer dot at z16 was not
+  found on screen (its spot is random per traveler per day).
+
+**Next:** commit the afternoon's work when the user says "commit"
+(suggested: `feat(map): tighter cloud heat`, `feat(map): radar detection
+glow with a lit core`, `feat(map): hidden vouchers, gifts and ads`,
+`docs`); then push/PR when the user says so; realme (lite map on a real weak
+phone) ✓; country tap ✓; crowd test (several echoes on one spot); other echo
 type colors; radar sweep cost (re-sends GeoJSON ~15×/s, unmeasured).
 
 **2026-10-08: human-sized echoes built and tested on the Xiaomi.**

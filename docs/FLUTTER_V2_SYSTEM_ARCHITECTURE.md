@@ -61,11 +61,11 @@ gate-closes-app-v2/lib/
 │   ├── flight/                     # Active flight ticket lifecycle management
 │   ├── profile/                    # User profile hero, editor, password change, settings
 │   ├── terminal_echo/              # Feed view, audio composer, thread views, emoji reactions
-│   └── worldMap/                   # Home map: boundaries, clustered pins, heatmap, lighting
+│   └── worldMap/                   # Home map: 3D/lite tiers, radar, airport tags, cloud heat, echoes, hidden offers
 ├── l10n/                           # Localized strings (en, es)
 ├── routes/                         # GoRouter route table (composition root) and redirect guards
 ├── shared/                         # Cross-feature widgets (map nav bar, airport gate dialog, pickers)
-└── theme/                          # Ink-on-white minimalist design system & tokens
+└── theme/                          # Dark maroon + lime design system (Poppins, glass, tokens)
 ```
 
 ### The Unidirectional Request Lifecycle
@@ -163,30 +163,54 @@ graph LR
 Behavior follows the Expo app's map shell; full mapping and status in
 [MAP_EXPO_PARITY.md](MAP_EXPO_PARITY.md).
 
-* **Engine**: `mapbox_maps_flutter` 2.31 (Mapbox Maps SDK v11), style
-  `dark-v11`, globe projection.
-* **Airport boundaries** (`GET /api/airport/geojson`): drawn as radar
-  scopes in the app's lime accent `#BBE40A`: faint fill, glow and outline;
-  from zoom 10 a grid (rings, spokes, edge ticks) on the 12 airports nearest
-  the view center and a rotating sweep (4 s per turn, ~15 fps) on the
-  nearest 6. No sweep on lite maps or in the background
-  (`AirportRadar`; uncommitted as of 2026-10-01). Only polygons in the
-  visible area are sent to Mapbox (none below zoom 7, at most 300). Sending
-  the whole collection crashed Android with an out-of-memory error in the
-  plugin's JSON conversion.
-* **Echo pins** (`GET /api/terminal-echo/map`, fetched per visible area;
-  bounds wrapped into -180..180 by `MapViewBounds`, `west > east` when the
-  view crosses the antimeridian, at most the 100 newest per view):
-  clustered symbol layer (radius 45, max zoom 15) with Expo's per-type
-  badges, and an activity heatmap. Tap a cluster to zoom in; tap a pin for
-  its card with START CONVERSATION (PS / DT / BT).
+* **Engine**: `mapbox_maps_flutter` (Mapbox Maps SDK v11), globe
+  projection. A **device ladder** (`MapTierPolicy`, `MapTierController`)
+  picks the map before it is created: capable phones get **Mapbox
+  Standard** (3D city, dusk/night lighting from Map Lighting, no street,
+  place, POI or transit names); weak ones (32-bit, < ~5 GB RAM, low-RAM
+  flag, Android < 10, or measured too slow by `FrameBudgetMonitor`) get
+  the **lite** `dark-v11` map in a green/blue palette. Every feature works
+  on both; 3D-only decoration (lit buildings, airport glow, sweep) is
+  skipped on lite.
+* **Zoom stages.**
+  * *Zoomed out* (< 10.5): a faint, cloud-shaped glow per airport with
+    echoes (3D) or faint cloud heat (lite), tight around each airport and
+    growing as you zoom in (`AirportClouds`: ten seeded puffs per airport);
+    a **tag for every airport** (`AirportTags`: airports with echoes get
+    their own glass plate with name, code, echo count and a leader line;
+    the rest share one stretchable plate with name and code); the
+    airports-in-view panel (`AirportVisibility` keeps far-side airports
+    out). Tags are Mapbox symbols, so they stay on their airport while the
+    map moves.
+  * *Airport zoom* (10.5–16): a green radar on every airport circle (grid
+    on the 12 nearest, sweep on the nearest 6, 4 s per turn), lit
+    airport buildings (3D), and a "N ECHOES HERE · ZOOM IN" chip that
+    flies to the busiest spot (`EchoBeacons.hotspot`). No pins yet.
+  * *Close up* (16+): **human-sized echoes** (`EchoBeacons`): a floor disc
+    of at least 7 pt that settles to ~1.2 m; echoes sharing a rounded spot
+    stand 2.5 m apart; finger-sized taps, and a tap that covers several
+    opens the stack list. No clusters.
+* **Radar detection.** Echoes and offers inside a radar disc carry their
+  bearing from its center (`radarBearing`); as the arm crosses one it
+  gets a dark, rich halo of its own color and a small core in its true
+  color that lights up, both fading to nothing before the next pass
+  (from the airport zoom, one style update per layer per sweep frame).
+* **Offers** (`GET /api/offers?airport=`; vouchers, gifts, ads by the
+  admin's `kind`, `OfferGroup`): hidden discoveries like the records.
+  Nothing at the airport gives them away (no banner, no counts); close up
+  an offer is a small faint dot in its group's color, found mostly through
+  the radar glow; tapping it opens `OfferSheet` (claim, link). Offers the
+  admin placed only as an airport "card" (no spot) do not show on the map.
+* **Airport boundaries** (`GET /api/airport/geojson`, which now carries
+  each airport's `iata`): only polygons in the visible area are sent to
+  Mapbox (none below zoom 7, at most 300); the whole collection crashed
+  Android with an out-of-memory error in the plugin's JSON conversion.
+  `AirportPoint` turns them into one point per airport for the tags.
 * **Location**: user puck; position stream re-detects the airport every
   250 m; last location (quantized, ~110 m) remembered 15 minutes.
-* **Look**: Expo's theming over dark-v11 (terrain, dark water with a sheen,
-  3D buildings from zoom 13); flat camera, rotation locked at zoom 3.5 and
-  below; the tapped pin grows (0.85 vs 0.72) while its card is open.
 * **Offline**: boundaries and pins cached on disk; offline / slow banner.
-* **Map Lighting**: realtime or static time-of-day tint (Settings).
+* **Render guard**: if a phone can't draw the map within 25 s (only
+  counted while the app is on screen) the map is turned off with a retry.
 
 **Data contract.**
 * Map features carry `id`, `type` (affinity), `createdAt`, `listenCount`
@@ -446,14 +470,14 @@ The Flutter codebase enforces strict verification routines before any merge:
 **Built and passing automated checks:** auth and onboarding, boarding-pass
 barcode / OCR / manual capture with privacy filtering, Terminal Echo,
 Connections (PS / DT / BT, starting conversations from map pins), the
-Expo-parity map shell, location tracking, offline map caching, Map Lighting.
-166 tests pass, `flutter analyze` is clean, the Android debug build succeeds
-(2026-10-02, including the uncommitted map work).
+3D/lite map with radar, airport tags, cloud heat, human-sized echoes and
+hidden offers, location tracking, offline map caching, Map Lighting. 245
+tests pass and `flutter analyze` is clean (2026-10-08).
 
 **Pending:**
-* Physical Android device validation: the map runs on a realme RMX3231 and a
-  Xiaomi 2201116SG (`HANDOFF.md` §1); the radar look and zoomed-out clusters
-  are not yet seen on a device.
+* Physical Android device validation: the 3D map is checked on a Xiaomi
+  2201116SG (also the lite map, forced by its flag); the lite map on a real
+  weak phone (realme RMX3231) is not re-tested since 2026-10-07.
 * iOS build and device validation (needs a Mac).
 * Production-scale map data testing.
 * Confirm production runs the pushed API changes (`conversation:updated`,

@@ -8,7 +8,12 @@ Read this first to continue. Related docs in this folder:
 > **Start here (2026-10-09):** `SESSION_2026-10-07_DESIGN_3D_MAP.md`,
 > section "Resume here (2026-10-09)". New design, 3D dusk map, radar,
 > cloud glow, tags for every airport, human-sized echoes and the device
-> ladder are committed on `feat/design-3d-map` (app-v2, not pushed).
+> ladder are committed on `feat/design-3d-map` (app-v2, 7 commits, not
+> pushed); the afternoon's work (tighter heat, detection glow with a lit
+> core, hidden vouchers/gifts/ads, banner and offer badge removed) is
+> **uncommitted** on the same branch. API `039d028` (airport GeoJSON
+> carries `iata`) on `feat/airport-offers-and-access`, not pushed. The
+> current map design is in `FLUTTER_V2_SYSTEM_ARCHITECTURE.md`.
 >
 > **Previous start (2026-10-07):** `SESSION_2026-10-06_OFFERS_RBAC.md`,
 > section "Resume here (2026-10-07)". Pins, offers, roles, seeders and the
@@ -37,6 +42,7 @@ PowerVR GPU. Device id `0151312S28102753`. Package
 | Native `SIGSEGV` in `libGLESv2_powervr.so`, thread `1.raster` | Flutter raster thread in the PowerVR driver | **Probably fixed**: no new crash entry on 2026-10-01 |
 | App didn't open (Mapbox `BufPoolFreeBuffer` spam) | Map too heavy for the GPU/RAM | **Mitigated**: lite map on 32-bit ARM + render guard |
 | "Map isn't available" on **Xiaomi 2201116SG** (Android 13), no boundaries/pins | Once the user is located the pulsing puck redraws every frame, so `onMapIdle` never fired; the guard and the viewport refresh both waited on it | **Fixed**: guard settles on `onMapLoaded` + layers added; viewport refresh runs off a debounced `onCameraChange`. Verified on device 2026-10-01 (not Impeller: opting out changed nothing) |
+| "Map isn't available" after opening the app with the phone **locked** (2026-10-08) | The 25 s render timeout ran while the map couldn't draw | **Fixed**: the timeout waits while the app isn't in the foreground (`_startLoadTimeout`) |
 | Voice note upload 500 | Local API had no S3 credentials (provider chain only) | **Fixed** in API `3b86956` (restart the local API) |
 | `Bad state: No element` in the voice composer | Preview player closed before playback ended | **Fixed** in app `827f904` |
 
