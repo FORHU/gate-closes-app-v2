@@ -9,10 +9,10 @@
 | Human-sized echo pins, only from a close zoom | **Done**: z16, floor disc (column tried, rejected as "a tower"), hint chip flies in, finger taps, crowd → stack list |
 | Country tap → its airports | **Done** (2026-10-08, seen on the realme): Mapbox `country-boundaries-v1` tileset (no asset), invisible hit layer + lime outline below z10.5, `CountryAirportsSheet` busiest first → fly in; `AirportPoint.countryCode`/`inCountry` |
 | Live clouds (weather) | **Dropped** by the user |
-| Land/water color tuning on Standard | **Open** (nice to have) |
+| Land/water color tuning on Standard | **Done**: user picked option C of three shown on the Xiaomi (current blue-grey / near-black night / green): `_kStandardColors` colorWater #1D4A70, colorLand #4C7656, colorGreenspace #5C8F62 (first try #14324D/#2F4A36/#3B5E40 read near-black at dusk close up), each set separately. `getStyleImportSchema` isn't wired on Android in plugin 2.25 |
 | realme gets the lite map | **Done**: realme opens the lite map, chip, radar, country tap work. Fix: lite has no sweep, so echo/offer glow cores now glow steadily there (echo 0.6, offer 0.3) instead of never showing |
 | Airport search by code/city | **Open** (name search accepted for now; needs API work) |
-| Radar sweep cost (~15 GeoJSON sends/s) | **Open**, now plus 2–4 glow updates per frame; unmeasured |
+| Radar sweep cost (~15 GeoJSON sends/s) | **Measured + fixed** (Xiaomi, profile, MNL z13, 2 runs each): glow every sweep frame = 17–29% janky idle / 24–29% panning; glow off = 5% / 7–20%; glow every 2nd frame (`_sweepFrame`, rise 26°) = **3.5–3.9% / 10%**, looks the same. The sweep itself is cheap |
 
 **Added on 2026-10-08 (not in the plan):** airport tags anchored to the
 map and on every airport, the far-side label bug, green radar, radar
