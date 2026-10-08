@@ -5,7 +5,12 @@ Read this first to continue. Related docs in this folder:
 `FLUTTER_V2_SYSTEM_ARCHITECTURE.md` (system + API contracts),
 `BOARDING_PASS_INTELLIGENCE_PLAN.md` (frozen feature).
 
-> **Start here (2026-10-07):** `SESSION_2026-10-06_OFFERS_RBAC.md`,
+> **Start here (2026-10-09):** `SESSION_2026-10-07_DESIGN_3D_MAP.md`,
+> section "Resume here (2026-10-09)". New design, 3D dusk map, radar,
+> cloud glow, tags for every airport, human-sized echoes and the device
+> ladder are committed on `feat/design-3d-map` (app-v2, not pushed).
+>
+> **Previous start (2026-10-07):** `SESSION_2026-10-06_OFFERS_RBAC.md`,
 > section "Resume here (2026-10-07)". Pins, offers, roles, seeders and the
 > airport cleanup are committed on feature branches (not merged); the
 > per-airport radius admin is built but **uncommitted**. API on **3001**.
