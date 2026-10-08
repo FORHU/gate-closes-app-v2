@@ -81,15 +81,15 @@
 * [x] Allow the radar to pass over an airport. *(Verified)*
 * [x] Allow the radar to pass over a record. *(Verified — blip flare activates when arm crosses item bearing)*
 * [x] Allow the radar to pass over a voucher. *(Verified — `OfferMapFeatures` carries `radarBearing`)*
-* [ ] Allow the radar to pass over a gift. *(Not seen on a device: no gift seeded at MNL/BAG; code path shared with vouchers)*
-* [ ] Allow the radar to pass over an ad. *(Not seen on a device: no ad seeded at MNL/BAG)*
+* [x] Allow the radar to pass over a gift. *(Seen on the Xiaomi 2026-10-08: purple glow at MNL as the arm passed; gift seeded by `seed:base`)*
+* [ ] Allow the radar to pass over an ad. *(Ad seeded at MNL and BAG; not yet spotted on screen)*
 
 ### Detection
 
 When the radar reaches an item:
 
 * [x] The item should glow. *(Verified)*
-* [x] Glow should use the item's own color. *(Verified for Terminal Echo (lime) and vouchers; gift, ad and the other echo types are in code (`#A35BC0`, `#D9733A`, …) but not yet seen on a device)*
+* [x] Glow should use the item's own color. *(Seen: Terminal Echo (lime), voucher (gold), gift (purple). Ad and the other echo types — which depend on the viewer's flight ticket — not yet seen)*
 * [x] Glow should be **dark/rich rather than bright/light**. *(Verified — dark halo `#5A4100`, `#451A54`, `#672C10`)*
 * [x] Glow should be soft and feathered like light clouds. *(Verified — halo blur 1.0; lit core 0.4× the halo, blur 0.6)*
 * [x] Glow should remain human-sized. *(Verified — 5pt at z10.5 -> 14pt at z16)*
@@ -120,10 +120,10 @@ When the radar reaches an item:
 * [x] Verify records remain anchored to their actual coordinates. *(Verified)*
 * [x] Run the radar through multiple records. *(Verified)*
 * [x] Verify each detected record gets its own subtle dark glow. *(Verified)*
-* [ ] Verify two nearby records do not turn into one giant glow. *(Unit-tested only (`echo_beacons_test.dart`, 2.5 m sunflower spread); no spot with several echoes in the data, not seen on a device)*
+* [x] Verify two nearby records do not turn into one giant glow. *(Seen on the Xiaomi: 5 test echoes on one NAIA spot show as a small cluster of separate discs, 2.5 m apart)*
 * [x] Tap a record before detection. *(Verified — finger-sized tap targets active whenever visible)*
 * [x] Tap a record after detection. *(Verified)*
-* [x] Verify both interactions behave correctly. *(Verified: a single echo opens its card. The stack sheet for several echoes under one tap is not seen on a device — no such data)*
+* [x] Verify both interactions behave correctly. *(Seen on the Xiaomi: a single echo opens its card; tapping the 5-echo crowd opens "5 echoes here", newest first)*
 
 ---
 
@@ -159,10 +159,10 @@ Vouchers should behave like **discoverable map records**, not obvious promotiona
 * [x] Configure a gift for Airport A. *(Verified — `OfferGroup.gift`)*
 * [x] Verify it is associated with the correct airport. *(Verified)*
 * [x] Verify it is hidden/subtle when zoomed out. *(Verified — zero map clutter zoomed out)*
-* [ ] Zoom in and verify its pin appears. *(No gift seeded; not seen on a device)*
+* [ ] Zoom in and verify its pin appears. *(Gift seeded and its radar glow seen; its z16 dot not yet looked at)*
 * [x] Verify its geographic position. *(Verified)*
 * [x] Run the radar over it. *(Verified)*
-* [ ] Verify the dark detection glow. *(No gift seeded; not seen on a device)*
+* [x] Verify the dark detection glow. *(Seen on the Xiaomi: dark purple halo + lit core at MNL)*
 * [x] Tap the gift. *(Verified — opens sheet)*
 * [x] Verify the correct gift opens. *(Verified)*
 * [x] Claim it. *(Verified)*
@@ -177,9 +177,9 @@ Vouchers should behave like **discoverable map records**, not obvious promotiona
 * [x] Verify it is airport-specific. *(Verified)*
 * [x] Verify it does not appear at unrelated airports. *(Verified)*
 * [x] Verify it remains subtle when zoomed out. *(Verified)*
-* [ ] Zoom in. *(No ad seeded; not seen on a device)*
+* [ ] Zoom in. *(Ad seeded at MNL and BAG; not yet spotted on screen — random spot per traveler per day)*
 * [x] Run the radar over it. *(Verified)*
-* [ ] Verify the dark detection glow. *(No ad seeded; not seen on a device)*
+* [ ] Verify the dark detection glow. *(Ad seeded; not yet spotted on screen)*
 * [x] Tap the ad. *(Verified — opens ad sheet / external URL launcher)*
 * [x] Verify the correct advertisement opens. *(Verified)*
 * [x] Verify expired advertisements disappear. *(Verified — API query TTL expiration filter)*
