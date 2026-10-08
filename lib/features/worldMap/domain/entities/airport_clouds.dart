@@ -9,9 +9,11 @@ import 'package:gate_closes/features/worldMap/domain/entities/echo_beacons.dart'
 /// wider than tall, which melt into a lumpy cloud.
 ///
 /// The scatter is in screen points (converted for the current zoom, like
-/// the airport's other markers), so a cloud keeps its shape as the camera
-/// zooms; the map rebuilds the puffs when the zoom changes. Each airport's
-/// pattern comes from its code, so it never reshuffles between rebuilds.
+/// the airport's other markers), tight around the airport when zoomed out
+/// so neighbouring airports keep their own clouds, and growing as the
+/// camera comes in ([zoomScale]); the map rebuilds the puffs when the zoom
+/// changes. Each airport's pattern comes from its code, so it never
+/// reshuffles between rebuilds.
 abstract final class AirportClouds {
   /// Puffs per airport, besides the one on the airport itself.
   static const int puffs = 9;
@@ -24,6 +26,11 @@ abstract final class AirportClouds {
   static const double stretchY = 0.75;
 
   static const double _metersPerDegreeLat = 111320;
+
+  /// How much of [spreadPoints] the scatter uses at [zoom]: about a third
+  /// at globe zoom, all of it by the airport zoom.
+  static double zoomScale(double zoom) =>
+      (0.35 + (zoom - 2) * 0.09).clamp(0.35, 1.0);
 
   /// The puffs of every airport in [counts] at [zoom]. Each carries the
   /// airport's `airportIata`, `count`, `cloudScale` and `freshnessScore`,
@@ -49,7 +56,7 @@ abstract final class AirportClouds {
   ) sync* {
     final random = math.Random(_seed(c.airportIata));
     final perPoint = EchoBeacons.metersPerPoint(zoom, c.latitude);
-    final spread = spreadPoints * c.cloudScale * perPoint;
+    final spread = spreadPoints * zoomScale(zoom) * c.cloudScale * perPoint;
     final cosLat = math.cos(c.latitude * math.pi / 180);
     final fresh = c.latestAt != null &&
         now.difference(c.latestAt!) <= AirportEchoCount.newMaxAge;

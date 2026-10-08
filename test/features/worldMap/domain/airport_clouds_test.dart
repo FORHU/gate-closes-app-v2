@@ -35,6 +35,7 @@ void main() {
     const zoom = 6.0;
     final perPoint = EchoBeacons.metersPerPoint(zoom, 14.51);
     final maxMeters = AirportClouds.spreadPoints *
+        AirportClouds.zoomScale(zoom) *
         mnl.cloudScale *
         AirportClouds.stretchX *
         perPoint;
@@ -48,7 +49,14 @@ void main() {
     double far(double zoom) => points(zoom)
         .map((q) => EchoBeacons.distanceMeters(q[0], q[1], 121.02, 14.51))
         .reduce((a, b) => a > b ? a : b);
-    expect(far(8), closeTo(far(6) / 4, far(6) * 0.01));
+    final scale = AirportClouds.zoomScale(8) / AirportClouds.zoomScale(6);
+    expect(far(8), closeTo(far(6) / 4 * scale, far(6) * 0.01));
+  });
+
+  test('clouds are tight zoomed out and full size by the airport zoom', () {
+    expect(AirportClouds.zoomScale(2), closeTo(0.35, 1e-9));
+    expect(AirportClouds.zoomScale(5), lessThan(AirportClouds.zoomScale(8)));
+    expect(AirportClouds.zoomScale(10), 1);
   });
 
   test('the puffs share the airport heat', () {
