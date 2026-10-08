@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
+
+/// The map is always dark, so its sheets use the dark palette whatever
+/// the app theme.
+const GateColors _kUi = GateColors.dark;
 
 /// Echoes that share one spot on the map. Coordinates are rounded to about
 /// 110 m, so echoes from the same gate land on the same point and their
@@ -74,7 +79,7 @@ class EchoStackSheet extends StatelessWidget {
       maxChildSize: 0.9,
       // Material, not a colored box: the rows' ink ripples paint on it.
       builder: (context, scroll) => Material(
-        color: const Color(0xFF111418),
+        color: _kUi.surfaceElevated,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -86,7 +91,7 @@ class EchoStackSheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: _kUi.borderStrong,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -99,8 +104,8 @@ class EchoStackSheet extends StatelessWidget {
               ),
               child: Text(
                 '${items.length} echoes here',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: _kUi.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -131,11 +136,11 @@ class EchoStackSheet extends StatelessWidget {
                     ),
                     subtitle: Text(
                       _detail(echo, now),
-                      style: const TextStyle(color: Colors.white60),
+                      style: TextStyle(color: _kUi.textSecondary),
                     ),
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.chevron_right,
-                      color: Colors.white38,
+                      color: _kUi.textMuted,
                     ),
                     onTap: () => Navigator.of(context).pop(echo),
                   );

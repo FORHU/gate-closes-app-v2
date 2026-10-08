@@ -13,7 +13,7 @@ class MapLightingPage extends ConsumerWidget {
   static const Map<MapLightingMode, (String, String)> _modes = {
     MapLightingMode.realtime: (
       'Realtime Lighting',
-      'Uses your device local time and updates the map automatically.',
+      'Dusk through the day and night after dark, by your device time.',
     ),
     MapLightingMode.fixed: (
       'Static Lighting',

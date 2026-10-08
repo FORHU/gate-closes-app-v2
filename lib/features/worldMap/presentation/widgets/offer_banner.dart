@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
 import 'package:gate_closes/features/worldMap/presentation/widgets/offer_sheet.dart';
+import 'package:gate_closes/theme/tokens/colors.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
+
+/// The map is always dark, so its sheets use the dark palette whatever
+/// the app theme.
+const GateColors _kUi = GateColors.dark;
 
 /// The airport's offer card, as a small banner over the bottom of the map
 /// (the app has no airport sheet to hold it). Tap to open, × to hide it
@@ -21,7 +26,7 @@ class OfferBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xF2111418),
+      color: _kUi.glassStrong,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -59,8 +64,8 @@ class OfferBanner extends StatelessWidget {
                       offer.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: _kUi.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -70,7 +75,7 @@ class OfferBanner extends StatelessWidget {
               IconButton(
                 tooltip: 'Hide offer',
                 onPressed: onDismiss,
-                icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                icon: Icon(Icons.close_rounded, color: _kUi.textMuted),
               ),
             ],
           ),

@@ -5,15 +5,15 @@ import 'package:gate_closes/features/worldMap/presentation/controllers/map_light
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('realtime schedule matches Expo (dawn 5, day 8, dusk 17, night 19)', () {
+  test('realtime: dusk through the day (5 to 19), night after dark', () {
     MapTimeOfDay at(int hour) => MapTimeOfDay.at(DateTime(2026, 9, 29, hour));
 
     expect(at(4), MapTimeOfDay.night);
-    expect(at(5), MapTimeOfDay.dawn);
-    expect(at(8), MapTimeOfDay.day);
-    expect(at(16), MapTimeOfDay.day);
-    expect(at(17), MapTimeOfDay.dusk);
+    expect(at(5), MapTimeOfDay.dusk);
+    expect(at(12), MapTimeOfDay.dusk);
+    expect(at(18), MapTimeOfDay.dusk);
     expect(at(19), MapTimeOfDay.night);
+    expect(at(23), MapTimeOfDay.night);
   });
 
   test('static mode ignores the clock', () {
