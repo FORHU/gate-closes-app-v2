@@ -32,8 +32,8 @@ import 'package:gate_closes/features/worldMap/presentation/controllers/map_tier_
 import 'package:gate_closes/features/worldMap/presentation/controllers/world_map_controller.dart';
 import 'package:gate_closes/features/worldMap/presentation/map_badges.dart';
 import 'package:gate_closes/features/worldMap/presentation/widgets/airports_in_view_panel.dart';
+import 'package:gate_closes/features/worldMap/presentation/widgets/country_airports_sheet.dart';
 import 'package:gate_closes/features/worldMap/presentation/widgets/echo_stack_sheet.dart';
-import 'package:gate_closes/features/worldMap/presentation/widgets/offer_banner.dart';
 import 'package:gate_closes/features/worldMap/presentation/widgets/offer_sheet.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/map_bottom_nav.dart';
@@ -94,6 +94,39 @@ const int _kMaxSweepDiscs = 6;
 /// One full sweep turn and the beam's frame interval.
 const Duration _kSweepPeriod = Duration(seconds: 4);
 const Duration _kSweepFrame = Duration(milliseconds: 66);
+
+/// Zoomed out, tapping a country (anywhere that isn't an airport) lists its
+/// airports. Mapbox's country boundaries tileset gives the shapes, so the
+/// app ships no countries file; the hit layer is invisible, and the
+/// tapped country gets a lime outline while its list is open. Only one
+/// worldview, so disputed areas aren't counted twice.
+const _kCountrySource = 'country-boundaries';
+const _kCountryHitLayer = 'country-hit';
+const _kCountryOutlineLayer = 'country-outline';
+const List<Object> _kCountryWorldview = [
+  'any',
+  [
+    '==',
+    ['get', 'worldview'],
+    'all',
+  ],
+  [
+    'in',
+    'US',
+    ['get', 'worldview'],
+  ],
+];
+
+/// The outline's filter for country [iso2], or for none.
+List<Object> _countryOutline(String? iso2) => [
+      'all',
+      _kCountryWorldview,
+      [
+        '==',
+        ['get', 'iso_3166_1'],
+        iso2 ?? '',
+      ],
+    ];
 
 /// Zoomed out, the map shows no markers: a heat cloud per airport with
 /// echoes, bigger and hotter with more of them (AirportEchoCount).
@@ -197,8 +230,8 @@ const List<Object> _kGlowColor = [
 
 /// Glow and core radius in points, times the airport's `cloudScale`
 /// (1 to 2.4 with its echoes), growing a little as the camera comes in.
-const List<(double, double)> _kGlowRadius = [(2, 10), (6, 14), (10, 18)];
-const List<(double, double)> _kGlowCoreRadius = [(2, 3.5), (6, 5), (10, 6)];
+const List<(double, double)> _kGlowRadius = [(2, 4), (6, 8), (9, 13), (10, 15)];
+const List<(double, double)> _kGlowCoreRadius = [(2, 2), (6, 3), (10, 4.5)];
 
 /// On the 3D map, the real buildings inside the airport circles light up
 /// lime: one extra extrusion layer over Standard's, filtered by Mapbox to
@@ -230,6 +263,7 @@ const List<Object> _kPingColor = [
 /// the pin cards.
 const _kPinsSource = 'echo-symbols-source';
 const _kPinGlowLayer = 'echo-glow';
+const _kPinCoreLayer = 'echo-blip-core';
 const _kPinLayer = 'echo-discs';
 const _kPinTapLayer = 'echo-tap';
 const List<Object> _kEchoColor = [
@@ -238,6 +272,16 @@ const List<Object> _kEchoColor = [
   'destination_thread', '#FFB457',
   'baton_touch', '#CF3573',
   '#BBE40A', // terminal_echo
+];
+
+/// The radar glow in a darker, richer shade of each echo's own color, so a
+/// detection reads as the record lighting up, not a white or neon flash.
+const List<Object> _kEchoGlowColor = [
+  'match', ['get', 'type'], //
+  'parallel_soul', '#11506A',
+  'destination_thread', '#6E4610',
+  'baton_touch', '#591331',
+  '#455A00', // terminal_echo
 ];
 
 /// Echoes fade in from just below the show zoom; fading ones (about to
@@ -269,38 +313,79 @@ List<Object> _echoOpacity(
 /// shows in the radar"). Small there, it grows into the disc's halo.
 const double _kEchoGlowFrom = AirportPinPlan.pinsMinZoom;
 const double _kEchoGlowTo = _kEchoGlowFrom + 0.5;
+
+/// Human-sized and feathered: a few points at airport zoom, about twice
+/// the floor disc close up; never a big halo.
 const List<(double, double)> _kEchoGlowRadius = [
-  (_kEchoGlowFrom, 12),
-  (14, 21),
-  (16, 40),
-  (18, 52),
-  (20, 90),
-  (22, 360),
+  (_kEchoGlowFrom, 5),
+  (14, 8),
+  (16, 14),
+  (18, 19),
+  (20, 34),
+  (22, 136),
 ];
 
-/// Offers (ads, vouchers): unclustered, their own badge, above echo pins.
+/// Offers (vouchers, gifts, ads) are hidden discoveries, like the records:
+/// close up each is only a small, faint dot in its group's color, easy to
+/// miss; the radar is what finds them (a glow in a dark shade of that
+/// color as the arm passes). Tapping one opens it. Nothing at the airport
+/// gives them away.
 const _kOfferSource = 'offer-pins-source';
 const _kOfferLayer = 'offer-pins';
-
-/// Offer badge sizes by zoom; they show with the echoes, from close up.
-const List<(double, double)> _kPinSizes = [
-  (14, 0.55),
-  (16, 0.72),
+const _kOfferTapLayer = 'offer-tap';
+const _kOfferGlowLayer = 'offer-glow';
+const _kOfferCoreLayer = 'offer-blip-core';
+const List<Object> _kOfferColor = [
+  'match', ['get', 'group'], //
+  'voucher', '#C9A227',
+  'gift', '#A35BC0',
+  '#D9733A', // ad
+];
+const List<Object> _kOfferGlowColor = [
+  'match', ['get', 'group'], //
+  'voucher', '#5A4100',
+  'gift', '#451A54',
+  '#672C10', // ad
 ];
 
 /// The radar sweep lights up the echoes it passes ("blips"), soft and
 /// feathered like light clouds: as the arm crosses an echo its glow fades
 /// in to [_kBlipPeak] over [_kBlipRiseDeg] of the turn, then eases back
-/// out over [_kBlipFadeDeg] to a barely-there [_kBlipRest] until the next
-/// pass. Echoes outside a radar disc keep a steady, faint glow.
+/// out over [_kBlipFadeDeg] to nothing until the next pass: the glow shows
+/// only while the radar is detecting. Echoes outside a radar disc keep a
+/// steady, faint glow.
 const double _kBlipRiseDeg = 18;
 const double _kBlipFadeDeg = 180;
-const double _kBlipPeak = 0.55;
-const double _kBlipRest = 0.06;
-const double _kGlowOpacity = 0.3;
+const double _kBlipPeak = 0.9;
+
+/// At detection a small core lights up in the item's own true color inside
+/// the dark halo, so it reads as glowing, not as a dull dot; it fades out
+/// with the halo. A fraction of the halo's radius.
+const double _kBlipCorePeak = 0.85;
+const double _kBlipCoreScale = 0.4;
+const double _kBlipRest = 0;
+const double _kGlowOpacity = 0.25;
 
 /// The glow's opacity with the arm at [headingDeg].
-List<Object> _blipOpacity(double headingDeg) {
+List<Object> _blipOpacity(double headingDeg) => _blipCurve(
+      headingDeg,
+      peak: _kBlipPeak,
+      outside: _kGlowOpacity,
+    );
+
+/// The detection core's opacity with the arm at [headingDeg]: it lights up
+/// only at the moment of detection, never between passes or outside a
+/// radar.
+List<Object> _blipCoreOpacity(double headingDeg) =>
+    _blipCurve(headingDeg, peak: _kBlipCorePeak, outside: 0);
+
+/// Opacity rising to [peak] as the arm crosses the feature and easing back
+/// to [_kBlipRest]; [outside] for features outside every radar disc.
+List<Object> _blipCurve(
+  double headingDeg, {
+  required double peak,
+  required double outside,
+}) {
   // Degrees the arm has turned since it crossed this echo.
   final since = [
     '%',
@@ -325,17 +410,40 @@ List<Object> _blipOpacity(double headingDeg) {
       [
         'interpolate', ['linear'], since, //
         0, _kBlipRest,
-        _kBlipRiseDeg, _kBlipPeak,
+        _kBlipRiseDeg, peak,
         // Eases out: quick at first, then lingering, as light fades.
-        _kBlipRiseDeg + _kBlipFadeDeg * 0.25, _kBlipPeak * 0.6,
-        _kBlipRiseDeg + _kBlipFadeDeg * 0.55, _kBlipPeak * 0.3,
+        _kBlipRiseDeg + _kBlipFadeDeg * 0.25, peak * 0.6,
+        _kBlipRiseDeg + _kBlipFadeDeg * 0.55, peak * 0.3,
         _kBlipRiseDeg + _kBlipFadeDeg, _kBlipRest,
         360, _kBlipRest,
       ],
-      _kGlowOpacity,
+      outside,
     ],
   ];
 }
+
+/// The detection core at rest: off.
+const List<Object> _kBlipCoreOff = [
+  'literal',
+  0,
+];
+
+/// The lite map has no sweep, so nothing is ever detected there: its
+/// cores glow steadily instead, or the echoes would be invisible until
+/// zoom 16. Offers stay fainter (they are meant to be hard to find).
+List<Object> _liteCoreOpacity(double opacity) => _echoOpacity(
+      opacity,
+      from: _kEchoGlowFrom,
+      to: _kEchoGlowTo,
+    );
+
+/// The detection glow's radius by zoom, times [scale] (the core is smaller).
+List<Object> _glowRadiusExpr({double scale = 1}) => [
+      'interpolate',
+      ['exponential', 2],
+      ['zoom'],
+      for (final (z, r) in _kEchoGlowRadius) ...[z, r * scale],
+    ];
 
 /// The glow's steady opacity (no sweep running), from the airport zoom.
 final List<Object> _echoGlowOpacity = _echoOpacity(
@@ -484,10 +592,11 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   /// are then simply not shown and the map works as before.
   bool _offersReady = false;
 
-  /// Offer cards hidden with × (for this session), and offers already
-  /// counted as seen (one view per offer per session).
-  final Set<String> _dismissedOffers = {};
+  /// Offers already counted as seen (one view per offer per session).
   final Set<String> _seenOffers = {};
+
+  /// The offers' radar glow was added.
+  bool _offerGlowReady = false;
   bool _mapLoaded = false;
   Timer? _boundsDebounce;
 
@@ -517,6 +626,9 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
 
   /// The quiet airports' dots and names were added.
   bool _quietReady = false;
+
+  /// The country tap target and outline were added.
+  bool _countriesReady = false;
 
   /// The airport glow was added (3D map). It breathes on the ping clock.
   bool _glowReady = false;
@@ -797,20 +909,6 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
               ),
             ),
           ),
-          if (_visibleOfferCard(state) case final card?)
-            Positioned(
-              left: AppSpacing.md,
-              // Clear of the recenter button on the right.
-              right: state.userLocation != null
-                  ? AppSpacing.md + 56 + AppSpacing.sm
-                  : AppSpacing.md,
-              bottom: navClearance + AppSpacing.md,
-              child: OfferBanner(
-                offer: card,
-                onOpen: () => unawaited(_openOffer(card)),
-                onDismiss: () => setState(() => _dismissedOffers.add(card.id)),
-              ),
-            ),
           if (state.userLocation != null)
             Positioned(
               right: AppSpacing.md,
@@ -856,10 +954,6 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         previous?.pinMode != next.pinMode) {
       unawaited(_syncOffers());
     }
-    final card = _visibleOfferCard(next);
-    if (card != null && card != _visibleOfferCard(previous)) {
-      _trackSeen(card);
-    }
     if (next.userLocation != null && !_centeredOnUser) {
       _centerOnUser(next.userLocation!, animated: false);
     } else if (previous?.selectedAirport != next.selectedAirport &&
@@ -895,12 +989,15 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
           );
     await _setSourceData(_kBoundarySource, boundaries);
     await _syncAirportBuildings();
-    if (_beacons.isNotEmpty && !_sameDiscs(_pinsRadar, _radarDiscs)) {
+    if (!_sameDiscs(_pinsRadar, _radarDiscs)) {
       _pinsRadar = _radarDiscs;
-      await _setSourceData(
-        _kPinsSource,
-        EchoBeacons.points(_beacons, radar: _radarDiscs),
-      );
+      if (_beacons.isNotEmpty) {
+        await _setSourceData(
+          _kPinsSource,
+          EchoBeacons.points(_beacons, radar: _radarDiscs),
+        );
+      }
+      await _syncOffers();
     }
     if (_radarReady) {
       try {
@@ -1026,19 +1123,30 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   /// only while their glow is showing (from the airport zoom).
   Future<void> _drawBlips(double heading) async {
     final map = _map;
+    final offers = _offerGlowReady &&
+        ref.read(worldMapControllerProvider).offerPins.isNotEmpty;
     if (map == null ||
         !_blipOk ||
-        _beacons.isEmpty ||
+        (_beacons.isEmpty && !offers) ||
         _viewZoom < _kEchoGlowFrom) {
       await _stopBlips();
       return;
     }
     try {
-      await map.style.setStyleLayerProperty(
-        _kPinGlowLayer,
-        'circle-opacity',
-        _blipOpacity(heading),
-      );
+      final opacity = _blipOpacity(heading);
+      final core = _blipCoreOpacity(heading);
+      if (_beacons.isNotEmpty) {
+        await map.style
+            .setStyleLayerProperty(_kPinGlowLayer, 'circle-opacity', opacity);
+        await map.style
+            .setStyleLayerProperty(_kPinCoreLayer, 'circle-opacity', core);
+      }
+      if (offers) {
+        await map.style
+            .setStyleLayerProperty(_kOfferGlowLayer, 'circle-opacity', opacity);
+        await map.style
+            .setStyleLayerProperty(_kOfferCoreLayer, 'circle-opacity', core);
+      }
       _blipping = true;
     } on Object catch (e) {
       // Decoration: the glow just stays steady.
@@ -1059,6 +1167,17 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         'circle-opacity',
         _echoGlowOpacity,
       );
+      await map.style
+          .setStyleLayerProperty(_kPinCoreLayer, 'circle-opacity', 0);
+      if (_offerGlowReady) {
+        await map.style.setStyleLayerProperty(
+          _kOfferGlowLayer,
+          'circle-opacity',
+          _echoGlowOpacity,
+        );
+        await map.style
+            .setStyleLayerProperty(_kOfferCoreLayer, 'circle-opacity', 0);
+      }
     } on Object catch (_) {
       // The layer is gone with its style; nothing to restore.
     }
@@ -1163,27 +1282,24 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         spot == null ? null : _EchoHint(spot, total: state.echoNodes.length);
   }
 
-  /// Offer pins of the airports in view; none when zoomed out.
+  /// Offer pins of the airports in view, with their radar bearing; none
+  /// when zoomed out.
   Future<void> _syncOffers() async {
     if (!_offersReady) return;
     final state = ref.read(worldMapControllerProvider);
-    final offers = state.pinMode == MapPinMode.pins
-        ? OfferMapFeatures.collection(state.offerPins)
-        : null;
+    final shown = state.pinMode == MapPinMode.pins;
     try {
-      await _setSourceData(_kOfferSource, offers);
+      await _setSourceData(
+        _kOfferSource,
+        shown
+            ? OfferMapFeatures.collection(state.offerPins, radar: _radarDiscs)
+            : null,
+      );
     } on Object catch (e) {
       // Offers are extra: drop them rather than disturb the map.
       debugPrint('Map offers disabled: $e');
       _offersReady = false;
     }
-  }
-
-  /// The offer card to show over the map, unless hidden with ×.
-  MapOffer? _visibleOfferCard(WorldMapState? state) {
-    final card = state?.offerCard;
-    if (card == null || state?.pinMode != MapPinMode.pins) return null;
-    return _dismissedOffers.contains(card.id) ? null : card;
   }
 
   void _trackSeen(MapOffer offer) {
@@ -1327,6 +1443,13 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       )
       ..addInteraction(
         TapInteraction(
+          FeaturesetDescriptor(layerId: _kCountryHitLayer),
+          (feature, _) => unawaited(_onCountryTap(feature)),
+        ),
+        interactionID: 'tap-countries',
+      )
+      ..addInteraction(
+        TapInteraction(
           FeaturesetDescriptor(layerId: _kQuietNameLayer),
           (feature, _) => unawaited(_onCloudTap(feature)),
         ),
@@ -1348,7 +1471,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       )
       ..addInteraction(
         TapInteraction(
-          FeaturesetDescriptor(layerId: _kOfferLayer),
+          FeaturesetDescriptor(layerId: _kOfferTapLayer),
           (feature, _) => _onOfferTap(feature),
         ),
         interactionID: 'tap-offer-pins',
@@ -1518,6 +1641,48 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       } on Object catch (e) {
         debugPrint('Map airport buildings skipped: $e');
       }
+    }
+
+    // Countries, under everything of ours: an invisible tap target and the
+    // tapped country's outline. Extra: without them the map works as before.
+    _countriesReady = false;
+    try {
+      await style.addSource(
+        VectorSource(
+          id: _kCountrySource,
+          url: 'mapbox://mapbox.country-boundaries-v1',
+        ),
+      );
+      await style.addLayer(
+        FillLayer(
+          id: _kCountryHitLayer,
+          sourceId: _kCountrySource,
+          sourceLayer: 'country_boundaries',
+          slot: _kGroundSlot,
+          maxZoom: AirportPinPlan.pinsMinZoom,
+          filter: _kCountryWorldview,
+          fillColor: Colors.transparent.toARGB32(),
+          fillOpacity: 0,
+        ),
+      );
+      await style.addLayer(
+        LineLayer(
+          id: _kCountryOutlineLayer,
+          sourceId: _kCountrySource,
+          sourceLayer: 'country_boundaries',
+          slot: _kGroundSlot,
+          maxZoom: AirportPinPlan.pinsMinZoom,
+          filter: _countryOutline(null),
+          lineEmissiveStrength: 1,
+          lineColor: _kLime.toARGB32(),
+          lineOpacity: 0.85,
+          lineWidth: 1.6,
+          lineBlur: 0.6,
+        ),
+      );
+      _countriesReady = true;
+    } on Object catch (e) {
+      debugPrint('Map countries skipped: $e');
     }
 
     // Zoomed out only: one heat cloud per airport, tuned to show from a
@@ -1715,16 +1880,26 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         circleEmissiveStrength: 1,
         circlePitchAlignment: CirclePitchAlignment.MAP,
         circlePitchScale: CirclePitchScale.MAP,
-        circleRadiusExpression: [
-          'interpolate',
-          ['exponential', 2],
-          ['zoom'],
-          for (final (z, r) in _kEchoGlowRadius) ...[z, r],
-        ],
-        circleColorExpression: _kEchoColor,
+        circleRadiusExpression: _glowRadiusExpr(),
+        circleColorExpression: _kEchoGlowColor,
         // Fully feathered: no edge, a soft cloud of light.
         circleBlur: 1,
         circleOpacityExpression: _echoGlowOpacity,
+      ),
+    );
+    await style.addLayer(
+      CircleLayer(
+        id: _kPinCoreLayer,
+        sourceId: _kPinsSource,
+        minZoom: _kEchoGlowFrom,
+        circleEmissiveStrength: 1,
+        circlePitchAlignment: CirclePitchAlignment.MAP,
+        circlePitchScale: CirclePitchScale.MAP,
+        circleRadiusExpression: _glowRadiusExpr(scale: _kBlipCoreScale),
+        circleColorExpression: _kEchoColor,
+        circleBlur: 0.6,
+        circleOpacityExpression:
+            _kLiteMap ? _liteCoreOpacity(0.6) : _kBlipCoreOff,
       ),
     );
     await style.addLayer(
@@ -1756,18 +1931,66 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
 
     // Offers are extra: if this phone can't add their layer, the echo pins
     // and everything else still load (offers just aren't shown).
+    _offerGlowReady = false;
     try {
       await style.addSource(GeoJsonSource(id: _kOfferSource, data: empty));
+      // Their radar glow, as the echoes', under the pins.
+      try {
+        await style.addLayer(
+          CircleLayer(
+            id: _kOfferGlowLayer,
+            sourceId: _kOfferSource,
+            minZoom: _kEchoGlowFrom,
+            circleEmissiveStrength: 1,
+            circlePitchAlignment: CirclePitchAlignment.MAP,
+            circlePitchScale: CirclePitchScale.MAP,
+            circleRadiusExpression: _glowRadiusExpr(),
+            circleColorExpression: _kOfferGlowColor,
+            circleBlur: 1,
+            circleOpacityExpression: _echoGlowOpacity,
+          ),
+        );
+        await style.addLayer(
+          CircleLayer(
+            id: _kOfferCoreLayer,
+            sourceId: _kOfferSource,
+            minZoom: _kEchoGlowFrom,
+            circleEmissiveStrength: 1,
+            circlePitchAlignment: CirclePitchAlignment.MAP,
+            circlePitchScale: CirclePitchScale.MAP,
+            circleRadiusExpression: _glowRadiusExpr(scale: _kBlipCoreScale),
+            circleColorExpression: _kOfferColor,
+            circleBlur: 0.6,
+            circleOpacityExpression:
+                _kLiteMap ? _liteCoreOpacity(0.3) : _kBlipCoreOff,
+          ),
+        );
+        _offerGlowReady = true;
+      } on Object catch (e) {
+        debugPrint('Map offer glow skipped: $e');
+      }
+      // The offer itself: a small faint dot, smaller than an echo's disc.
       await style.addLayer(
-        SymbolLayer(
+        CircleLayer(
           id: _kOfferLayer,
-          iconEmissiveStrength: 1,
-          textEmissiveStrength: 1,
           sourceId: _kOfferSource,
           minZoom: EchoBeacons.fadeInFrom,
-          iconImage: MapBadges.offer,
-          iconSizeExpression: _byZoom(_kPinSizes),
-          iconAllowOverlap: true,
+          circleEmissiveStrength: 1,
+          circlePitchAlignment: CirclePitchAlignment.MAP,
+          circlePitchScale: CirclePitchScale.MAP,
+          circleRadiusExpression: _discRadius(null, scale: 0.75),
+          circleColorExpression: _kOfferColor,
+          circleOpacityExpression: _echoOpacity(0.45),
+        ),
+      );
+      await style.addLayer(
+        CircleLayer(
+          id: _kOfferTapLayer,
+          sourceId: _kOfferSource,
+          minZoom: EchoBeacons.fadeInFrom,
+          circleRadius: EchoBeacons.tapRadiusPoints,
+          circleColor: Colors.transparent.toARGB32(),
+          circleOpacity: 0,
         ),
       );
       _offersReady = true;
@@ -2215,7 +2438,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     );
   }
 
-  /// Opens the pin's card, enlarging its badge until the card closes.
+  /// Opens the pin's card, enlarging its disc until the card closes.
   Future<void> _openPin(String id, String type) async {
     await _setSelectedPin(id);
     if (!mounted) return;
@@ -2231,6 +2454,45 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       'circle-radius',
       _discRadius(id),
     );
+  }
+
+  /// A country tapped on the zoomed-out map: outlines it and lists its
+  /// airports, busiest first; the one picked is flown into.
+  Future<void> _onCountryTap(FeaturesetFeature feature) async {
+    final iso = feature.properties['iso_3166_1']?.toString();
+    if (iso == null || iso.isEmpty || !_countriesReady) return;
+    final name = feature.properties['name_en']?.toString() ?? iso;
+    final state = ref.read(worldMapControllerProvider);
+    final counts = {
+      for (final c in state.airportCounts) c.airportIata: c.count,
+    };
+    final airports =
+        AirportPoint.inCountry(state.allAirports, iso, counts: counts);
+    await _outlineCountry(iso);
+    if (!mounted) return;
+    final picked = await CountryAirportsSheet.show(
+      context,
+      country: name,
+      airports: airports,
+      counts: counts,
+    );
+    await _outlineCountry(null);
+    if (picked == null || !mounted) return;
+    await _flyInto(picked.longitude, picked.latitude);
+  }
+
+  Future<void> _outlineCountry(String? iso2) async {
+    final map = _map;
+    if (map == null || !_countriesReady) return;
+    try {
+      await map.style.setStyleLayerProperty(
+        _kCountryOutlineLayer,
+        'filter',
+        _countryOutline(iso2),
+      );
+    } on Object catch (e) {
+      debugPrint('Map country outline off: $e');
+    }
   }
 
   /// Flies from an airport's cloud into the airport, where its pins load.
@@ -2376,15 +2638,15 @@ const List<Object> _cloudScale = [
 const double _kHeatFadeEnd = AirportPinPlan.pinsMinZoom;
 const double _kHeatFadeStart = _kHeatFadeEnd - 1;
 
-/// Chumme's kernel, per puff (AirportClouds): grows while the heat is
-/// regional, then shrinks into the handover so neighbouring airports pull
-/// apart instead of merging.
+/// The kernel per puff (AirportClouds): small and tight zoomed out, so
+/// each airport keeps its own cloud instead of merging into one big heat
+/// area, growing as the camera comes in, then shrinking into the handover.
 const List<Object> _cloudRadius = [
   'interpolate', ['linear'], ['zoom'], //
-  0, ['*', 11, _cloudScale],
-  3, ['*', 20, _cloudScale],
-  5, ['*', 26, _cloudScale],
-  _kHeatFadeStart, ['*', 21, _cloudScale],
+  0, ['*', 4, _cloudScale],
+  3, ['*', 6, _cloudScale],
+  6, ['*', 11, _cloudScale],
+  _kHeatFadeStart, ['*', 17, _cloudScale],
   _kHeatFadeEnd, ['*', 12, _cloudScale],
 ];
 

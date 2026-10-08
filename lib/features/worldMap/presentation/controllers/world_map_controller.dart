@@ -33,10 +33,6 @@ final offerMapRepositoryProvider = Provider<OfferMapRepository>((ref) {
   return OfferMapRepositoryImpl(ref.watch(apiServiceProvider));
 });
 
-/// [WorldMapState.copyWith] value meaning "leave unchanged", so `null` can
-/// still clear a nullable field.
-const _keep = Object();
-
 class WorldMapState extends Equatable {
   const WorldMapState({
     this.isLoading = false,
@@ -50,7 +46,6 @@ class WorldMapState extends Equatable {
     this.userLocation,
     this.isFetchingPins = false,
     this.offerPins = const [],
-    this.offerCard,
     this.error,
   });
 
@@ -74,12 +69,11 @@ class WorldMapState extends Equatable {
   /// A view's pins or counts are loading (drives the slow-connection banner).
   final bool isFetchingPins;
 
-  /// Offers (ads, vouchers) of the airports in view, when zoomed in: pins at
-  /// their spots, and one card for the airport nearest the view center.
+  /// Offers (ads, vouchers, gifts) of the airports in view, when zoomed in,
+  /// at their spots: hidden on the map until the radar finds them.
   /// Empty when zoomed out or when offers couldn't load: never in the way
   /// of the echo pins.
   final List<MapOffer> offerPins;
-  final MapOffer? offerCard;
   final String? error;
 
   WorldMapState copyWith({
@@ -94,7 +88,6 @@ class WorldMapState extends Equatable {
     LocationCoordinates? userLocation,
     bool? isFetchingPins,
     List<MapOffer>? offerPins,
-    Object? offerCard = _keep,
     String? error,
   }) =>
       WorldMapState(
@@ -110,9 +103,6 @@ class WorldMapState extends Equatable {
         userLocation: userLocation ?? this.userLocation,
         isFetchingPins: isFetchingPins ?? this.isFetchingPins,
         offerPins: offerPins ?? this.offerPins,
-        offerCard: identical(offerCard, _keep)
-            ? this.offerCard
-            : offerCard as MapOffer?,
         error: error,
       );
 
@@ -129,7 +119,6 @@ class WorldMapState extends Equatable {
         userLocation,
         isFetchingPins,
         offerPins,
-        offerCard,
         error,
       ];
 }
@@ -279,7 +268,6 @@ class WorldMapController extends Notifier<WorldMapState> {
         pinMode: MapPinMode.counts,
         airportCounts: _counts,
         offerPins: const [],
-        offerCard: null,
       );
       return;
     }
@@ -311,7 +299,7 @@ class WorldMapController extends Notifier<WorldMapState> {
   }
 
   /// Loads the shown airports' offers (missing or stale ones) and shows
-  /// their pins and the nearest airport's card. Failures leave offers out.
+  /// their pins. Failures leave offers out.
   Future<void> _refreshOffers(List<String> airports, int request) async {
     final now = DateTime.now();
     final stale = airports.where((a) {
@@ -325,8 +313,6 @@ class WorldMapController extends Notifier<WorldMapState> {
     final offers = airports.map((a) => _airportOffers[a]).nonNulls.toList();
     state = state.copyWith(
       offerPins: [for (final o in offers) ...o.pins],
-      // [airports] is nearest-first, so this is the nearest airport's card.
-      offerCard: offers.map((o) => o.card).nonNulls.firstOrNull,
     );
   }
 
