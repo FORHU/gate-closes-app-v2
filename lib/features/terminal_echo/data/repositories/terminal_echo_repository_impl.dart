@@ -86,7 +86,7 @@ class TerminalEchoRepositoryImpl implements TerminalEchoRepository {
           ServerFailure('Echo posted, but the server sent no id.'),
         );
       }
-      return getEchoById(id);
+      return await getEchoById(id);
     } on AppException catch (e) {
       return Left(ServerFailure(e.message));
     } on Object catch (e) {

@@ -20,6 +20,10 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          # Pinned to the team's local Flutter: newer releases change which
+          # futures need unawaited(), so an unpinned CI fails on lints that
+          # pass locally. Bump this when everyone upgrades.
+          flutter-version: '3.44.8'
           cache: true
 
       - name: 🔐 Provide env assets
