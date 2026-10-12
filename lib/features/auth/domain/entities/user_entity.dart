@@ -11,6 +11,7 @@ class UserEntity extends Equatable {
     this.picture,
     this.signupCompleted = true,
     this.isCompleteProfile = true,
+    this.permissions = const [],
   });
 
   final String id;
@@ -21,6 +22,10 @@ class UserEntity extends Equatable {
   final bool signupCompleted;
   final bool isCompleteProfile;
 
+  /// What the user's role allows (from `GET /auth/me`), e.g.
+  /// `airports:simulate`. Empty until `/auth/me` has been read.
+  final List<String> permissions;
+
   @override
   List<Object?> get props => [
         id,
@@ -30,5 +35,6 @@ class UserEntity extends Equatable {
         picture,
         signupCompleted,
         isCompleteProfile,
+        permissions,
       ];
 }

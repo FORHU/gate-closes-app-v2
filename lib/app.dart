@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/config/app_config.dart';
+import 'package:gate_closes/core/location/simulated_airport.dart';
 import 'package:gate_closes/core/services/theme_controller.dart';
 import 'package:gate_closes/l10n/generated/app_localizations.dart';
 import 'package:gate_closes/routes/app_routes.dart';
@@ -13,6 +14,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final simulated = ref.watch(simulatedAirportProvider);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
@@ -23,6 +25,25 @@ class MyApp extends ConsumerWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
+      // On every screen while a dev simulated airport is active, so its
+      // data is never mistaken for real. An overlay, not a wrapper: the app
+      // must keep its place in the tree when the banner comes and goes.
+      builder: (context, child) => Stack(
+        fit: StackFit.expand,
+        children: [
+          child!,
+          if (simulated != null)
+            IgnorePointer(
+              child: Banner(
+                message: 'SIM ${simulated.iata}',
+                location: BannerLocation.topStart,
+                textDirection: TextDirection.ltr,
+                layoutDirection: TextDirection.ltr,
+                child: const SizedBox.expand(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

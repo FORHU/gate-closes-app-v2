@@ -2,8 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gate_closes/core/airports/airport_reference.dart';
+import 'package:gate_closes/core/location/location_repository_impl.dart';
+import 'package:gate_closes/core/location/simulated_airport.dart';
 import 'package:gate_closes/core/services/theme_controller.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
 import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
 import 'package:gate_closes/features/flight/presentation/controllers/flight_controller.dart';
@@ -146,6 +150,120 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
+  /// Dev builds, staff only (see `simulated_airport.dart`). Off until an
+  /// airport is selected or created; then on until OFF is tapped.
+  void _showSimulatedAirportDialog() {
+    var code = 'MNL';
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: context.colors.surface,
+          title: const Text('Simulated airport'),
+          content: TextFormField(
+            initialValue: code,
+            onChanged: (v) => code = v,
+            maxLength: 3,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              labelText: 'Airport code (IATA)',
+              helperText: 'Or create a test airport where you are.',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                unawaited(_createAirportHere());
+              },
+              child: const Text('Create Airport Here'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                unawaited(_selectAirport(code));
+              },
+              child: const Text('Select airport'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectAirport(String code) async {
+    final ok = await ref.read(simulatedAirportProvider.notifier).simulate(code);
+    if (!ok) {
+      if (mounted) showTopToast(context, 'Unknown airport code');
+      return;
+    }
+    await _reportDetection();
+  }
+
+  /// A test airport at the real GPS position (simulation is off here, so
+  /// the location provider is real), visible only to this account.
+  Future<void> _createAirportHere() async {
+    final here =
+        await ref.read(locationRepositoryProvider).getCurrentLocation();
+    final coords = here.fold(
+      (failure) {
+        if (mounted) showTopToast(context, failure.message);
+        return null;
+      },
+      (c) => c,
+    );
+    if (coords == null) return;
+
+    final created =
+        await ref.read(airportRepositoryProvider).createTestAirport(coords);
+    final airport = created.fold(
+      (failure) {
+        if (mounted) showTopToast(context, failure.message);
+        return null;
+      },
+      (a) => a,
+    );
+    if (airport == null) return;
+
+    await ref.read(simulatedAirportProvider.notifier).simulateAt(
+          AirportReference(
+            iata: airport.iata,
+            name: airport.name,
+            city: '',
+            countryCode: '',
+            timezone: 'UTC',
+            latitude: airport.latitude ?? coords.latitude,
+            longitude: airport.longitude ?? coords.longitude,
+            airportType: testAirportType,
+          ),
+        );
+    await _reportDetection();
+  }
+
+  /// OFF: back to real GPS. A test airport is deleted too, or real GPS at
+  /// that spot would still count as inside it.
+  Future<void> _turnOffSimulation() async {
+    final active = ref.read(simulatedAirportProvider);
+    if (active?.airportType == testAirportType) {
+      await ref.read(airportRepositoryProvider).deleteTestAirport();
+    }
+    await ref.read(simulatedAirportProvider.notifier).clear();
+    await _reportDetection();
+  }
+
+  /// Re-detects so the API answers for the new position.
+  Future<void> _reportDetection() async {
+    await ref.read(airportControllerProvider.notifier).detectAirport();
+    if (!mounted) return;
+    final airport = ref.read(airportControllerProvider);
+    showTopToast(
+      context,
+      airport.isInsideAirport
+          ? 'Inside ${airport.airport?.name}'
+          : airport.error ?? 'Not inside an airport',
+    );
+  }
+
   void _showLogoutDialog() {
     unawaited(
       showDialog<void>(
@@ -188,6 +306,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final profileState = ref.watch(profileControllerProvider);
     final flightState = ref.watch(flightControllerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final canSimulate = ref.watch(canSimulateAirportProvider);
+    final simulated = ref.watch(simulatedAirportProvider);
 
     final username =
         profileState.profile?.name ?? authUser?.name ?? 'Identity Pending';
@@ -394,6 +514,33 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
               const SizedBox(height: AppSpacing.lg),
 
+              if (canSimulate) ...[
+                _SectionHeader(title: 'Developer', color: colors.textMuted),
+                const SizedBox(height: AppSpacing.xs),
+                _SettingsGroup(
+                  children: [
+                    if (simulated == null)
+                      _SettingsRow(
+                        icon: Icons.flight_land_rounded,
+                        label: 'Simulated airport: Off',
+                        onTap: _showSimulatedAirportDialog,
+                      )
+                    else
+                      _SettingsRow(
+                        icon: Icons.flight_land_rounded,
+                        label: simulated.airportType == testAirportType
+                            ? 'Simulating test airport'
+                            : 'Simulating ${simulated.iata}',
+                        trailing: TextButton(
+                          onPressed: _turnOffSimulation,
+                          child: const Text('OFF'),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
               // Sign out action
               _SettingsGroup(
                 children: [
@@ -496,11 +643,15 @@ class _SettingsRow extends StatelessWidget {
     required this.icon,
     required this.label,
     this.onTap,
+    this.trailing,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
+
+  /// Replaces the chevron, e.g. with a button.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -532,11 +683,12 @@ class _SettingsRow extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 20,
-              color: colors.textMuted,
-            ),
+            trailing ??
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: colors.textMuted,
+                ),
           ],
         ),
       ),

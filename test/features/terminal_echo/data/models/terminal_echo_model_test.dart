@@ -3,6 +3,30 @@ import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_mod
 
 void main() {
   group('TerminalEchoModel parsing and attributes', () {
+    test('reads the audio and sender from the nested API file/user', () {
+      final model = TerminalEchoModel.fromJson(const {
+        'data': {
+          '_id': 'e1',
+          'file': {
+            'fileUrl': 'https://cdn.example.com/a.m4a',
+            'fileName': 'a.m4a',
+            'metaData': {
+              'audioDuration': 7.5,
+              'waveformData': [0.2, 0.8],
+            },
+          },
+          'user': {'username': 'test_superadmin'},
+        },
+      });
+
+      expect(model.isVoiceMemo, isTrue);
+      expect(model.fileUrl, 'https://cdn.example.com/a.m4a');
+      expect(model.fileName, 'a.m4a');
+      expect(model.audioDuration, 7.5);
+      expect(model.waveformData, [0.2, 0.8]);
+      expect(model.senderUsername, 'test_superadmin');
+    });
+
     test('parses voice memo echo with waveforms and reactions', () {
       final json = {
         'data': {

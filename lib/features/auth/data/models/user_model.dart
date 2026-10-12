@@ -13,6 +13,7 @@ class UserModel extends UserEntity {
     super.picture,
     super.signupCompleted = true,
     super.isCompleteProfile = true,
+    super.permissions,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +47,12 @@ class UserModel extends UserEntity {
       picture: user['picture'] as String?,
       signupCompleted: user['signupCompleted'] as bool? ?? true,
       isCompleteProfile: user['isCompleteProfile'] as bool? ?? true,
+      permissions: [
+        for (final p in (payload['permissions'] ??
+            user['permissions'] ??
+            <dynamic>[]) as List<dynamic>)
+          p.toString(),
+      ],
     );
   }
 
@@ -67,6 +74,7 @@ class UserModel extends UserEntity {
         'picture': picture,
         'signupCompleted': signupCompleted,
         'isCompleteProfile': isCompleteProfile,
+        'permissions': permissions,
       };
 
   @override

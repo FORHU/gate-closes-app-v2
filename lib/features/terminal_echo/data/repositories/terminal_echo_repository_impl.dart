@@ -78,10 +78,15 @@ class TerminalEchoRepositoryImpl implements TerminalEchoRepository {
         body: payload,
         idempotencyKey: const Uuid().v4(),
       );
-      final rawData = (response as Map)['data'];
-      final model =
-          TerminalEchoModel.fromJson((rawData as Map).cast<String, dynamic>());
-      return Right(model);
+      // The API answers 201 { message, insertedId, airportIata }, not the
+      // echo itself: read it back for the feed (file, sender, counts).
+      final id = ((response as Map)['insertedId'] ?? '').toString();
+      if (id.isEmpty) {
+        return const Left(
+          ServerFailure('Echo posted, but the server sent no id.'),
+        );
+      }
+      return await getEchoById(id);
     } on AppException catch (e) {
       return Left(ServerFailure(e.message));
     } on Object catch (e) {
