@@ -137,4 +137,35 @@ class AirportRepositoryImpl implements AirportRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, AirportEntity>> createTestAirport(
+    LocationCoordinates coordinates,
+  ) async {
+    try {
+      final response = await _api.put(ApiEndpoints.airportTest, {
+        'lat': coordinates.latitude,
+        'lng': coordinates.longitude,
+      });
+      return Right(
+        AirportModel.fromJson((response as Map).cast<String, dynamic>()),
+      );
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteTestAirport() async {
+    try {
+      await _api.delete(ApiEndpoints.airportTest);
+      return const Right(unit);
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

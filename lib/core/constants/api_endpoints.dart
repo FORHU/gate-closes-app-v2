@@ -33,6 +33,9 @@ class ApiEndpoints {
   static const String airportSearch = '/airport/search';
   static const String airportGeoJson = '/airport/geojson';
 
+  /// The caller's own test airport (dev builds, `airports:simulate`).
+  static const String airportTest = '/airport/test';
+
   /// Flight Ticket endpoints
   static const String flightTicket = '/flight-ticket';
 

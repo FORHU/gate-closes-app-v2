@@ -23,4 +23,13 @@ abstract class AirportRepository {
 
   /// Fetches the airport boundaries GeoJSON FeatureCollection (`GET /airport/geojson`).
   Future<Either<Failure, Map<String, dynamic>>> getAirportGeoJson();
+
+  /// Creates (or moves) the caller's test airport at [coordinates]: dev
+  /// builds, staff only. Only the caller ever sees it.
+  Future<Either<Failure, AirportEntity>> createTestAirport(
+    LocationCoordinates coordinates,
+  );
+
+  /// Removes the caller's test airport, if any.
+  Future<Either<Failure, Unit>> deleteTestAirport();
 }

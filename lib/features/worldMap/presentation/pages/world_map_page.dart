@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/core/location/location_repository_impl.dart';
+import 'package:gate_closes/core/location/simulated_airport.dart';
 import 'package:gate_closes/core/services/connectivity_service.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
@@ -729,7 +730,22 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       (_) => setState(() {}),
     );
     unawaited(Future.microtask(_armMap));
+    // A dev simulated airport swaps the location source: follow the new one
+    // and hide the native puck, which would still show the real GPS fix.
+    ref.listenManual(locationRepositoryProvider, (_, __) {
+      unawaited(
+        _map?.location.updateSettings(
+          LocationComponentSettings(enabled: !_simulating),
+        ),
+      );
+      if (_positionSub == null) return;
+      unawaited(_positionSub!.cancel());
+      _lastDetectedAt = null;
+      _startTracking();
+    });
   }
+
+  bool get _simulating => ref.read(simulatedAirportProvider) != null;
 
   /// Saves the guard's marker, then creates the map.
   Future<void> _armMap() async {
@@ -1434,7 +1450,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     unawaited(
       map.location.updateSettings(
         LocationComponentSettings(
-          enabled: true,
+          enabled: !_simulating,
           pulsingEnabled: true,
           pulsingColor: const Color(0xFF4A9DFF).toARGB32(),
         ),

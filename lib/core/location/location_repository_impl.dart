@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/core/location/location_repository.dart';
+import 'package:gate_closes/core/location/simulated_airport.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationRepositoryImpl implements LocationRepository {
@@ -91,6 +92,11 @@ class LocationRepositoryImpl implements LocationRepository {
   }
 }
 
+/// Real GPS, unless a dev-build simulated airport is active (see
+/// `simulated_airport.dart`). Every location read in the app goes through
+/// this provider, so switching here switches all of them.
 final locationRepositoryProvider = Provider<LocationRepository>((ref) {
+  final simulated = ref.watch(simulatedAirportProvider);
+  if (simulated != null) return SimulatedLocationRepository(simulated);
   return const LocationRepositoryImpl();
 });

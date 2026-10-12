@@ -57,7 +57,7 @@ class _TopToastState extends State<_TopToast>
   @override
   void initState() {
     super.initState();
-    _controller.forward();
+    unawaited(_controller.forward());
     _timer = Timer(widget.duration, _dismiss);
   }
 

@@ -21,6 +21,12 @@ void main() {
     mockRepository = MockAuthRepository();
     mockStorage = MockStorageService();
     when(() => mockStorage.readUserModel()).thenReturn(null);
+    // login() re-reads /auth/me in the background (for permissions).
+    when(() => mockRepository.refreshAuth()).thenAnswer(
+      (_) async => const Right(
+        UserEntity(id: '1', email: 'test@example.com', name: 'Test'),
+      ),
+    );
 
     container = ProviderContainer(
       overrides: [

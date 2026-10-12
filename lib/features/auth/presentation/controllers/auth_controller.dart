@@ -111,6 +111,8 @@ class AuthController extends Notifier<AuthState> {
       },
       (user) {
         state = AuthState(user: user);
+        // The login response has no permissions; /auth/me does.
+        unawaited(refreshAuth());
         return true;
       },
     );

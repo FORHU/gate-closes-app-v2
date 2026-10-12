@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:gate_closes/core/config/app_config.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
 import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
 import 'package:gate_closes/features/flight/domain/repositories/flight_repository.dart';
@@ -25,6 +26,7 @@ void main() {
   late MockStorageService mockStorage;
 
   setUp(() {
+    AppConfig.instance = const AppConfig.dev();
     mockProfileRepository = MockProfileRepository();
     mockFlightRepository = MockFlightRepository();
     mockStorage = MockStorageService();

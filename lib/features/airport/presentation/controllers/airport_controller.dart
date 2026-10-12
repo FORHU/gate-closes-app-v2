@@ -96,20 +96,6 @@ class AirportController extends Notifier<AirportState> {
       },
     );
   }
-
-  /// Sets manual coordinates (useful for emulator mock GPS testing,
-  /// e.g. Changi SIN).
-  Future<void> setManualCoordinates(LocationCoordinates coords) async {
-    state = state.copyWith(isDetecting: true, coordinates: coords);
-    final airportRepo = ref.read(airportRepositoryProvider);
-    final result = await airportRepo.checkInsideAirport(coords);
-
-    result.fold(
-      (failure) =>
-          state = state.copyWith(isDetecting: false, error: failure.message),
-      (airport) => state = state.copyWith(isDetecting: false, airport: airport),
-    );
-  }
 }
 
 final airportControllerProvider =

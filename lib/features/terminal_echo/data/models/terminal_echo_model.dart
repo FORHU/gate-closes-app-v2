@@ -38,12 +38,19 @@ class TerminalEchoModel extends TerminalEchoEntity {
     final createdStr = (payload['createdAt'] ?? '').toString();
     final createdAt = DateTime.tryParse(createdStr) ?? DateTime.now();
 
-    final rawWaves = payload['waveformData'];
+    // The API joins the audio and sender as nested objects
+    // (`file: {fileUrl, metaData: {...}}`, `user: {username}`); flat keys
+    // are the fallback (socket payloads, older shapes).
+    final file = payload['file'] is Map ? payload['file'] as Map : null;
+    final meta = file?['metaData'] is Map ? file!['metaData'] as Map : null;
+    final user = payload['user'] is Map ? payload['user'] as Map : null;
+
+    final rawWaves = meta?['waveformData'] ?? payload['waveformData'];
     final waveformData = rawWaves is List
         ? rawWaves.map((e) => (e is num) ? e.toDouble() : 0.0).toList()
         : <double>[];
 
-    final rawDuration = payload['audioDuration'];
+    final rawDuration = meta?['audioDuration'] ?? payload['audioDuration'];
     final audioDuration = rawDuration is num ? rawDuration.toDouble() : 0.0;
 
     return TerminalEchoModel(
@@ -52,8 +59,8 @@ class TerminalEchoModel extends TerminalEchoEntity {
       textMessage: textMessage,
       airportIata: airportIata,
       createdAt: createdAt,
-      fileUrl: payload['fileUrl'] as String?,
-      fileName: payload['fileName'] as String?,
+      fileUrl: (file?['fileUrl'] ?? payload['fileUrl']) as String?,
+      fileName: (file?['fileName'] ?? payload['fileName']) as String?,
       audioDuration: audioDuration,
       waveformData: waveformData,
       countListens: (payload['countListens'] as num?)?.toInt() ?? 0,
@@ -63,7 +70,8 @@ class TerminalEchoModel extends TerminalEchoEntity {
       countReactWow: (payload['countReactWow'] as num?)?.toInt() ?? 0,
       countReactSad: (payload['countReactSad'] as num?)?.toInt() ?? 0,
       countReactAngry: (payload['countReactAngry'] as num?)?.toInt() ?? 0,
-      senderUsername: payload['senderUsername'] as String?,
+      senderUsername:
+          (user?['username'] ?? payload['senderUsername']) as String?,
       userReaction: payload['userReaction'] as String?,
     );
   }
