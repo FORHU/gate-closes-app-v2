@@ -6,6 +6,7 @@ import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
+import 'package:gate_closes/features/terminal_echo/domain/entities/echo_page.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/repositories/terminal_echo_repository.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
@@ -35,8 +36,9 @@ class _FakeEchoRepository implements TerminalEchoRepository {
   final List<String?> requested = [];
 
   @override
-  Future<Either<Failure, List<TerminalEchoEntity>>> getEchoes({
+  Future<Either<Failure, EchoPage>> getEchoes({
     String? airportIata,
+    String? cursor,
   }) async {
     requested.add(airportIata);
     return const Left(ServerFailure('offline'));

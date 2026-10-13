@@ -21,25 +21,43 @@ final terminalEchoRepositoryProvider = Provider<TerminalEchoRepository>((ref) {
 class TerminalEchoState extends Equatable {
   const TerminalEchoState({
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.echoes = const [],
+    this.nextCursor,
     this.currentAirportIata,
     this.error,
   });
 
   final bool isLoading;
+
+  /// Fetching the page after [echoes] (see [nextCursor]).
+  final bool isLoadingMore;
   final List<TerminalEchoEntity> echoes;
+
+  /// The API's cursor for the next page; null when the feed is complete.
+  final String? nextCursor;
   final String? currentAirportIata;
   final String? error;
 
+  bool get hasMore => nextCursor != null;
+
+  static const Object _keep = Object();
+
   TerminalEchoState copyWith({
     bool? isLoading,
+    bool? isLoadingMore,
     List<TerminalEchoEntity>? echoes,
+    Object? nextCursor = _keep,
     String? currentAirportIata,
     String? error,
   }) {
     return TerminalEchoState(
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       echoes: echoes ?? this.echoes,
+      nextCursor: identical(nextCursor, _keep)
+          ? this.nextCursor
+          : nextCursor as String?,
       currentAirportIata: currentAirportIata ?? this.currentAirportIata,
       error: error,
     );
@@ -48,7 +66,9 @@ class TerminalEchoState extends Equatable {
   @override
   List<Object?> get props => [
         isLoading,
+        isLoadingMore,
         echoes,
+        nextCursor,
         currentAirportIata,
         error,
       ];
@@ -71,7 +91,7 @@ class TerminalEchoController extends Notifier<TerminalEchoState> {
     return const TerminalEchoState();
   }
 
-  /// Loads feed for a given airport and establishes a realtime socket room.
+  /// Loads the first page of an airport's feed and joins its realtime room.
   Future<void> loadFeed(String airportIata) async {
     state = state.copyWith(isLoading: true, currentAirportIata: airportIata);
     final repo = ref.read(terminalEchoRepositoryProvider);
@@ -84,12 +104,43 @@ class TerminalEchoController extends Notifier<TerminalEchoState> {
         isLoading: false,
         error: failure.message,
       ),
-      (echoes) {
+      (page) {
         state = state.copyWith(
           isLoading: false,
-          echoes: echoes,
+          echoes: page.echoes,
+          nextCursor: page.nextCursor,
         );
         _initSocket(airportIata);
+      },
+    );
+  }
+
+  /// Appends the next page, if there is one and none is loading. Echoes the
+  /// socket already prepended aren't repeated.
+  Future<void> loadMore() async {
+    final airportIata = state.currentAirportIata;
+    final cursor = state.nextCursor;
+    if (airportIata == null || cursor == null || state.isLoadingMore) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    final result = await ref
+        .read(terminalEchoRepositoryProvider)
+        .getEchoes(airportIata: airportIata, cursor: cursor);
+    if (!ref.mounted || state.currentAirportIata != airportIata) return;
+
+    result.fold(
+      // Keep the cursor: scrolling back down retries.
+      (failure) => state = state.copyWith(isLoadingMore: false),
+      (page) {
+        final known = {for (final e in state.echoes) e.id};
+        state = state.copyWith(
+          isLoadingMore: false,
+          echoes: [
+            ...state.echoes,
+            ...page.echoes.where((e) => !known.contains(e.id)),
+          ],
+          nextCursor: page.nextCursor,
+        );
       },
     );
   }
