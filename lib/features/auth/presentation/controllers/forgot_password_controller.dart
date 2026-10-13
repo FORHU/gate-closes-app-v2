@@ -2,10 +2,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 
-/// The 3 interactive steps of the forgot-password wizard (verified against
-/// `user.auth.route.ts`): request code → verify code → set new password.
-/// Successful completion logs the user in with the new password — like
-/// signup, none of these steps return access/refresh tokens.
+/// The 3 interactive steps of the forgot-password wizard on
+/// gate-closes-api-v2: request code → check code → set new password with
+/// that code. Checking doesn't use the code up; 3 wrong tries do.
+/// Successful completion logs the user in with the new password.
 enum ForgotPasswordStep { email, otp, newPassword }
 
 class ForgotPasswordState extends Equatable {
@@ -13,24 +13,26 @@ class ForgotPasswordState extends Equatable {
     this.step = ForgotPasswordStep.email,
     this.isLoading = false,
     this.error,
-    this.userId,
     this.email = '',
+    this.code = '',
     this.isDone = false,
   });
 
   final ForgotPasswordStep step;
   final bool isLoading;
   final String? error;
-  final String? userId;
   final String email;
+
+  /// The checked code, sent again with the new password.
+  final String code;
   final bool isDone;
 
   ForgotPasswordState copyWith({
     ForgotPasswordStep? step,
     bool? isLoading,
     String? error,
-    String? userId,
     String? email,
+    String? code,
     bool? isDone,
   }) {
     return ForgotPasswordState(
@@ -38,14 +40,14 @@ class ForgotPasswordState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       // Intentionally not `error ?? this.error`: passing null clears it.
       error: error,
-      userId: userId ?? this.userId,
       email: email ?? this.email,
+      code: code ?? this.code,
       isDone: isDone ?? this.isDone,
     );
   }
 
   @override
-  List<Object?> get props => [step, isLoading, error, userId, email, isDone];
+  List<Object?> get props => [step, isLoading, error, email, code, isDone];
 }
 
 class ForgotPasswordController extends Notifier<ForgotPasswordState> {
@@ -61,10 +63,9 @@ class ForgotPasswordController extends Notifier<ForgotPasswordState> {
         state = state.copyWith(isLoading: false, error: failure.message);
         return false;
       },
-      (step) {
+      (_) {
         state = state.copyWith(
           isLoading: false,
-          userId: step.userId,
           step: ForgotPasswordStep.otp,
         );
         return true;
@@ -73,12 +74,10 @@ class ForgotPasswordController extends Notifier<ForgotPasswordState> {
   }
 
   Future<bool> resendCode() async {
-    final userId = state.userId;
-    if (userId == null) return false;
+    if (state.email.isEmpty) return false;
 
-    final result = await ref.read(authRepositoryProvider).resendResetCode(
-          userId,
-        );
+    final result =
+        await ref.read(authRepositoryProvider).resendResetCode(state.email);
     return result.fold(
       (failure) {
         state = state.copyWith(error: failure.message);
@@ -89,12 +88,12 @@ class ForgotPasswordController extends Notifier<ForgotPasswordState> {
   }
 
   Future<bool> verifyCode(String code) async {
-    final userId = state.userId;
-    if (userId == null) return false;
+    if (state.email.isEmpty) return false;
 
     state = state.copyWith(isLoading: true);
-    final result =
-        await ref.read(authRepositoryProvider).verifyResetCode(userId, code);
+    final result = await ref
+        .read(authRepositoryProvider)
+        .verifyResetCode(state.email, code);
 
     return result.fold(
       (failure) {
@@ -104,6 +103,7 @@ class ForgotPasswordController extends Notifier<ForgotPasswordState> {
       (_) {
         state = state.copyWith(
           isLoading: false,
+          code: code,
           step: ForgotPasswordStep.newPassword,
         );
         return true;
@@ -111,19 +111,23 @@ class ForgotPasswordController extends Notifier<ForgotPasswordState> {
     );
   }
 
-  /// Sets the new password, then logs in with it — `resetPassword`'s
-  /// response carries no tokens, so this is a real second network call.
+  /// Sets the new password, then logs in with it — the reset response
+  /// carries no session, so this is a real second network call. The API
+  /// takes one password, so the match is checked here.
   Future<bool> submitNewPassword(
     String password,
     String confirmPassword,
   ) async {
-    final userId = state.userId;
-    if (userId == null) return false;
+    if (state.email.isEmpty || state.code.isEmpty) return false;
+    if (password != confirmPassword) {
+      state = state.copyWith(error: 'Passwords do not match.');
+      return false;
+    }
 
     state = state.copyWith(isLoading: true);
     final result = await ref
         .read(authRepositoryProvider)
-        .resetPassword(userId, password, confirmPassword);
+        .resetPassword(state.email, state.code, password);
 
     return result.fold(
       (failure) async {

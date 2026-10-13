@@ -7,13 +7,14 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// A Socket.IO connection to one API namespace that stays authenticated.
 ///
-/// * The access token is read on every (re)connect handshake, so a token the
-///   HTTP layer rotated is picked up instead of a stale copy.
+/// * The session token is read on every (re)connect handshake, so a new
+///   sign-in is picked up instead of a stale copy.
 /// * Transport drops are retried by socket.io itself. A handshake the server
-///   *rejects* (auth middleware `next(new Error(...))`, typically an expired
-///   token) is not — the client destroys the socket and stays down. Here that
-///   case calls `revalidateSession` (which lets the HTTP interceptor refresh
-///   the token, or signs the user out) and reconnects with backoff.
+///   *rejects* (auth middleware `next(new Error(...))`, typically an ended
+///   session) is not — the client destroys the socket and stays down. Here
+///   that case calls `revalidateSession` (`/auth/me`: a 401 signs the user
+///   out) and reconnects with backoff. Signing out on the server also
+///   disconnects that session's sockets.
 class AuthenticatedSocket {
   AuthenticatedSocket({
     required String namespace,

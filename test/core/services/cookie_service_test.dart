@@ -46,7 +46,6 @@ void main() {
       () {
         final storage = MockStorageService();
         when(storage.readToken).thenAnswer((_) async => null);
-        when(storage.readRefreshToken).thenAnswer((_) async => null);
 
         final cookieService = CookieService();
         final api = ApiService(

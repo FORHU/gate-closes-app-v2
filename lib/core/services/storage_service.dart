@@ -17,7 +17,9 @@ class StorageService {
   final FlutterSecureStorage _secure;
 
   static const String _tokenKey = 'auth_token';
-  static const String _refreshTokenKey = 'refresh_token';
+
+  /// v1 builds stored one; v2 has none. Still deleted on sign-out.
+  static const String _legacyRefreshTokenKey = 'refresh_token';
   static const String _userModelKey = 'cached_user_model';
   static const String _onboardingKey = 'onboarding_seen';
 
@@ -27,15 +29,10 @@ class StorageService {
       _prefs.setString(key, value);
   Future<void> remove(String key) => _prefs.remove(key);
 
-  // --- Secure (access token) ---
+  // --- Secure (session token) ---
   Future<void> saveToken(String token) =>
       _secure.write(key: _tokenKey, value: token);
   Future<String?> readToken() => _secure.read(key: _tokenKey);
-
-  // --- Secure (refresh token) ---
-  Future<void> saveRefreshToken(String token) =>
-      _secure.write(key: _refreshTokenKey, value: token);
-  Future<String?> readRefreshToken() => _secure.read(key: _refreshTokenKey);
 
   // --- Cached user model (SharedPreferences, for instant cold start) ---
   Future<void> saveUserModel(UserModel user) =>
@@ -69,10 +66,10 @@ class StorageService {
   Future<void> setOnboardingSeen(String userId) =>
       _prefs.setBool('$_onboardingKey:$userId', true);
 
-  /// Clears the whole authenticated session (tokens + cached user).
+  /// Clears the whole authenticated session (token + cached user).
   Future<void> clearSession() async {
     await _secure.delete(key: _tokenKey);
-    await _secure.delete(key: _refreshTokenKey);
+    await _secure.delete(key: _legacyRefreshTokenKey);
     await _prefs.remove(_userModelKey);
   }
 }

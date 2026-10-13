@@ -74,5 +74,16 @@ void main() {
       expect(model.isMine('user456'), isTrue);
       expect(model.isMine('someoneElse'), isFalse);
     });
+
+    test('reads a nested sender id sent as `id` (v2) or `_id` (v1)', () {
+      for (final key in ['id', '_id']) {
+        final model = ConversationMessageModel.fromJson({
+          'id': 'msg4',
+          'conversationId': 'convo123',
+          'senderId': {key: 'user456'},
+        });
+        expect(model.senderId, 'user456', reason: key);
+      }
+    });
   });
 }

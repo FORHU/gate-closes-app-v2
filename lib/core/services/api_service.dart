@@ -38,11 +38,10 @@ class ApiService {
       client.interceptors.add(CookieManager(jar));
     }
 
-    // 1. Attach the bearer token and transparently refresh it on a 401.
+    // 1. Attach the session token; a 401 signs the user out.
     client.interceptors.add(
       AuthInterceptor(
         storage,
-        baseUrl: client.options.baseUrl,
         cookieService: cookieService,
         onUnauthenticated: onUnauthenticated,
       ),

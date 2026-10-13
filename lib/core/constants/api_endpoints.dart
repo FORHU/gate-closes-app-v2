@@ -3,25 +3,28 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String login = '/auth/login';
+  /// Auth on gate-closes-api-v2 (Better Auth; see its docs/AUTH.md). Sign-in
+  /// responses carry the session token; there is no refresh token.
+  static const String login = '/auth/sign-in/email';
 
-  /// Signup wizard (4 steps, verified against `user.auth.route.ts`).
-  static const String registerEmail = '/auth/register-email';
-  static const String verifyEmail = '/auth/verify-email';
-  static const String resendCode = '/auth/resend-code';
+  /// Sends a 4-digit code: `type` "sign-in" for sign-up (and resend),
+  /// "forget-password" for a password reset (and resend).
+  static const String sendOtp = '/auth/email-otp/send-verification-otp';
+
+  /// Sign-up step 2: the code signs the new user in (session token).
+  static const String signInWithOtp = '/auth/sign-in/email-otp';
+
+  /// Sign-up steps 3 and 4, with the session from step 2.
   static const String setPassword = '/auth/set-password';
   static const String setUsernameGender = '/auth/set-username-gender';
 
-  /// Forgot-password wizard (4 steps, same shape as signup).
-  static const String forgotPassword = '/auth/forgot-password';
-  static const String resendResetCode = '/auth/resend-reset-code';
-  static const String verifyResetCode = '/auth/verify-reset-code';
-  static const String resetPassword = '/auth/reset-password';
+  /// Password reset: check the code (doesn't use it up), then reset with it.
+  static const String checkOtp = '/auth/email-otp/check-verification-otp';
+  static const String resetPassword = '/auth/email-otp/reset-password';
 
-  static const String refresh = '/auth/refresh';
-  static const String logout = '/auth/logout';
+  static const String logout = '/auth/sign-out';
   static const String me = '/auth/me';
-  static const String googleAuth = '/auth/login-or-register-google';
+  static const String googleAuth = '/auth/sign-in/social';
   static const String changePassword = '/auth/change-password';
   static const String editProfile = '/auth/edit-profile';
 
