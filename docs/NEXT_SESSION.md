@@ -51,8 +51,8 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:all && pnpm db:che
 ## Next work
 
 1. ~~**Test-Airport Review items**~~: done 2026-10-13 (TRACKER GC-58/59/60), commit `1141c68`.
-2. ~~**Step 7**~~: done 2026-10-13, **uncommitted**. `fs.conversation*` and `sovereign.future.signal` were models only in v1, so their Step 1 tables are the whole port; added todo (unmounted) and the org namespace.
-3. ~~**Step 8**~~: done 2026-10-13, **uncommitted**, on branches `feat/api-v2-client` (app-v2) and `feat/admin-api-v2` (landing, cut from `feat/landing-revamp`, so GC-20 still applies). GC-09 (Google sign-in) left: needs a client id.
+2. ~~**Step 7**~~: done 2026-10-13, commit `1d60cf7`. `fs.conversation*` and `sovereign.future.signal` were models only in v1, so their Step 1 tables are the whole port; added todo (unmounted) and the org namespace.
+3. ~~**Step 8**~~: done 2026-10-13: app-v2 `18d67d1` on `feat/api-v2-client`, landing `5735ecc` on `feat/admin-api-v2` (cut from `feat/landing-revamp`, so GC-20 still applies). GC-09 (Google sign-in) left: needs a client id.
 4. **Step 9**: Phone check on the realme, same checklist as 2026-10-09.
 
 ---
