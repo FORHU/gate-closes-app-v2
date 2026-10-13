@@ -5,9 +5,13 @@ import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/core/services/api_service.dart';
 import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_model.dart';
+import 'package:gate_closes/features/terminal_echo/domain/entities/echo_page.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/repositories/terminal_echo_repository.dart';
 import 'package:uuid/uuid.dart';
+
+/// Echoes per feed page (`GET /terminal-echo?limit=`; the API allows 100).
+const int feedPageSize = 30;
 
 class TerminalEchoRepositoryImpl implements TerminalEchoRepository {
   const TerminalEchoRepositoryImpl(this._api);
@@ -15,29 +19,34 @@ class TerminalEchoRepositoryImpl implements TerminalEchoRepository {
   final ApiService _api;
 
   @override
-  Future<Either<Failure, List<TerminalEchoEntity>>> getEchoes({
+  Future<Either<Failure, EchoPage>> getEchoes({
     String? airportIata,
+    String? cursor,
   }) async {
     try {
-      final query = <String, dynamic>{};
+      final query = <String, dynamic>{'limit': feedPageSize};
       if (airportIata != null && airportIata.isNotEmpty) {
         query['airportName'] = airportIata;
       }
+      if (cursor != null) query['cursor'] = cursor;
 
-      final response = await _api.get(
-        ApiEndpoints.terminalEcho,
-        query: query.isEmpty ? null : query,
+      final response =
+          await _api.get(ApiEndpoints.terminalEcho, query: query) as Map;
+
+      final rawData = response['data'];
+      final list = rawData is List
+          ? rawData
+              .whereType<Map<String, dynamic>>()
+              .map(TerminalEchoModel.fromJson)
+              .toList()
+          : <TerminalEchoEntity>[];
+
+      return Right(
+        EchoPage(
+          echoes: list,
+          nextCursor: response['nextCursor'] as String?,
+        ),
       );
-
-      final rawData = (response as Map)['data'];
-      if (rawData is! List) return const Right([]);
-
-      final list = rawData
-          .whereType<Map<String, dynamic>>()
-          .map(TerminalEchoModel.fromJson)
-          .toList();
-
-      return Right(list);
     } on AppException catch (e) {
       return Left(ServerFailure(e.message));
     } on Object catch (e) {
@@ -128,11 +137,17 @@ class TerminalEchoRepositoryImpl implements TerminalEchoRepository {
   Future<Either<Failure, TerminalEchoEntity>> getEchoById(String id) async {
     try {
       final response = await _api.get('${ApiEndpoints.terminalEcho}/$id');
+      // The API answers `{data: {properties: echo}}` (a GeoJSON-style
+      // wrapper, as in v1). Parsing `data` itself gave an echo with no id,
+      // which showed up as an empty extra card after posting.
       final rawData = (response as Map)['data'];
-      final model = TerminalEchoModel.fromJson(
-        (rawData is Map) ? rawData.cast<String, dynamic>() : {},
-      );
-      return Right(model);
+      final echo = (rawData is Map && rawData['properties'] is Map)
+          ? rawData['properties'] as Map
+          : rawData;
+      if (echo is! Map) {
+        return const Left(ServerFailure('Terminal echo not found.'));
+      }
+      return Right(TerminalEchoModel.fromJson(echo.cast<String, dynamic>()));
     } on AppException catch (e) {
       return Left(ServerFailure(e.message));
     } on Object catch (e) {

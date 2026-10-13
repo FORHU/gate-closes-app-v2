@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:gate_closes/core/config/app_config.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/auth/presentation/widgets/login_form.dart';
 import 'package:gate_closes/shared/widgets/ambient_background.dart';
@@ -92,28 +93,30 @@ class LoginPage extends StatelessWidget {
                         .fadeIn(delay: 200.ms, duration: 400.ms)
                         .slideY(begin: 0.08, end: 0),
 
-                    AppSpacing.lg.v,
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceElevated,
-                        borderRadius: AppRadius.brMd,
-                        border: Border.all(color: colors.border),
-                      ),
-                      child: Text(
-                        'Demo: admin@example.com  •  Password123!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                    // Seeded demo login (API `pnpm seed`); dev builds only.
+                    if (AppConfig.instance.isDev) ...[
+                      AppSpacing.lg.v,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
                         ),
-                      ),
-                    ).animate().fadeIn(delay: 350.ms),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceElevated,
+                          borderRadius: AppRadius.brMd,
+                          border: Border.all(color: colors.border),
+                        ),
+                        child: Text(
+                          'Demo: ava.morgan@example.com  •  Password123!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 350.ms),
+                    ],
                   ],
                 ),
               ),

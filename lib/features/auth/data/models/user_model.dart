@@ -1,14 +1,13 @@
 import 'package:gate_closes/features/auth/domain/entities/user_entity.dart';
 
 /// Data-layer extension of [UserEntity] that knows how to (de)serialize and
-/// carries the auth token returned by the API.
+/// carries the session token returned by sign-in.
 class UserModel extends UserEntity {
   const UserModel({
     required super.id,
     required super.email,
     required super.name,
     required this.token,
-    this.refreshToken,
     super.gender,
     super.picture,
     super.signupCompleted = true,
@@ -28,8 +27,7 @@ class UserModel extends UserEntity {
             ? (payload['user'] as Map).cast<String, dynamic>()
             : payload;
 
-    final token = (payload['token'] ?? payload['accessToken'] ?? '').toString();
-    final refreshToken = payload['refreshToken'] as String?;
+    final token = (payload['token'] ?? '').toString();
 
     return UserModel(
       id: (user['_id'] ?? user['id'] ?? payload['_id'] ?? payload['id'] ?? '')
@@ -42,7 +40,6 @@ class UserModel extends UserEntity {
               '')
           .toString(),
       token: token,
-      refreshToken: refreshToken,
       gender: user['gender'] as String?,
       picture: user['picture'] as String?,
       signupCompleted: user['signupCompleted'] as bool? ?? true,
@@ -56,12 +53,9 @@ class UserModel extends UserEntity {
     );
   }
 
-  /// Short-lived access token (bearer).
+  /// Session token (bearer). Empty on responses that don't sign in, like
+  /// `/auth/me`.
   final String token;
-
-  /// Long-lived token used to obtain a new access token. Optional — some
-  /// backends issue only an access token.
-  final String? refreshToken;
 
   /// Profile fields only. Tokens are deliberately excluded: this map is
   /// cached in plaintext SharedPreferences, while tokens live exclusively in
@@ -78,5 +72,5 @@ class UserModel extends UserEntity {
       };
 
   @override
-  List<Object?> get props => [...super.props, token, refreshToken];
+  List<Object?> get props => [...super.props, token];
 }

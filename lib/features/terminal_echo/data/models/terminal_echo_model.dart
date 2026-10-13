@@ -53,6 +53,12 @@ class TerminalEchoModel extends TerminalEchoEntity {
     final rawDuration = meta?['audioDuration'] ?? payload['audioDuration'];
     final audioDuration = rawDuration is num ? rawDuration.toDouble() : 0.0;
 
+    // The API sends the viewer's reactions as `currentUserReactions`; the
+    // card shows one, so take the first.
+    final mine = payload['currentUserReactions'];
+    final userReaction = payload['userReaction'] as String? ??
+        (mine is List && mine.isNotEmpty ? mine.first.toString() : null);
+
     return TerminalEchoModel(
       id: id,
       senderId: senderId,
@@ -72,7 +78,7 @@ class TerminalEchoModel extends TerminalEchoEntity {
       countReactAngry: (payload['countReactAngry'] as num?)?.toInt() ?? 0,
       senderUsername:
           (user?['username'] ?? payload['senderUsername']) as String?,
-      userReaction: payload['userReaction'] as String?,
+      userReaction: userReaction,
     );
   }
 

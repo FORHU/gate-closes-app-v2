@@ -11,15 +11,18 @@ class ProfileModel extends ProfileEntity {
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
-    final payload = (json['data'] is Map<String, dynamic>)
-        ? json['data'] as Map<String, dynamic>
-        : (json['data'] is Map)
-            ? (json['data'] as Map).cast<String, dynamic>()
-            : json;
+    Map<String, dynamic> map(Object? v) =>
+        v is Map ? v.cast<String, dynamic>() : const {};
+    final data = json['data'] is Map ? map(json['data']) : json;
+    // `GET /auth/me` nests the account under `user`; the top level holds
+    // `permissions`. Reading the top level gave an empty name, shown as "?".
+    final payload = data['user'] is Map ? map(data['user']) : data;
+    final username = payload['username']?.toString() ?? '';
+    final name = payload['name']?.toString() ?? '';
 
     return ProfileModel(
-      id: (payload['id'] ?? '').toString(),
-      name: (payload['name'] ?? payload['username'] ?? '').toString(),
+      id: (payload['id'] ?? payload['_id'] ?? '').toString(),
+      name: username.isNotEmpty ? username : name,
       email: (payload['email'] ?? '').toString(),
       bio: payload['bio'] as String?,
       joinedAt: payload['joinedAt'] != null

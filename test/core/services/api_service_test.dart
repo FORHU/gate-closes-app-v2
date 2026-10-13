@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gate_closes/core/config/app_config.dart';
+import 'package:gate_closes/core/constants/api_endpoints.dart';
 import 'package:gate_closes/core/errors/exceptions.dart';
 import 'package:gate_closes/core/services/api_service.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
@@ -38,15 +39,24 @@ class _StubAdapter implements HttpClientAdapter {
   }
 }
 
-ApiService _apiReturning({required int status, required Object body}) {
-  final storage = MockStorageService();
-  when(storage.readToken).thenAnswer((_) async => null);
-  when(storage.readRefreshToken).thenAnswer((_) async => null);
-  when(storage.clearSession).thenAnswer((_) async {});
+ApiService _apiReturning({
+  required int status,
+  required Object body,
+  MockStorageService? storage,
+  String? token,
+  void Function()? onUnauthenticated,
+}) {
+  final store = storage ?? MockStorageService();
+  when(store.readToken).thenAnswer((_) async => token);
+  when(store.clearSession).thenAnswer((_) async {});
 
   final dio = Dio()
     ..httpClientAdapter = _StubAdapter(statusCode: status, body: body);
-  return ApiService(storage: storage, dio: dio);
+  return ApiService(
+    storage: store,
+    dio: dio,
+    onUnauthenticated: onUnauthenticated,
+  );
 }
 
 void main() {
@@ -100,6 +110,46 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('ApiService sessions (no refresh token on v2)', () {
+    test('a 401 on a signed-in request ends the session', () async {
+      final storage = MockStorageService();
+      var signedOut = 0;
+      final api = _apiReturning(
+        status: 401,
+        body: {'message': 'Unauthorized'},
+        storage: storage,
+        token: 'session-token',
+        onUnauthenticated: () => signedOut++,
+      );
+
+      await expectLater(
+        api.get('/data'),
+        throwsA(isA<UnauthorizedException>()),
+      );
+      verify(storage.clearSession).called(1);
+      expect(signedOut, 1);
+    });
+
+    test('a wrong password (401 on sign-in) keeps the session', () async {
+      final storage = MockStorageService();
+      var signedOut = 0;
+      final api = _apiReturning(
+        status: 401,
+        body: {'code': 'INVALID_EMAIL_OR_PASSWORD', 'message': 'Invalid'},
+        storage: storage,
+        token: 'session-token',
+        onUnauthenticated: () => signedOut++,
+      );
+
+      await expectLater(
+        api.post(ApiEndpoints.login, {'email': 'a@b.c', 'password': 'x'}),
+        throwsA(isA<UnauthorizedException>()),
+      );
+      verifyNever(storage.clearSession);
+      expect(signedOut, 0);
     });
   });
 

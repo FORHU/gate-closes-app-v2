@@ -74,7 +74,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
     try {
       final payload = <String, dynamic>{
         'fileUrl': fileUrl,
-        'audioDuration': (audioDuration * 1000).toInt(),
+        // Message durations are milliseconds on the API (v1's contract, as
+        // the Expo app sent them); echoes use seconds. [audioDuration] is
+        // seconds: the page used to convert too, sending 1000x too long.
+        'audioDuration': (audioDuration * 1000).round(),
         'waveformData': waveformData,
       };
       if (fileName != null) {

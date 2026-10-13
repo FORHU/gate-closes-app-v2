@@ -16,8 +16,8 @@ abstract class MessagesRepository {
     required String textMessage,
   });
 
-  /// Sends a voice memo message with uploaded fileUrl, audioDuration,
-  /// and waveformData.
+  /// Sends a voice memo message with uploaded fileUrl, audioDuration
+  /// (seconds; sent to the API as milliseconds) and waveformData.
   Future<Either<Failure, ConversationMessageEntity>> sendVoiceMessage({
     required String conversationId,
     required String fileUrl,

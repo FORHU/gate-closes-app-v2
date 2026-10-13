@@ -34,17 +34,15 @@ void main() {
       id: '1',
       email: tEmail,
       name: 'Test',
-      token: 'access-token',
-      refreshToken: 'refresh-token',
+      token: 'session-token',
     );
 
-    test('returns Right(user) and persists both tokens on success', () async {
+    test('returns Right(user) and persists the session token', () async {
       // Arrange
       when(
         () => mockRemote.login(tEmail, tPassword),
       ).thenAnswer((_) async => tUser);
       when(() => mockStorage.saveToken(any())).thenAnswer((_) async {});
-      when(() => mockStorage.saveRefreshToken(any())).thenAnswer((_) async {});
       when(() => mockStorage.saveUserModel(any())).thenAnswer((_) async {});
 
       // Act
@@ -53,8 +51,7 @@ void main() {
       // Assert
       expect(result.isRight(), isTrue);
       expect(result.getRight().toNullable(), tUser);
-      verify(() => mockStorage.saveToken('access-token')).called(1);
-      verify(() => mockStorage.saveRefreshToken('refresh-token')).called(1);
+      verify(() => mockStorage.saveToken('session-token')).called(1);
     });
 
     test('maps UnauthorizedException to UnauthorizedFailure', () async {
@@ -120,8 +117,7 @@ void main() {
   group('AuthRepositoryImpl.logout', () {
     test('clears the session and returns Right(null)', () async {
       // Arrange
-      when(() => mockStorage.readRefreshToken()).thenAnswer((_) async => null);
-      when(() => mockRemote.logout(any())).thenAnswer((_) async {});
+      when(() => mockRemote.logout()).thenAnswer((_) async {});
       when(() => mockStorage.clearSession()).thenAnswer((_) async {});
 
       // Act
@@ -133,10 +129,7 @@ void main() {
     });
 
     test('still clears the local session when offline', () async {
-      when(() => mockStorage.readRefreshToken()).thenAnswer((_) async => 'r');
-      when(
-        () => mockRemote.logout(any()),
-      ).thenThrow(const NetworkException());
+      when(() => mockRemote.logout()).thenThrow(const NetworkException());
       when(() => mockStorage.clearSession()).thenAnswer((_) async {});
 
       final result = await repository.logout();
@@ -149,10 +142,7 @@ void main() {
       'returns Left(CacheFailure) when clearing the session throws',
       () async {
         // Arrange
-        when(
-          () => mockStorage.readRefreshToken(),
-        ).thenAnswer((_) async => null);
-        when(() => mockRemote.logout(any())).thenAnswer((_) async {});
+        when(() => mockRemote.logout()).thenAnswer((_) async {});
         when(
           () => mockStorage.clearSession(),
         ).thenThrow(Exception('disk error'));
@@ -165,5 +155,32 @@ void main() {
         expect(result.getLeft().toNullable(), isA<CacheFailure>());
       },
     );
+  });
+
+  group('AuthRepositoryImpl signup wizard', () {
+    test('the code step keeps the session for the next steps', () async {
+      when(
+        () => mockRemote.verifyEmail('new@example.com', '1234'),
+      ).thenAnswer(
+        (_) async => (token: 'signup-session', signupStep: 'set_password'),
+      );
+      when(() => mockStorage.saveToken(any())).thenAnswer((_) async {});
+
+      final result = await repository.verifyEmail('new@example.com', '1234');
+
+      expect(result.getRight().toNullable()?.signupStep, 'set_password');
+      verify(() => mockStorage.saveToken('signup-session')).called(1);
+    });
+
+    test('a wrong code saves nothing', () async {
+      when(
+        () => mockRemote.verifyEmail('new@example.com', '0000'),
+      ).thenThrow(const ServerException('Invalid OTP', statusCode: 400));
+
+      final result = await repository.verifyEmail('new@example.com', '0000');
+
+      expect(result.getLeft().toNullable()?.message, 'Invalid OTP');
+      verifyNever(() => mockStorage.saveToken(any()));
+    });
   });
 }

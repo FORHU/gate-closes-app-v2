@@ -42,11 +42,10 @@ void main() {
     });
 
     test(
-      'ApiService attaches CookieManager when cookieService is provided',
+      'ApiService keeps no cookie jar on native: bearer token only',
       () {
         final storage = MockStorageService();
         when(storage.readToken).thenAnswer((_) async => null);
-        when(storage.readRefreshToken).thenAnswer((_) async => null);
 
         final cookieService = CookieService();
         final api = ApiService(
@@ -57,7 +56,9 @@ void main() {
         final hasCookieManager = api.client.interceptors.any(
           (i) => i is CookieManager,
         );
-        expect(hasCookieManager, isTrue);
+        // A jar echoed Better Auth's session cookie, and the API then
+        // refused sign-out without an Origin header (403).
+        expect(hasCookieManager, isFalse);
       },
     );
   });

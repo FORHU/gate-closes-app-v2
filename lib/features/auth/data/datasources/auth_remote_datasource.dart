@@ -5,42 +5,41 @@ import 'package:gate_closes/features/auth/data/models/user_model.dart';
 
 /// Talks to the remote API. Knows nothing about storage or UI.
 ///
-/// The signup and forgot-password flows are real multi-step wizards on
-/// `gate-closes-api` (verified against `user.auth.controller.ts`) — neither
-/// is a single POST, and neither returns tokens directly. Both end by
-/// handing back a `userId` the next step must include, and the caller
-/// (`RegisterController`/`ForgotPasswordController`) logs in separately
-/// with the password once the wizard completes.
+/// gate-closes-api-v2 runs auth on Better Auth (its docs/AUTH.md). Both
+/// wizards are keyed by email:
+/// * signup: send a code → the code signs the user in (session token) →
+///   set password → set username and gender, all with that session;
+/// * forgot password: send a code → check it → reset with code and password,
+///   then sign in with the new password.
 abstract class AuthRemoteDataSource {
   Future<UserModel> login(String email, String password);
 
   // --- Signup wizard ---
-  Future<RegistrationStepModel> registerEmail(String email);
-  Future<RegistrationStepModel> verifyEmail(String userId, String code);
-  Future<void> resendCode(String userId);
+  /// Sends the signup code, or a new one. A finished account gets 400
+  /// "Email already registered.".
+  Future<void> sendSignupCode(String email);
+
+  /// Signs in with the code: the session token and the user's signup step.
+  Future<({String token, String? signupStep})> verifyEmail(
+    String email,
+    String code,
+  );
   Future<RegistrationStepModel> setPassword(
-    String userId,
     String password,
     String confirmPassword,
   );
   Future<RegistrationStepModel> setUsernameGender(
-    String userId,
     String username,
     String gender,
   );
 
   // --- Forgot-password wizard ---
-  Future<RegistrationStepModel> forgotPassword(String email);
-  Future<void> resendResetCode(String userId);
-  Future<RegistrationStepModel> verifyResetCode(String userId, String code);
-  Future<RegistrationStepModel> resetPassword(
-    String userId,
-    String password,
-    String confirmPassword,
-  );
+  Future<void> sendResetCode(String email);
+  Future<void> checkResetCode(String email, String code);
+  Future<void> resetPassword(String email, String code, String password);
 
-  Future<void> logout(String? refreshToken);
-  Future<UserModel> checkAuth(String token);
+  Future<void> logout();
+  Future<UserModel> checkAuth();
   Future<UserModel> editProfile({String? username, String? gender});
   Future<void> changePassword({
     required String currentPassword,
@@ -54,135 +53,99 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   final ApiService _api;
 
+  Map<String, dynamic> _map(Object? data) =>
+      (data is Map) ? data.cast<String, dynamic>() : <String, dynamic>{};
+
   @override
   Future<UserModel> login(String email, String password) async {
     final data = await _api.post(ApiEndpoints.login, {
       'email': email,
       'password': password,
     });
-    return UserModel.fromJson((data as Map).cast<String, dynamic>());
+    return UserModel.fromJson(_map(data));
   }
 
   @override
-  Future<RegistrationStepModel> registerEmail(String email) async {
-    final data = await _api.post(ApiEndpoints.registerEmail, {
-      'email': email,
-    });
-    return RegistrationStepModel.fromJson(
-      (data as Map).cast<String, dynamic>(),
+  Future<void> sendSignupCode(String email) async {
+    await _api.post(ApiEndpoints.sendOtp, {'email': email, 'type': 'sign-in'});
+  }
+
+  @override
+  Future<({String token, String? signupStep})> verifyEmail(
+    String email,
+    String code,
+  ) async {
+    final json = _map(
+      await _api.post(ApiEndpoints.signInWithOtp, {
+        'email': email,
+        'otp': code,
+      }),
     );
-  }
-
-  @override
-  Future<RegistrationStepModel> verifyEmail(String userId, String code) async {
-    final data = await _api.post(ApiEndpoints.verifyEmail, {
-      'userId': userId,
-      'code': code,
-    });
-    return RegistrationStepModel.fromJson(
-      (data as Map).cast<String, dynamic>(),
-      fallbackUserId: userId,
+    return (
+      token: (json['token'] ?? '').toString(),
+      signupStep: _map(json['user'])['signupStep'] as String?,
     );
-  }
-
-  @override
-  Future<void> resendCode(String userId) async {
-    await _api.post(ApiEndpoints.resendCode, {'userId': userId});
   }
 
   @override
   Future<RegistrationStepModel> setPassword(
-    String userId,
     String password,
     String confirmPassword,
   ) async {
     final data = await _api.post(ApiEndpoints.setPassword, {
-      'userId': userId,
       'password': password,
       'confirmPassword': confirmPassword,
     });
-    return RegistrationStepModel.fromJson(
-      (data as Map).cast<String, dynamic>(),
-      fallbackUserId: userId,
-    );
+    return RegistrationStepModel.fromJson(_map(data));
   }
 
   @override
   Future<RegistrationStepModel> setUsernameGender(
-    String userId,
     String username,
     String gender,
   ) async {
     final data = await _api.post(ApiEndpoints.setUsernameGender, {
-      'userId': userId,
       'username': username,
       'gender': gender,
     });
-    return RegistrationStepModel.fromJson(
-      (data as Map).cast<String, dynamic>(),
-      fallbackUserId: userId,
-    );
+    return RegistrationStepModel.fromJson(_map(data));
   }
 
   @override
-  Future<RegistrationStepModel> forgotPassword(String email) async {
-    final data = await _api.post(ApiEndpoints.forgotPassword, {
+  Future<void> sendResetCode(String email) async {
+    await _api.post(ApiEndpoints.sendOtp, {
       'email': email,
+      'type': 'forget-password',
     });
-    return RegistrationStepModel.fromJson(
-      (data as Map).cast<String, dynamic>(),
-    );
   }
 
   @override
-  Future<void> resendResetCode(String userId) async {
-    await _api.post(ApiEndpoints.resendResetCode, {'userId': userId});
-  }
-
-  @override
-  Future<RegistrationStepModel> verifyResetCode(
-    String userId,
-    String code,
-  ) async {
-    final data = await _api.post(ApiEndpoints.verifyResetCode, {
-      'userId': userId,
-      'code': code,
+  Future<void> checkResetCode(String email, String code) async {
+    await _api.post(ApiEndpoints.checkOtp, {
+      'email': email,
+      'type': 'forget-password',
+      'otp': code,
     });
-    return RegistrationStepModel.fromJson(
-      (data as Map).cast<String, dynamic>(),
-      fallbackUserId: userId,
-    );
   }
 
   @override
-  Future<RegistrationStepModel> resetPassword(
-    String userId,
-    String password,
-    String confirmPassword,
-  ) async {
-    final data = await _api.post(ApiEndpoints.resetPassword, {
-      'userId': userId,
+  Future<void> resetPassword(String email, String code, String password) async {
+    await _api.post(ApiEndpoints.resetPassword, {
+      'email': email,
+      'otp': code,
       'password': password,
-      'confirmPassword': confirmPassword,
     });
-    return RegistrationStepModel.fromJson(
-      (data as Map).cast<String, dynamic>(),
-      fallbackUserId: userId,
-    );
   }
 
   @override
-  Future<void> logout(String? refreshToken) async {
-    final payload = <String, dynamic>{};
-    if (refreshToken != null) payload['refreshToken'] = refreshToken;
-
-    await _api.post(ApiEndpoints.logout, payload);
+  Future<void> logout() async {
+    await _api.post(ApiEndpoints.logout, <String, dynamic>{});
   }
 
   @override
-  Future<UserModel> checkAuth(String token) async {
+  Future<UserModel> checkAuth() async {
     final data = await _api.get(ApiEndpoints.me);
-    return UserModel.fromJson((data as Map).cast<String, dynamic>());
+    return UserModel.fromJson(_map(data));
   }
 
   @override
@@ -192,7 +155,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (gender != null && gender.isNotEmpty) payload['gender'] = gender;
 
     final data = await _api.patch(ApiEndpoints.editProfile, payload);
-    return UserModel.fromJson((data as Map).cast<String, dynamic>());
+    return UserModel.fromJson(_map(data));
   }
 
   @override

@@ -176,10 +176,25 @@ class _FeedPageState extends ConsumerState<FeedPage> {
           .loadFeed(airport.iata),
       child: ListView.separated(
         padding: AppSpacing.edgeInsetsMd,
-        itemCount: echoState.echoes.length,
+        // One more row while pages remain: building it fetches the next.
+        itemCount: echoState.echoes.length + (echoState.hasMore ? 1 : 0),
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-        itemBuilder: (context, index) =>
-            EchoCard(echo: echoState.echoes[index]),
+        itemBuilder: (context, index) {
+          if (index < echoState.echoes.length) {
+            return EchoCard(echo: echoState.echoes[index]);
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              unawaited(
+                ref.read(terminalEchoControllerProvider.notifier).loadMore(),
+              );
+            }
+          });
+          return const Padding(
+            padding: AppSpacing.edgeInsetsMd,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        },
       ),
     );
   }

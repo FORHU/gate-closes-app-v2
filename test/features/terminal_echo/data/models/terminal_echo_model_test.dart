@@ -80,5 +80,18 @@ void main() {
       expect(model.waveformData, isEmpty);
       expect(model.totalReactions, 0);
     });
+
+    test("reads the viewer's reaction from currentUserReactions", () {
+      final model = TerminalEchoModel.fromJson(const {
+        'id': 'e1',
+        'senderId': 'u1',
+        'textMessage': '',
+        'airportIata': 'MNL',
+        'createdAt': '2026-10-13T08:00:00.000Z',
+        'currentUserReactions': ['haha'],
+      });
+
+      expect(model.userReaction, 'haha');
+    });
   });
 }

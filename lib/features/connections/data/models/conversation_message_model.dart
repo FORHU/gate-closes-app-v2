@@ -25,7 +25,7 @@ class ConversationMessageModel extends ConversationMessageEntity {
     final conversationId = (json['conversationId'] ?? '').toString();
     final senderIdRaw = json['senderId'];
     final senderId = senderIdRaw is Map
-        ? (senderIdRaw['_id'] ?? '').toString()
+        ? (senderIdRaw['_id'] ?? senderIdRaw['id'] ?? '').toString()
         : (senderIdRaw ?? '').toString();
 
     final file = json['file'];

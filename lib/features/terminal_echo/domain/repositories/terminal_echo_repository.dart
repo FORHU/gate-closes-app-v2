@@ -1,12 +1,15 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/core/location/location_coordinates.dart';
+import 'package:gate_closes/features/terminal_echo/domain/entities/echo_page.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 
 abstract class TerminalEchoRepository {
-  /// Fetches the echoes for an airport feed (or all if airportIata is null).
-  Future<Either<Failure, List<TerminalEchoEntity>>> getEchoes({
+  /// Fetches one page of an airport feed (or of every echo if airportIata
+  /// is null). [cursor] is the previous page's `nextCursor`.
+  Future<Either<Failure, EchoPage>> getEchoes({
     String? airportIata,
+    String? cursor,
   });
 
   /// Publishes a new Terminal Echo. A voice memo is mandatory on the real

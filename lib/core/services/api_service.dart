@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gate_closes/core/config/app_config.dart';
@@ -31,18 +30,17 @@ class ApiService {
                 contentType: Headers.jsonContentType,
               ),
             ) {
-    // 0. Enable Web credentials & native platform cookie jar
+    // 0. Web builds send the browser's cookies. Native builds keep no
+    // cookie jar: they authenticate with the bearer token only. Echoing
+    // Better Auth's session cookie back made the API treat requests as a
+    // browser's and refuse them without an Origin header (403
+    // MISSING_OR_NULL_ORIGIN), so signing out left the session alive.
     configureWebCredentials(client);
-    final jar = cookieService?.jar;
-    if (jar != null && !kIsWeb) {
-      client.interceptors.add(CookieManager(jar));
-    }
 
-    // 1. Attach the bearer token and transparently refresh it on a 401.
+    // 1. Attach the session token; a 401 signs the user out.
     client.interceptors.add(
       AuthInterceptor(
         storage,
-        baseUrl: client.options.baseUrl,
         cookieService: cookieService,
         onUnauthenticated: onUnauthenticated,
       ),
