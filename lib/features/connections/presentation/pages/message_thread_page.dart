@@ -49,6 +49,7 @@ class MessageThreadPage extends ConsumerStatefulWidget {
 class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
   final _scrollController = ScrollController();
   bool _isUploading = false;
+  Key _composerKey = UniqueKey();
 
   @override
   void initState() {
@@ -116,13 +117,19 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       final success =
           await ref.read(messageThreadControllerProvider.notifier).sendVoice(
                 fileUrl: uploaded.url,
-                audioDuration: durationSeconds * 1000,
+                // Seconds; the repository sends the API milliseconds.
+                audioDuration: durationSeconds,
                 waveformData: waveform,
                 fileName: uploaded.key,
               );
 
       if (mounted) {
-        setState(() => _isUploading = false);
+        setState(() {
+          _isUploading = false;
+          // A fresh composer: the sent recording must not stay in review,
+          // one tap away from being sent again. Kept on failure to retry.
+          if (success) _composerKey = UniqueKey();
+        });
       }
 
       if (success) {
@@ -223,6 +230,7 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
               ),
             ),
           VoiceRecorderComposer(
+            key: _composerKey,
             isInline: true,
             accentColor: accent,
             onRecorded: _handleSendVoice,
