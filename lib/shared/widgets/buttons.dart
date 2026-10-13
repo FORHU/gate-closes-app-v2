@@ -78,6 +78,44 @@ class GradientButton extends StatelessWidget {
   }
 }
 
+/// Translucent pill on the glass surface — for secondary actions next to a
+/// [PrimaryButton], like "Continue with Google". [leading] takes any widget
+/// (a brand mark), where [PrimaryButton.icon] takes an icon.
+class GlassButton extends StatelessWidget {
+  const GlassButton({
+    required this.label,
+    required this.onPressed,
+    this.leading,
+    this.expand = true,
+    this.isLoading = false,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final Widget? leading;
+  final bool expand;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return _PressableButton(
+      onPressed: onPressed,
+      expand: expand,
+      isLoading: isLoading,
+      label: label,
+      leading: leading,
+      foreground: colors.textPrimary,
+      decoration: BoxDecoration(
+        color: colors.glass,
+        borderRadius: AppRadius.brPill,
+        border: Border.all(color: colors.border),
+      ),
+    );
+  }
+}
+
 class _PressableButton extends StatefulWidget {
   const _PressableButton({
     required this.label,
@@ -87,6 +125,7 @@ class _PressableButton extends StatefulWidget {
     required this.isLoading,
     required this.foreground,
     this.icon,
+    this.leading,
   });
 
   final String label;
@@ -96,6 +135,7 @@ class _PressableButton extends StatefulWidget {
   final bool isLoading;
   final Color foreground;
   final IconData? icon;
+  final Widget? leading;
 
   @override
   State<_PressableButton> createState() => _PressableButtonState();
@@ -139,7 +179,10 @@ class _PressableButtonState extends State<_PressableButton> {
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (widget.icon != null) ...[
+                      if (widget.leading != null) ...[
+                        widget.leading!,
+                        const Gap(AppSpacing.sm),
+                      ] else if (widget.icon != null) ...[
                         Icon(widget.icon, color: widget.foreground, size: 20),
                         const Gap(AppSpacing.sm),
                       ],

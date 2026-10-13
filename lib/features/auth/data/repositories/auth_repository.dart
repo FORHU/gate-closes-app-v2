@@ -11,6 +11,11 @@ import 'package:gate_closes/features/auth/domain/entities/user_entity.dart';
 abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> login(String email, String password);
 
+  /// Signs in with a Google ID token and loads the full user (`/auth/me`).
+  /// The user is cached as signed in only once the profile is complete; a
+  /// new Google account finishes signup with [setUsernameGender] first.
+  Future<Either<Failure, UserEntity>> loginWithGoogle(String idToken);
+
   // --- Signup wizard (keyed by email) ---
   Future<Either<Failure, void>> registerEmail(String email);
 
@@ -72,6 +77,16 @@ class AuthRepositoryImpl implements AuthRepository {
         await _storage.saveToken(user.token);
         // Save full user model to local cache for instant offline startup.
         await _storage.saveUserModel(user);
+        return user;
+      });
+
+  @override
+  Future<Either<Failure, UserEntity>> loginWithGoogle(String idToken) =>
+      _run(() async {
+        final session = await _remote.signInWithGoogle(idToken);
+        await _storage.saveToken(session.token);
+        final user = await _remote.checkAuth();
+        if (user.isCompleteProfile) await _storage.saveUserModel(user);
         return user;
       });
 

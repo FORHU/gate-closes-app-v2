@@ -14,6 +14,11 @@ import 'package:gate_closes/features/auth/data/models/user_model.dart';
 abstract class AuthRemoteDataSource {
   Future<UserModel> login(String email, String password);
 
+  /// Signs in with a Google ID token (Better Auth's ID-token flow). A new
+  /// account comes back signed up but without username/gender
+  /// (`isCompleteProfile: false`).
+  Future<UserModel> signInWithGoogle(String idToken);
+
   // --- Signup wizard ---
   /// Sends the signup code, or a new one. A finished account gets 400
   /// "Email already registered.".
@@ -61,6 +66,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final data = await _api.post(ApiEndpoints.login, {
       'email': email,
       'password': password,
+    });
+    return UserModel.fromJson(_map(data));
+  }
+
+  @override
+  Future<UserModel> signInWithGoogle(String idToken) async {
+    final data = await _api.post(ApiEndpoints.googleAuth, {
+      'provider': 'google',
+      'idToken': {'token': idToken},
     });
     return UserModel.fromJson(_map(data));
   }

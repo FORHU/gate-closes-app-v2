@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gate_closes/core/services/google_sign_in_service.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/core/utils/validators.dart';
 import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:gate_closes/features/auth/presentation/controllers/register_controller.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/buttons.dart';
 import 'package:gate_closes/shared/widgets/modern_text_field.dart';
@@ -48,9 +50,29 @@ class _LoginFormState extends ConsumerState<LoginForm> {
     }
   }
 
+  Future<void> _continueWithGoogle() async {
+    final result =
+        await ref.read(authControllerProvider.notifier).loginWithGoogle();
+    if (!mounted) return;
+
+    switch (result) {
+      case GoogleLoginResult.signedIn:
+        context.go(RouteNames.home);
+      case GoogleLoginResult.needsProfile:
+        ref.read(registerControllerProvider.notifier).startProfileCompletion();
+        context.go(RouteNames.register);
+      case GoogleLoginResult.failed:
+        final error = ref.read(authControllerProvider).error;
+        if (error != null) showTopToast(context, error);
+      case GoogleLoginResult.cancelled:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
+    final showGoogle = ref.watch(googleSignInServiceProvider).isConfigured;
     final colors = context.colors;
 
     return Form(
@@ -116,6 +138,17 @@ class _LoginFormState extends ConsumerState<LoginForm> {
               .animate()
               .fadeIn(delay: 260.ms, duration: 350.ms)
               .slideY(begin: 0.1, end: 0),
+          if (showGoogle) ...[
+            AppSpacing.md.v,
+            GlassButton(
+              label: 'Continue with Google',
+              leading: const _GoogleMark(),
+              onPressed: state.isLoading ? null : _continueWithGoogle,
+            )
+                .animate()
+                .fadeIn(delay: 290.ms, duration: 350.ms)
+                .slideY(begin: 0.1, end: 0),
+          ],
           AppSpacing.lg.v,
           Wrap(
             alignment: WrapAlignment.center,
@@ -142,6 +175,34 @@ class _LoginFormState extends ConsumerState<LoginForm> {
             ],
           ).animate().fadeIn(delay: 320.ms, duration: 350.ms),
         ],
+      ),
+    );
+  }
+}
+
+/// Google's "G" on a white disc, as Google's sign-in guidelines ask for on
+/// dark buttons.
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: const Text(
+        'G',
+        style: TextStyle(
+          color: Color(0xFF4285F4),
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
       ),
     );
   }

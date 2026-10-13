@@ -42,6 +42,12 @@ class RegisterController extends Notifier<RegisterState> {
   @override
   RegisterState build() => const RegisterState();
 
+  /// A new Google account is already signed up and signed in; only the
+  /// last step (username and gender) is left.
+  void startProfileCompletion() {
+    state = const RegisterState(step: RegisterStep.usernameGender);
+  }
+
   Future<bool> submitEmail(String email) async {
     state = state.copyWith(isLoading: true, email: email);
     final result = await ref.read(authRepositoryProvider).registerEmail(email);

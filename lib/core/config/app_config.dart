@@ -16,6 +16,7 @@ class AppConfig {
     required this.appName,
     required this.baseUrl,
     this.mapboxAccessToken = '',
+    this.googleServerClientId = '',
     this.enableLogging = false,
   });
 
@@ -28,6 +29,7 @@ class AppConfig {
       appName: dotenv.env['APP_NAME'] ?? 'Gate Closes',
       baseUrl: dotenv.env['BASE_URL'] ?? '',
       mapboxAccessToken: dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '',
+      googleServerClientId: dotenv.env['GOOGLE_SERVER_CLIENT_ID'] ?? '',
       enableLogging: (dotenv.env['ENABLE_LOGGING'] ??
                   (envString != 'prod' ? 'true' : 'false'))
               .toLowerCase() ==
@@ -42,6 +44,7 @@ class AppConfig {
         appName = 'Gate Closes (Dev)',
         baseUrl = 'http://10.0.2.2:3001/api',
         mapboxAccessToken = _mapboxTokenDefine,
+        googleServerClientId = _googleServerClientIdDefine,
         enableLogging = true;
 
   /// Explicit production config used by `main_prod.dart` — logging off,
@@ -51,12 +54,19 @@ class AppConfig {
         appName = 'Gate Closes',
         baseUrl = 'https://api.gatecloses.com/api',
         mapboxAccessToken = _mapboxTokenDefine,
+        googleServerClientId = _googleServerClientIdDefine,
         enableLogging = false;
 
   final Environment environment;
   final String appName;
   final String baseUrl;
   final String mapboxAccessToken;
+
+  /// The API's Google OAuth client id (the "Web application" client, not the
+  /// Android one). Google issues the sign-in ID token for this audience and
+  /// the API (Better Auth, `GOOGLE_CLIENT_ID`) only accepts that audience.
+  /// Empty: Google sign-in is hidden.
+  final String googleServerClientId;
   final bool enableLogging;
 
   bool get isDev => environment == Environment.dev;
@@ -68,6 +78,11 @@ class AppConfig {
   /// Without it the map can't render.
   static const String _mapboxTokenDefine =
       String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
+
+  /// Same as [googleServerClientId], for the define-based entry points:
+  /// `--dart-define=GOOGLE_SERVER_CLIENT_ID=....apps.googleusercontent.com`.
+  static const String _googleServerClientIdDefine =
+      String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
   /// Set once by `bootstrap()` before `runApp`. Reading it before then throws.
   static late AppConfig instance;
