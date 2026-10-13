@@ -40,9 +40,13 @@ void main() {
 
   test('reads the created echo back by its insertedId', () async {
     stubPost({'message': 'Terminal echo created.', 'insertedId': 'e1'});
+    // GET /terminal-echo/:id wraps the echo in `properties`. Reading `data`
+    // as the echo gave one with no id: an empty extra card in the feed.
     when(() => api.get('${ApiEndpoints.terminalEcho}/e1')).thenAnswer(
       (_) async => {
-        'data': {'_id': 'e1', 'textMessage': 'test 1'},
+        'data': {
+          'properties': {'id': 'e1', 'textMessage': 'test 1'},
+        },
       },
     );
 

@@ -137,11 +137,17 @@ class TerminalEchoRepositoryImpl implements TerminalEchoRepository {
   Future<Either<Failure, TerminalEchoEntity>> getEchoById(String id) async {
     try {
       final response = await _api.get('${ApiEndpoints.terminalEcho}/$id');
+      // The API answers `{data: {properties: echo}}` (a GeoJSON-style
+      // wrapper, as in v1). Parsing `data` itself gave an echo with no id,
+      // which showed up as an empty extra card after posting.
       final rawData = (response as Map)['data'];
-      final model = TerminalEchoModel.fromJson(
-        (rawData is Map) ? rawData.cast<String, dynamic>() : {},
-      );
-      return Right(model);
+      final echo = (rawData is Map && rawData['properties'] is Map)
+          ? rawData['properties'] as Map
+          : rawData;
+      if (echo is! Map) {
+        return const Left(ServerFailure('Terminal echo not found.'));
+      }
+      return Right(TerminalEchoModel.fromJson(echo.cast<String, dynamic>()));
     } on AppException catch (e) {
       return Left(ServerFailure(e.message));
     } on Object catch (e) {
