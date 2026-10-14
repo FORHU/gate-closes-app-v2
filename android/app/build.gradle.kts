@@ -60,6 +60,10 @@ android {
                 logger.warn("key.properties not found: release build is debug-signed")
                 signingConfigs.getByName("debug")
             }
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

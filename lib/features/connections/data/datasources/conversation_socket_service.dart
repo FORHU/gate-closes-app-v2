@@ -4,8 +4,8 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Manages realtime Socket.IO connections for the `/conversations` namespace.
 ///
-/// Event names are verified against `gate-closes-api/src/events/conversation.
-/// events.ts` and `conversation.controller.ts` — note `join_conversation`/
+/// Event names are verified against `gate-closes-api-v2/src/events/
+/// conversation.events.ts` and `conversation.controller.ts` — note `join_conversation`/
 /// `leave_conversation` (bare), unlike Terminal Echo's prefixed
 /// `terminal_echo:join_airport`. The two namespaces are not symmetric; do not
 /// copy one pattern onto the other without checking.
@@ -41,8 +41,8 @@ class ConversationSocketService {
 
     final connection = _connection = AuthenticatedSocket(
       namespace: '/conversations',
-      // The /conversations middleware reads `auth.token`.
-      authKey: 'token',
+      // The /conversations middleware reads `auth.accessToken`.
+      authKey: 'accessToken',
       readToken: readToken,
       revalidateSession: revalidateSession,
     );
