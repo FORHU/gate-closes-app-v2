@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart' as ap;
 import 'package:flutter/material.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
+import 'package:gate_closes/shared/widgets/top_toast.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// Compact inline audio player rendering a stored `waveformData` sample
@@ -31,8 +32,11 @@ class WaveformPlayer extends StatefulWidget {
 }
 
 class _WaveformPlayerState extends State<WaveformPlayer> {
+  static const _prepareTimeout = Duration(seconds: 10);
+
   final _player = ap.AudioPlayer();
   bool _isPlaying = false;
+  bool _isLoading = false;
   Duration _position = Duration.zero;
   bool _thresholdFired = false;
   StreamSubscription<Duration>? _positionSub;
@@ -71,12 +75,30 @@ class _WaveformPlayerState extends State<WaveformPlayer> {
   }
 
   Future<void> _toggle() async {
+    if (_isLoading) return;
     if (_isPlaying) {
       await _player.pause();
+      if (mounted) setState(() => _isPlaying = false);
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      // An unreachable host makes Android's media player retry instead of
+      // failing, and audioplayers waits 30 s for it; clips are ≤10 s.
+      await _player
+          .play(ap.UrlSource(widget.audioUrl))
+          .timeout(_prepareTimeout);
+      if (mounted) setState(() => _isPlaying = true);
+    } on Object catch (error) {
+      // An unreachable URL (e.g. a `localhost` MinIO address on a phone)
+      // or a blocked cleartext request lands here.
+      debugPrint('WaveformPlayer: failed to play ${widget.audioUrl}: $error');
+      unawaited(_player.stop());
+      if (!mounted) return;
       setState(() => _isPlaying = false);
-    } else {
-      await _player.play(ap.UrlSource(widget.audioUrl));
-      setState(() => _isPlaying = true);
+      showTopToast(context, "Couldn't play this voice note.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -99,11 +121,19 @@ class _WaveformPlayerState extends State<WaveformPlayer> {
             height: 36,
             decoration:
                 BoxDecoration(color: colors.accent, shape: BoxShape.circle),
-            child: Icon(
-              _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              color: colors.accentOn,
-              size: 20,
-            ),
+            child: _isLoading
+                ? Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.accentOn,
+                    ),
+                  )
+                : Icon(
+                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: colors.accentOn,
+                    size: 20,
+                  ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
