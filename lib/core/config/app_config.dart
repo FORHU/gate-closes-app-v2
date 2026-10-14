@@ -49,7 +49,7 @@ class AppConfig {
   const AppConfig.prod()
       : environment = Environment.prod,
         appName = 'Gate Closes',
-        baseUrl = 'https://api.gatecloses.com/api',
+        baseUrl = 'https://dev.gatecloses.com/api',
         mapboxAccessToken = _mapboxTokenDefine,
         enableLogging = false;
 
