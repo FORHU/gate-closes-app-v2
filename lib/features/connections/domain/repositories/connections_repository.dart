@@ -8,6 +8,9 @@ abstract class ConnectionsRepository {
     ConnectionType? type,
   });
 
+  /// One of the user's conversations, by id (e.g. from a notification).
+  Future<Either<Failure, ConnectionEntity>> getConnection(String id);
+
   /// Creates a new DM connection with another traveler.
   Future<Either<Failure, ConnectionEntity>> createConnection({
     required ConnectionType type,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/config/app_config.dart';
 import 'package:gate_closes/core/location/simulated_airport.dart';
+import 'package:gate_closes/core/notifications/notification_coordinator.dart';
 import 'package:gate_closes/core/services/theme_controller.dart';
 import 'package:gate_closes/l10n/generated/app_localizations.dart';
 import 'package:gate_closes/routes/app_routes.dart';
@@ -13,6 +14,10 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
+    // Live notifications, the flight reminder, and taps → screens.
+    ref
+      ..watch(notificationCoordinatorProvider)
+      ..watch(notificationTapRoutingProvider);
     final themeMode = ref.watch(themeModeProvider);
     final simulated = ref.watch(simulatedAirportProvider);
 

@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gate_closes/core/notifications/app_notification.dart';
+import 'package:gate_closes/core/notifications/local_notification_service.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
 import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:gate_closes/features/auth/presentation/pages/forgot_password_page.dart';
@@ -10,8 +14,10 @@ import 'package:gate_closes/features/boarding_pass/presentation/pages/add_boardi
 import 'package:gate_closes/features/boarding_pass/presentation/widgets/boarding_pass_scanner_sheet.dart';
 import 'package:gate_closes/features/connections/domain/entities/connection_entity.dart';
 import 'package:gate_closes/features/connections/presentation/pages/connections_page.dart';
+import 'package:gate_closes/features/connections/presentation/pages/conversation_loader_page.dart';
 import 'package:gate_closes/features/connections/presentation/pages/message_thread_page.dart';
 import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
+import 'package:gate_closes/features/notifications/presentation/pages/notification_settings_page.dart';
 import 'package:gate_closes/features/profile/presentation/pages/change_password_page.dart';
 import 'package:gate_closes/features/profile/presentation/pages/profile_editor_page.dart';
 import 'package:gate_closes/features/profile/presentation/pages/profile_page.dart';
@@ -25,6 +31,7 @@ import 'package:gate_closes/features/worldMap/presentation/pages/map_lighting_pa
 import 'package:gate_closes/features/worldMap/presentation/pages/world_map_page.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/dialog_page.dart';
+import 'package:gate_closes/shared/widgets/in_app_notification_banner.dart';
 import 'package:gate_closes/shared/widgets/main_layout.dart';
 import 'package:go_router/go_router.dart';
 
@@ -46,6 +53,51 @@ class RouterNotifier extends ChangeNotifier {
 
 final routerNotifierProvider = Provider<RouterNotifier>((ref) {
   return RouterNotifier(ref);
+});
+
+/// Opens the screen a tapped notification points to: the map with `go`,
+/// anything else pushed on top so Back returns to where the user was. A
+/// notification that launched the app is opened after the first frame.
+///
+/// Also hosts in-app banners: while the app is on screen, notifications come
+/// here instead of the phone's panel, and tapping one opens the same route.
+final notificationTapRoutingProvider = Provider<void>((ref) {
+  final router = ref.watch(goRouterProvider);
+  final service = ref.watch(localNotificationServiceProvider);
+
+  void open(String route) {
+    if (route == RouteNames.home) {
+      router.go(route);
+    } else {
+      unawaited(router.push<void>(route));
+    }
+  }
+
+  void showBanner(AppNotification notification) {
+    final overlay = router.routerDelegate.navigatorKey.currentState?.overlay;
+    if (overlay == null) {
+      // No screen to draw on yet: fall back to the notification panel.
+      unawaited(service.show(notification));
+      return;
+    }
+    showInAppNotificationBanner(
+      overlay,
+      title: notification.title,
+      body: notification.body,
+      onTap: () => open(notification.route),
+    );
+  }
+
+  final subscription = service.taps.listen(open);
+  final banners = service.inApp.listen(showBanner);
+  ref
+    ..onDispose(subscription.cancel)
+    ..onDispose(banners.cancel);
+
+  final launchRoute = service.takeLaunchRoute();
+  if (launchRoute != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => open(launchRoute));
+  }
 });
 
 /// The app's router. `redirect` guards routes based on auth state; the login
@@ -153,6 +205,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.mapLighting,
         builder: (context, state) => const MapLightingPage(),
+      ),
+      GoRoute(
+        path: RouteNames.notificationSettings,
+        builder: (context, state) => const NotificationSettingsPage(),
+      ),
+      GoRoute(
+        path: RouteNames.conversation,
+        builder: (context, state) => ConversationLoaderPage(
+          conversationId: state.pathParameters['conversationId']!,
+        ),
       ),
       GoRoute(
         path: RouteNames.connectionDraft,

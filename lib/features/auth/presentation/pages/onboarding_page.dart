@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gate_closes/core/notifications/local_notification_service.dart';
+import 'package:gate_closes/core/notifications/notification_coordinator.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/core/utils/validators.dart';
@@ -73,6 +75,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     }
     if (mounted) {
       context.go(RouteNames.home);
+      unawaited(
+        askNotificationPermissionOnce(
+          ref.read(storageServiceProvider),
+          ref.read(localNotificationServiceProvider),
+        ),
+      );
     }
   }
 

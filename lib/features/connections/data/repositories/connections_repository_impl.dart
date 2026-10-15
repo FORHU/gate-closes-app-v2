@@ -45,6 +45,22 @@ class ConnectionsRepositoryImpl implements ConnectionsRepository {
   }
 
   @override
+  Future<Either<Failure, ConnectionEntity>> getConnection(String id) async {
+    try {
+      final response = await _api.get(ApiEndpoints.conversationById(id));
+      final rawData = (response as Map)['data'];
+      if (rawData is! Map) {
+        return const Left(ServerFailure('Conversation not found.'));
+      }
+      return Right(ConnectionModel.fromJson(rawData.cast<String, dynamic>()));
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on Object catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, ConnectionEntity>> createConnection({
     required ConnectionType type,
     required String otherUserId,
