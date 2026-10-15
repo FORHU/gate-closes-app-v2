@@ -187,11 +187,18 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
-  Future<bool> editProfile({String? username, String? gender}) async {
+  /// [picture] null leaves the picture as it is; `(value: null)` clears it
+  /// back to the letter avatar.
+  Future<bool> editProfile({
+    String? username,
+    String? gender,
+    ({String? value})? picture,
+  }) async {
     state = state.copyWith(isLoading: true);
     final result = await ref.read(authRepositoryProvider).editProfile(
           username: username,
           gender: gender,
+          picture: picture,
         );
     return result.fold(
       (failure) {

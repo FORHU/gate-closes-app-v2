@@ -93,6 +93,7 @@ flutter:
   assets:
     - .env.dev
     - .env.prod
+    - assets/avatars/
     - assets/data/
     - assets/map_badges/
 

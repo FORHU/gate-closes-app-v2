@@ -11,6 +11,7 @@ import 'package:gate_closes/features/connections/domain/entities/conversation_me
 import 'package:gate_closes/features/connections/presentation/controllers/message_thread_controller.dart';
 import 'package:gate_closes/shared/widgets/app_state_view.dart';
 import 'package:gate_closes/shared/widgets/emoji_reaction_picker.dart';
+import 'package:gate_closes/shared/widgets/user_avatar.dart';
 import 'package:gate_closes/shared/widgets/voice_recorder_composer.dart';
 import 'package:gate_closes/shared/widgets/waveform_player.dart';
 import 'package:gate_closes/theme/tokens/colors.dart';
@@ -183,13 +184,11 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
         elevation: 0,
         title: Row(
           children: [
-            CircleAvatar(
+            UserAvatar(
+              name: name ?? '',
+              picture: connection?.otherUserAvatar,
               radius: 16,
-              backgroundColor: accent.withValues(alpha: 0.18),
-              child: Text(
-                (name?.isNotEmpty ?? false) ? name![0].toUpperCase() : '?',
-                style: TextStyle(color: accent, fontWeight: FontWeight.w700),
-              ),
+              tint: accent,
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(

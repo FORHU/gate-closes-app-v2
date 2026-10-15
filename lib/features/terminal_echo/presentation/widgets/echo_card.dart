@@ -8,6 +8,7 @@ import 'package:gate_closes/features/terminal_echo/presentation/controllers/term
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/emoji_reaction_picker.dart';
 import 'package:gate_closes/shared/widgets/glass_card.dart';
+import 'package:gate_closes/shared/widgets/user_avatar.dart';
 import 'package:gate_closes/shared/widgets/waveform_player.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +28,6 @@ class EchoCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final name = echo.senderUsername ?? 'Unknown traveler';
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
     return InkWell(
       onTap: () => context.push(RouteNames.echoThreadFor(echo.id), extra: echo),
@@ -38,16 +38,12 @@ class EchoCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
+                UserAvatar(
+                  name: name,
+                  picture: echo.senderPicture,
+                  userId: echo.senderId,
                   radius: 16,
-                  backgroundColor: colors.accent.withValues(alpha: 0.18),
-                  child: Text(
-                    initial,
-                    style: TextStyle(
-                      color: colors.accentText,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  tint: colors.accentText,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(

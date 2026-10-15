@@ -45,7 +45,11 @@ abstract class AuthRemoteDataSource {
 
   Future<void> logout();
   Future<UserModel> checkAuth();
-  Future<UserModel> editProfile({String? username, String? gender});
+  Future<UserModel> editProfile({
+    String? username,
+    String? gender,
+    ({String? value})? picture,
+  });
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -163,10 +167,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<UserModel> editProfile({String? username, String? gender}) async {
+  Future<UserModel> editProfile({
+    String? username,
+    String? gender,
+    ({String? value})? picture,
+  }) async {
     final payload = <String, dynamic>{};
     if (username != null && username.isNotEmpty) payload['username'] = username;
     if (gender != null && gender.isNotEmpty) payload['gender'] = gender;
+    // Sent only when changing it; null clears it to the letter avatar.
+    if (picture != null) payload['picture'] = picture.value;
 
     final data = await _api.patch(ApiEndpoints.editProfile, payload);
     return UserModel.fromJson(_map(data));

@@ -14,6 +14,7 @@ import 'package:gate_closes/features/flight/presentation/controllers/flight_cont
 import 'package:gate_closes/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/top_toast.dart';
+import 'package:gate_closes/shared/widgets/user_avatar.dart';
 import 'package:gate_closes/theme/tokens/radius.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 import 'package:go_router/go_router.dart';
@@ -314,8 +315,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final travelerType = (gender != null && gender.isNotEmpty)
         ? '$gender Traveler'
         : 'Unestablished Traveler';
-    final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -342,17 +341,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               Center(
                 child: Column(
                   children: [
-                    CircleAvatar(
+                    UserAvatar(
+                      name: username,
+                      picture: authUser?.picture,
                       radius: 40,
-                      backgroundColor: colors.accent,
-                      child: Text(
-                        initial,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: colors.accentOn,
-                        ),
-                      ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(

@@ -4,9 +4,11 @@ import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/core/utils/validators.dart';
 import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:gate_closes/features/profile/presentation/controllers/profile_controller.dart';
+import 'package:gate_closes/features/profile/presentation/widgets/avatar_picker_sheet.dart';
 import 'package:gate_closes/shared/widgets/buttons.dart';
 import 'package:gate_closes/shared/widgets/modern_text_field.dart';
 import 'package:gate_closes/shared/widgets/top_toast.dart';
+import 'package:gate_closes/shared/widgets/user_avatar.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 import 'package:go_router/go_router.dart';
 
@@ -67,12 +69,31 @@ class _ProfileEditorPageState extends ConsumerState<ProfileEditorPage> {
     }
   }
 
+  /// Saved right away, separate from the username/gender form.
+  Future<void> _changeAvatar() async {
+    final user = ref.read(authControllerProvider).user;
+    final choice = await AvatarPickerSheet.show(
+      context,
+      name: user?.name ?? '',
+      current: user?.picture,
+    );
+    if (choice == null || !mounted) return;
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .editProfile(picture: choice);
+    if (!mounted) return;
+    showTopToast(
+      context,
+      ok
+          ? 'Avatar updated'
+          : ref.read(authControllerProvider).error ?? 'Could not update avatar',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final user = ref.watch(authControllerProvider).user;
-    final initial =
-        (user?.name.isNotEmpty ?? false) ? user!.name[0].toUpperCase() : '?';
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -103,20 +124,52 @@ class _ProfileEditorPageState extends ConsumerState<ProfileEditorPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Center(
-                  child: CircleAvatar(
-                    radius: 46,
-                    backgroundColor: colors.accent,
-                    child: Text(
-                      initial,
-                      style: TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.bold,
-                        color: colors.accentOn,
+                  child: Semantics(
+                    button: true,
+                    label: 'Change avatar',
+                    child: GestureDetector(
+                      onTap: _changeAvatar,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          UserAvatar(
+                            name: user?.name ?? '',
+                            picture: user?.picture,
+                            radius: 46,
+                          ),
+                          Positioned(
+                            right: -2,
+                            bottom: 2,
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: colors.accent,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: colors.background,
+                                  width: 3,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.edit_rounded,
+                                size: 15,
+                                color: colors.accentOn,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Tap to change',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: colors.textMuted, fontSize: 12),
+                ),
+                const SizedBox(height: AppSpacing.lg),
                 ModernTextField(
                   label: 'USERNAME',
                   hint: 'traveler_jane',

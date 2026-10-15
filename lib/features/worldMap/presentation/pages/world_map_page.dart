@@ -671,6 +671,10 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   /// Re-evaluates realtime lighting every minute (Expo does the same).
   Timer? _lightingTicker;
 
+  /// The lighting preset [build] last drew, so the minute tick and app
+  /// resume only rebuild when the preset actually changes.
+  MapTimeOfDay? _shownLighting;
+
   /// Live position (Expo `MapShellLocationTracker`), started after the
   /// first fix so location permission has already been asked for.
   StreamSubscription<LocationCoordinates>? _positionSub;
@@ -706,11 +710,13 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         _appInForeground = state == AppLifecycleState.resumed;
         _syncSweep();
         _syncPing();
+        // Back after a while (e.g. overnight): catch up right away.
+        if (_appInForeground) _recheckLighting();
       },
     );
     _lightingTicker = Timer.periodic(
       const Duration(minutes: 1),
-      (_) => setState(() {}),
+      (_) => _recheckLighting(),
     );
     unawaited(Future.microtask(_armMap));
     // A dev simulated airport swaps the location source: follow the new one
@@ -729,6 +735,14 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   }
 
   bool get _simulating => ref.read(simulatedAirportProvider) != null;
+
+  /// Rebuilds when realtime lighting has moved on to another preset.
+  void _recheckLighting() {
+    if (!mounted) return;
+    final now =
+        ref.read(mapLightingControllerProvider).presetAt(DateTime.now());
+    if (now != _shownLighting) setState(() {});
+  }
 
   /// Saves the guard's marker, then creates the map.
   Future<void> _armMap() async {
@@ -808,6 +822,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     final state = ref.watch(worldMapControllerProvider);
     final lighting =
         ref.watch(mapLightingControllerProvider).presetAt(DateTime.now());
+    _shownLighting = lighting;
     if (_styleReady && lighting != _lightPreset) {
       unawaited(_applyLightPreset(lighting));
     }
@@ -2037,10 +2052,12 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     );
   }
 
-  /// Lights Standard for [preset]. A failure leaves the light it had.
+  /// Lights Standard for [preset]. A failure leaves the light it had, and
+  /// the next build or minute tick tries again.
   Future<void> _applyLightPreset(MapTimeOfDay preset) async {
     final map = _map;
     if (!_kStandardMap || map == null || preset == _lightPreset) return;
+    // Set before the call so overlapping builds don't send it twice.
     _lightPreset = preset;
     try {
       await map.style.setStyleImportConfigProperty(
@@ -2050,6 +2067,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       );
     } on Object catch (e) {
       debugPrint('Map light preset skipped: $e');
+      if (_lightPreset == preset) _lightPreset = null;
     }
   }
 

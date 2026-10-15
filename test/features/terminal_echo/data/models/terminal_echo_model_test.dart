@@ -15,10 +15,11 @@ void main() {
               'waveformData': [0.2, 0.8],
             },
           },
-          'user': {'username': 'test_superadmin'},
+          'user': {'username': 'test_superadmin', 'picture': 'avatar:chick'},
         },
       });
 
+      expect(model.senderPicture, 'avatar:chick');
       expect(model.isVoiceMemo, isTrue);
       expect(model.fileUrl, 'https://cdn.example.com/a.m4a');
       expect(model.fileName, 'a.m4a');

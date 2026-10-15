@@ -30,6 +30,7 @@ class TerminalEchoEntity extends Equatable {
     this.countReactSad = 0,
     this.countReactAngry = 0,
     this.senderUsername,
+    this.senderPicture,
     this.userReaction,
   });
 
@@ -50,6 +51,9 @@ class TerminalEchoEntity extends Equatable {
   final int countReactSad;
   final int countReactAngry;
   final String? senderUsername;
+
+  /// The sender's preset avatar (`avatar:<id>`), if any.
+  final String? senderPicture;
   final String? userReaction;
 
   bool get isVoiceMemo => fileUrl != null && fileUrl!.isNotEmpty;
@@ -80,6 +84,7 @@ class TerminalEchoEntity extends Equatable {
     int? countReactSad,
     int? countReactAngry,
     String? senderUsername,
+    String? senderPicture,
     String? userReaction,
   }) {
     return TerminalEchoEntity(
@@ -100,6 +105,7 @@ class TerminalEchoEntity extends Equatable {
       countReactSad: countReactSad ?? this.countReactSad,
       countReactAngry: countReactAngry ?? this.countReactAngry,
       senderUsername: senderUsername ?? this.senderUsername,
+      senderPicture: senderPicture ?? this.senderPicture,
       userReaction: userReaction ?? this.userReaction,
     );
   }
@@ -146,6 +152,7 @@ class TerminalEchoEntity extends Equatable {
         countReactSad,
         countReactAngry,
         senderUsername,
+        senderPicture,
         userReaction,
       ];
 }

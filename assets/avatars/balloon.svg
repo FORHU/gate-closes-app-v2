@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+<!-- Gate Closes preset avatar "Balloon" (cut-paper set). Rendered to balloon.png by tool/render_map_badges.dart. -->
+<defs><clipPath id="c"><circle cx="48" cy="48" r="48"/></clipPath></defs>
+<g clip-path="url(#c)"><rect width="96" height="96" fill="#1E1418"/><ellipse cx="48" cy="38" rx="45" ry="47" fill="#E8743B"/><path d="M48 -9 C29 20 31 60 43 85 L53 85 C65 60 67 20 48 -9Z" fill="#F1E9DA"/><path d="M10 4 C-2 34 10 66 31 82 L36 85 C22 60 18 26 22 -2Z" fill="#F1E9DA"/><path d="M86 4 C98 34 86 66 65 82 L60 85 C74 60 78 26 74 -2Z" fill="#F1E9DA"/><rect x="42" y="84" width="1.8" height="6" fill="#F1E9DA"/><rect x="52.2" y="84" width="1.8" height="6" fill="#F1E9DA"/><rect x="39" y="89" width="18" height="10" rx="2" fill="#5C2A36"/><circle cx="42.5" cy="42" r="4.4" fill="#1E1418"/><circle cx="42.5" cy="42" r="1.9" fill="#F1E9DA"/><circle cx="53.5" cy="42" r="4.4" fill="#1E1418"/><circle cx="53.5" cy="42" r="1.9" fill="#F1E9DA"/></g>
+</svg>

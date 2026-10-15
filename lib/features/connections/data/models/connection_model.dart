@@ -38,6 +38,10 @@ class ConnectionModel extends ConnectionEntity {
     final otherUserName = otherUser is Map
         ? (otherUser['name'] ?? otherUser['username'])?.toString()
         : null;
+    // Better Auth's `image`: their preset avatar (`avatar:<id>`), if any.
+    final otherUserAvatar = otherUser is Map
+        ? (otherUser['image'] ?? otherUser['picture'])?.toString()
+        : null;
 
     final lastEventAtStr = json['lastEventAt']?.toString();
 
@@ -48,6 +52,7 @@ class ConnectionModel extends ConnectionEntity {
       dmKey: (json['dmKey'] ?? '').toString(),
       otherUserId: otherUserId,
       otherUserName: otherUserName,
+      otherUserAvatar: otherUserAvatar,
       lastEventText: json['lastEventText'] as String?,
       lastEventAt:
           lastEventAtStr != null ? DateTime.tryParse(lastEventAtStr) : null,

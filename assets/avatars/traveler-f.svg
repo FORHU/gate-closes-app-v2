@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+<!-- Gate Closes preset avatar "Female Traveler" (cut-paper set). Rendered to traveler-f.png by tool/render_map_badges.dart. -->
+<defs><clipPath id="c"><circle cx="48" cy="48" r="48"/></clipPath></defs>
+<g clip-path="url(#c)"><rect width="96" height="96" fill="#F1E9DA"/><circle cx="64" cy="17" r="9.5" fill="#1E1418"/><path d="M24 72 L24 46 A27 27 0 0 1 78 46 L78 72Z" fill="#1E1418"/><path d="M8 100 L16 78 Q48 68 82 78 L90 100Z" fill="#5C2A36"/><rect x="39" y="56" width="13" height="14" fill="#CF9468"/><circle cx="46" cy="46" r="17" fill="#E6B08A"/><path d="M30 44 L22 54 L31 55Z" fill="#E6B08A"/><path d="M28.5 46 Q30 28 48 28 Q59 28 63.5 37 Q50 34 41 40 Q35 43 28.5 46Z" fill="#1E1418"/><path d="M33.5 49 a4.2 4.2 0 0 1 8.4 0Z" fill="#1E1418"/><path d="M27 68 Q48 77 68 66 L71 77 Q48 88 25 79Z" fill="#BBE40A"/><path d="M55 76 L65 74 L69 100 L59 100Z" fill="#7E9E12"/></g>
+</svg>
