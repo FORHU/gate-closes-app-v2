@@ -14,7 +14,6 @@ import 'package:gate_closes/features/flight/presentation/controllers/flight_cont
 import 'package:gate_closes/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/top_toast.dart';
-import 'package:gate_closes/theme/tokens/effects.dart';
 import 'package:gate_closes/theme/tokens/radius.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 import 'package:go_router/go_router.dart';
@@ -628,7 +627,6 @@ class _SettingsGroup extends StatelessWidget {
         color: colors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.hairline),
-        boxShadow: AppEffects.cardShadow,
       ),
       child: Column(children: children),
     );

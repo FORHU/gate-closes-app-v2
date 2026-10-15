@@ -17,6 +17,10 @@ class AmbientBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    // Light mode stays a clean, solid canvas: the blooms tint it lime-grey.
+    if (Theme.of(context).brightness == Brightness.light) {
+      return ColoredBox(color: colors.background, child: child);
+    }
     // Radii are fractions of the shortest side (the width on a phone);
     // the stops end each bloom about halfway out, as Chumme's do.
     RadialGradient bloom(

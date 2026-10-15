@@ -44,7 +44,7 @@ class EchoCard extends ConsumerWidget {
                   child: Text(
                     initial,
                     style: TextStyle(
-                      color: colors.accent,
+                      color: colors.accentText,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -175,12 +175,16 @@ class _ReactionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    // Light: a soft grey pill, so it doesn't vanish white-on-white.
+    final light = Theme.of(context).brightness == Brightness.light;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: mine
             ? colors.accent.withValues(alpha: 0.18)
-            : colors.surfaceElevated,
+            : light
+                ? colors.backgroundCanvas
+                : colors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: mine ? colors.accent : colors.border),
       ),

@@ -44,6 +44,7 @@ class MapBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final light = Theme.of(context).brightness == Brightness.light;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     Widget tab(int i) => Expanded(
@@ -63,9 +64,10 @@ class MapBottomNav extends StatelessWidget {
             child: CustomPaint(
               painter: _DomeBarPainter(
                 color: colors.surface,
-                borderColor: colors.hairline,
+                borderColor: light ? colors.border : colors.hairline,
                 domeWidth: _domeWidth,
                 domeRise: _domeRise,
+                light: light,
               ),
             ),
           ),
@@ -124,7 +126,7 @@ class _NavTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final color = active ? colors.accent : colors.textMuted;
+    final color = active ? colors.accentText : colors.textMuted;
     return Semantics(
       button: true,
       selected: active,
@@ -172,12 +174,17 @@ class _DomeBarPainter extends CustomPainter {
     required this.borderColor,
     required this.domeWidth,
     required this.domeRise,
+    required this.light,
   });
 
   final Color color;
   final Color borderColor;
   final double domeWidth;
   final double domeRise;
+
+  /// Light theme: a softer shadow and a full-pixel edge, so the white bar
+  /// separates from the page without a dark smudge.
+  final bool light;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -194,14 +201,19 @@ class _DomeBarPainter extends CustomPainter {
       ..lineTo(0, size.height)
       ..close();
     canvas
-      ..drawShadow(path, Colors.black, 6, false)
+      ..drawShadow(
+        path,
+        light ? Colors.black.withValues(alpha: 0.5) : Colors.black,
+        light ? 3 : 6,
+        false,
+      )
       ..drawPath(path, Paint()..color = color)
       ..drawPath(
         path,
         Paint()
           ..color = borderColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.6,
+          ..strokeWidth = light ? 1 : 0.6,
       );
   }
 
@@ -209,6 +221,7 @@ class _DomeBarPainter extends CustomPainter {
   bool shouldRepaint(_DomeBarPainter old) =>
       old.color != color ||
       old.borderColor != borderColor ||
+      old.light != light ||
       old.domeWidth != domeWidth ||
       old.domeRise != domeRise;
 }
