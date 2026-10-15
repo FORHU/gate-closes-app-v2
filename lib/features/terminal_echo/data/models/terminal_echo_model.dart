@@ -19,6 +19,7 @@ class TerminalEchoModel extends TerminalEchoEntity {
     super.countReactSad = 0,
     super.countReactAngry = 0,
     super.senderUsername,
+    super.senderPicture,
     super.userReaction,
   });
 
@@ -78,6 +79,7 @@ class TerminalEchoModel extends TerminalEchoEntity {
       countReactAngry: (payload['countReactAngry'] as num?)?.toInt() ?? 0,
       senderUsername:
           (user?['username'] ?? payload['senderUsername']) as String?,
+      senderPicture: (user?['picture'] ?? payload['senderPicture']) as String?,
       userReaction: userReaction,
     );
   }
@@ -100,6 +102,7 @@ class TerminalEchoModel extends TerminalEchoEntity {
         'countReactSad': countReactSad,
         'countReactAngry': countReactAngry,
         'senderUsername': senderUsername,
+        'senderPicture': senderPicture,
         'userReaction': userReaction,
       };
 }

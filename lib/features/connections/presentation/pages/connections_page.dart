@@ -6,6 +6,7 @@ import 'package:gate_closes/features/connections/presentation/controllers/connec
 import 'package:gate_closes/features/connections/presentation/pages/message_thread_page.dart';
 import 'package:gate_closes/shared/widgets/app_state_view.dart';
 import 'package:gate_closes/shared/widgets/glass_card.dart';
+import 'package:gate_closes/shared/widgets/user_avatar.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 
 /// Connections: Parallel Soul / Destination Thread / Baton Touch tabs, all
@@ -127,7 +128,6 @@ class _ConnectionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final name = connection.otherUserName ?? 'Unknown traveler';
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
     return GlassCard(
       onTap: () => Navigator.of(context).push(
@@ -137,17 +137,11 @@ class _ConnectionTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
+          UserAvatar(
+            name: name,
+            picture: connection.otherUserAvatar,
             radius: 22,
-            backgroundColor: connection.type.accent.withValues(alpha: 0.18),
-            child: Text(
-              initial,
-              style: TextStyle(
-                color: connection.type.accent,
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
+            tint: connection.type.accent,
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(

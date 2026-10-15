@@ -49,6 +49,7 @@ abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> editProfile({
     String? username,
     String? gender,
+    ({String? value})? picture,
   });
   Future<Either<Failure, void>> changePassword({
     required String currentPassword,
@@ -210,11 +211,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, UserEntity>> editProfile({
     String? username,
     String? gender,
+    ({String? value})? picture,
   }) async {
     try {
       final updated = await _remote.editProfile(
         username: username,
         gender: gender,
+        picture: picture,
       );
       await _storage.saveUserModel(updated);
       return Right(updated);

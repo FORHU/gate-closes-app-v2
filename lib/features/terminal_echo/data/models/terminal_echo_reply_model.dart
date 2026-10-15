@@ -19,6 +19,7 @@ class TerminalEchoReplyModel extends TerminalEchoReplyEntity {
     super.countReactSad = 0,
     super.countReactAngry = 0,
     super.senderUsername,
+    super.senderPicture,
     super.senderGender,
     super.currentUserReactions = const [],
   });
@@ -83,6 +84,8 @@ class TerminalEchoReplyModel extends TerminalEchoReplyEntity {
       countReactSad: (payload['countReactSad'] as num?)?.toInt() ?? 0,
       countReactAngry: (payload['countReactAngry'] as num?)?.toInt() ?? 0,
       senderUsername: senderUsername,
+      senderPicture:
+          (userObj?['picture'] ?? payload['senderPicture']) as String?,
       senderGender: senderGender,
       currentUserReactions: currentUserReactions,
     );
@@ -106,6 +109,7 @@ class TerminalEchoReplyModel extends TerminalEchoReplyEntity {
         'countReactSad': countReactSad,
         'countReactAngry': countReactAngry,
         'senderUsername': senderUsername,
+        'senderPicture': senderPicture,
         'senderGender': senderGender,
         'currentUserReactions': currentUserReactions,
       };

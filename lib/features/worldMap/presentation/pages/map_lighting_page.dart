@@ -13,7 +13,7 @@ class MapLightingPage extends ConsumerWidget {
   static const Map<MapLightingMode, (String, String)> _modes = {
     MapLightingMode.realtime: (
       'Realtime Lighting',
-      'Dusk through the day and night after dark, by your device time.',
+      'Dawn, day, dusk and night, following your device time.',
     ),
     MapLightingMode.fixed: (
       'Static Lighting',
@@ -150,7 +150,8 @@ class _OptionTile extends StatelessWidget {
                       Text(
                         title,
                         style: TextStyle(
-                          color: selected ? colors.accent : colors.textPrimary,
+                          color:
+                              selected ? colors.accentText : colors.textPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -166,7 +167,7 @@ class _OptionTile extends StatelessWidget {
                   ),
                 ),
                 if (selected)
-                  Icon(Icons.check_circle_rounded, color: colors.accent),
+                  Icon(Icons.check_circle_rounded, color: colors.accentText),
               ],
             ),
           ),

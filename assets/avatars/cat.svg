@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+<!-- Gate Closes preset avatar "Sleepy Cat" (cut-paper set). Rendered to cat.png by tool/render_map_badges.dart. -->
+<defs><clipPath id="c"><circle cx="48" cy="48" r="48"/></clipPath></defs>
+<g clip-path="url(#c)"><rect width="96" height="96" fill="#5C2A36"/><path d="M12 100 Q14 80 48 78 Q82 80 84 100Z" fill="#E2D5BF"/><path d="M22 42 L27 13 L46 30Z" fill="#F1E9DA"/><path d="M74 42 L69 13 L50 30Z" fill="#F1E9DA"/><path d="M28 34 L30 21 L39 29Z" fill="#E8743B"/><path d="M68 34 L66 21 L57 29Z" fill="#E8743B"/><ellipse cx="48" cy="50" rx="26" ry="24" fill="#F1E9DA"/><rect x="16" y="40" width="64" height="15" rx="7.5" fill="#BBE40A"/><path d="M44.5 61 L51.5 61 L48 65Z" fill="#E8743B"/><path d="M75 27 h8.5 v2.3 l-5.6 5.6 h5.6 v2.3 h-8.8 v-2.3 l5.6 -5.6 h-5.3Z" fill="#F1E9DA"/><path d="M81.5 19.5 h5.6 v1.6 l-3.6 3.6 h3.6 v1.6 h-5.8 v-1.6 l3.6 -3.6 h-3.4Z" fill="#F1E9DA"/></g>
+</svg>

@@ -47,8 +47,22 @@ void main() {
       expect(model.lastEventText, 'See you at the gate!');
       expect(model.lastEventAt, DateTime.parse('2026-09-23T10:00:00.000Z'));
       expect(model.hasUnread, isTrue);
-      // No avatar field exists on the backend's participant projection.
+      // No `image` on this participant: the letter avatar.
       expect(model.otherUserAvatar, isNull);
+    });
+
+    test("reads the other traveler's preset avatar from otherUser.image", () {
+      final model = ConnectionModel.fromJson(const {
+        '_id': 'convo789',
+        'participants': ['user1', 'user2'],
+        'dmKey': 'parallel_soul:user1:user2',
+        'otherUser': {
+          '_id': 'user2',
+          'name': 'traveler_99',
+          'image': 'avatar:chick',
+        },
+      });
+      expect(model.otherUserAvatar, 'avatar:chick');
     });
 
     test('defaults to parallel_soul, no otherUser, and unread=false', () {

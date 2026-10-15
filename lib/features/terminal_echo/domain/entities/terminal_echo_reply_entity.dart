@@ -20,6 +20,7 @@ class TerminalEchoReplyEntity extends Equatable {
     this.countReactSad = 0,
     this.countReactAngry = 0,
     this.senderUsername,
+    this.senderPicture,
     this.senderGender,
     this.currentUserReactions = const [],
   });
@@ -41,6 +42,9 @@ class TerminalEchoReplyEntity extends Equatable {
   final int countReactSad;
   final int countReactAngry;
   final String? senderUsername;
+
+  /// The sender's preset avatar (`avatar:<id>`), if any.
+  final String? senderPicture;
   final String? senderGender;
   final List<String> currentUserReactions;
 
@@ -75,6 +79,7 @@ class TerminalEchoReplyEntity extends Equatable {
     int? countReactSad,
     int? countReactAngry,
     String? senderUsername,
+    String? senderPicture,
     String? senderGender,
     List<String>? currentUserReactions,
   }) {
@@ -96,6 +101,7 @@ class TerminalEchoReplyEntity extends Equatable {
       countReactSad: countReactSad ?? this.countReactSad,
       countReactAngry: countReactAngry ?? this.countReactAngry,
       senderUsername: senderUsername ?? this.senderUsername,
+      senderPicture: senderPicture ?? this.senderPicture,
       senderGender: senderGender ?? this.senderGender,
       currentUserReactions: currentUserReactions ?? this.currentUserReactions,
     );
@@ -143,6 +149,7 @@ class TerminalEchoReplyEntity extends Equatable {
         countReactSad,
         countReactAngry,
         senderUsername,
+        senderPicture,
         senderGender,
         currentUserReactions,
       ];
