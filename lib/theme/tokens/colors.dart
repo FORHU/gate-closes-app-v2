@@ -28,6 +28,7 @@ class GateColors extends ThemeExtension<GateColors> {
     required this.accentGlow20,
     required this.accentGlow45,
     required this.accentWarm,
+    required this.accentText,
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
@@ -75,6 +76,10 @@ class GateColors extends ThemeExtension<GateColors> {
   /// Warm secondary accent (Chumme's ember): offers, highlights.
   final Color accentWarm;
 
+  /// The accent as text or a thin icon, where it must read against the
+  /// surface (the lime fill is too light for that on white).
+  final Color accentText;
+
   /// Full-emphasis text/icons.
   final Color textPrimary;
 
@@ -116,6 +121,7 @@ class GateColors extends ThemeExtension<GateColors> {
     accentGlow20: Color(0x33BBE40A),
     accentGlow45: Color(0x73BBE40A),
     accentWarm: Color(0xFFFF7A45), // ember500
+    accentText: Color(0xFFBBE40A),
     textPrimary: Color(0xFFFFFFFF),
     textSecondary: Color(0xFFCDC0C5), // fog300
     textMuted: Color(0xFFA8969D), // fog500
@@ -130,10 +136,11 @@ class GateColors extends ThemeExtension<GateColors> {
   );
 
   /// Gate Closes light identity — keeps the lime hue (darkened for contrast
-  /// on white), not a straight inversion of [dark].
+  /// on white), not a straight inversion of [dark]: white cards on a solid
+  /// light-grey canvas, with text and edges at readable contrast.
   static const light = GateColors(
-    background: Color(0xFFF7F8F4),
-    backgroundCanvas: Color(0xFFF0F2EC),
+    background: Color(0xFFF2F3EE),
+    backgroundCanvas: Color(0xFFEAECE5),
     surface: Color(0xFFFFFFFF),
     surfaceElevated: Color(0xFFFFFFFF),
     surfacePressed: Color(0xFFE9EBE4),
@@ -145,13 +152,14 @@ class GateColors extends ThemeExtension<GateColors> {
     accentGlow20: Color(0x338FB800),
     accentGlow45: Color(0x738FB800),
     accentWarm: Color(0xFFE8641F),
+    accentText: Color(0xFF5C7A00), // ~5:1 on white
     textPrimary: Color(0xFF111111),
     textSecondary: Color(0xFF333333),
-    textMuted: Color(0xFF666666),
-    textSubtle: Color(0xFF888888),
-    border: Color(0x14111111),
-    borderStrong: Color(0x29111111),
-    hairline: Color(0x14111111),
+    textMuted: Color(0xFF5A6058), // ~6.4:1 on white
+    textSubtle: Color(0xFF73786F), // AA on white
+    border: Color(0x1F111111),
+    borderStrong: Color(0x33111111),
+    hairline: Color(0x1A111111),
     error: Color(0xFFDC2626),
     errorGlow: Color(0x26DC2626),
     success: Color(0xFF2FA36B),
@@ -173,6 +181,7 @@ class GateColors extends ThemeExtension<GateColors> {
     Color? accentGlow20,
     Color? accentGlow45,
     Color? accentWarm,
+    Color? accentText,
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
@@ -199,6 +208,7 @@ class GateColors extends ThemeExtension<GateColors> {
       accentGlow20: accentGlow20 ?? this.accentGlow20,
       accentGlow45: accentGlow45 ?? this.accentGlow45,
       accentWarm: accentWarm ?? this.accentWarm,
+      accentText: accentText ?? this.accentText,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textMuted: textMuted ?? this.textMuted,
@@ -231,6 +241,7 @@ class GateColors extends ThemeExtension<GateColors> {
       accentGlow20: mix(accentGlow20, other.accentGlow20),
       accentGlow45: mix(accentGlow45, other.accentGlow45),
       accentWarm: mix(accentWarm, other.accentWarm),
+      accentText: mix(accentText, other.accentText),
       textPrimary: mix(textPrimary, other.textPrimary),
       textSecondary: mix(textSecondary, other.textSecondary),
       textMuted: mix(textMuted, other.textMuted),

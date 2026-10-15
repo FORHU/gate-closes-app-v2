@@ -24,6 +24,16 @@ class AppEffects {
         ),
       ];
 
+  /// The light theme's card shadow: just enough lift to separate a white
+  /// card from the canvas, without the dark theme's haze.
+  static List<BoxShadow> get cardShadowLight => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 12,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
   /// Heavier shadow for hero surfaces: sheets, glass panels (Chumme
   /// `shadow.premium`).
   static List<BoxShadow> get premiumShadow => [

@@ -13,8 +13,10 @@ class RadarDisc {
   final double radiusKm;
 }
 
-/// Radar decoration for the airport boundary circles: inner rings, spokes
-/// and edge ticks ([grid]) plus a rotating sweep beam ([sweep]).
+/// Radar decoration for the airport boundary circles, drawn like an
+/// airport's rotating beacon: a glowing [centers] point and a soft cone of
+/// light ([sweep]) turning from it, bright near the middle and fading to
+/// nothing at the edge.
 ///
 /// Boundaries are circles built server-side (turf.circle around the airport
 /// at `radiusKm`), so each polygon's center and radius are recovered from its
@@ -26,19 +28,17 @@ class AirportRadar {
   static const _kmPerDegLat = 110.574;
   static const _kmPerDegLngAtEquator = 111.32;
 
-  /// Inner rings, as fractions of the radius.
-  static const ringFractions = [0.25, 0.5, 0.75];
-  static const spokeCount = 12;
-
-  /// One tick every 5°; every 30° is a major (longer) tick.
-  static const tickCount = 72;
-
   /// Width of the beam and how many slices it fades over.
-  static const sweepWidthDeg = 48.0;
-  static const sweepSlices = 8;
+  static const sweepWidthDeg = 70.0;
+  static const sweepSlices = 12;
 
-  /// Points per drawn circle/arc segment.
-  static const _circleSegments = 48;
+  /// The beam's distance bands, as the outer edge of each (a fraction of the
+  /// radius), and each band's brightness: bright center, faint edge.
+  static const beamBands = [0.3, 0.55, 0.8, 1.0];
+  static const bandAlpha = [1.0, 0.7, 0.42, 0.18];
+
+  /// Points per slice arc: a slice is under 6°, so 2 segments are smooth.
+  static const _sliceSegments = 2;
 
   /// Centers and radii of the Polygon features in a boundary
   /// FeatureCollection. Non-polygons and degenerate rings are skipped.
@@ -74,45 +74,24 @@ class AirportRadar {
     return sorted.take(count).toList();
   }
 
-  /// Rings, spokes and ticks for every disc: one MultiLineString per `kind`
-  /// (`ring`, `spoke`, `tick`, `tickMajor`) per disc, to keep the payload
-  /// sent to the map small.
-  static Map<String, dynamic> grid(List<RadarDisc> discs) {
-    final features = <Map<String, dynamic>>[];
-    for (final d in discs) {
-      final rings = [
-        for (final f in ringFractions) _arc(d, d.radiusKm * f, 0, 360),
-      ];
-      final spokes = [
-        for (var i = 0; i < spokeCount; i++)
-          [
-            [d.lng, d.lat],
-            _offset(d, d.radiusKm, i * 360 / spokeCount),
-          ],
-      ];
-      final ticks = <List<List<double>>>[];
-      final majorTicks = <List<List<double>>>[];
-      for (var i = 0; i < tickCount; i++) {
-        final bearing = i * 360 / tickCount;
-        final major = i % (tickCount ~/ spokeCount) == 0;
-        final inner = d.radiusKm * (major ? 0.88 : 0.94);
-        (major ? majorTicks : ticks).add([
-          _offset(d, inner, bearing),
-          _offset(d, d.radiusKm, bearing),
-        ]);
-      }
-      features
-        ..add(_lines('ring', rings))
-        ..add(_lines('spoke', spokes))
-        ..add(_lines('tick', ticks))
-        ..add(_lines('tickMajor', majorTicks));
-    }
-    return _collection(features);
-  }
+  /// The beacon's center for every disc, one Point each.
+  static Map<String, dynamic> centers(List<RadarDisc> discs) => _collection([
+        for (final d in discs)
+          {
+            'type': 'Feature',
+            'properties': {'kind': 'center'},
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [d.lng, d.lat],
+            },
+          },
+      ]);
 
   /// The beam at [headingDeg] (clockwise from north) for every disc: a fan of
-  /// [sweepSlices] wedges trailing behind the heading, each with an `alpha`
-  /// from 1 (leading edge) down toward 0.
+  /// [sweepSlices] slices trailing behind the heading, each split into the
+  /// [beamBands] from the center out. Each piece's `alpha` fades with the
+  /// slice (1 at the leading edge) and with the band (bright center, faint
+  /// edge). Plus a `beam` line from the center to the rim at the heading.
   static Map<String, dynamic> sweep(List<RadarDisc> discs, double headingDeg) {
     final features = <Map<String, dynamic>>[];
     const sliceDeg = sweepWidthDeg / sweepSlices;
@@ -120,20 +99,32 @@ class AirportRadar {
       for (var i = 0; i < sweepSlices; i++) {
         final end = headingDeg - i * sliceDeg;
         final start = end - sliceDeg;
-        final ring = <List<double>>[
-          [d.lng, d.lat],
-          ..._arc(d, d.radiusKm, start, end, segments: 4),
-          [d.lng, d.lat],
-        ];
-        features.add({
-          'type': 'Feature',
-          'properties': {'alpha': 1 - i / sweepSlices},
-          'geometry': {
-            'type': 'Polygon',
-            'coordinates': [ring],
-          },
-        });
+        final fade = math.pow(1 - i / sweepSlices, 1.7).toDouble();
+        for (var j = 0; j < beamBands.length; j++) {
+          final inner = j == 0 ? 0.0 : d.radiusKm * beamBands[j - 1];
+          features.add({
+            'type': 'Feature',
+            'properties': {'alpha': fade * bandAlpha[j]},
+            'geometry': {
+              'type': 'Polygon',
+              'coordinates': [
+                _sector(d, inner, d.radiusKm * beamBands[j], start, end),
+              ],
+            },
+          });
+        }
       }
+      features.add({
+        'type': 'Feature',
+        'properties': {'kind': 'beam'},
+        'geometry': {
+          'type': 'LineString',
+          'coordinates': [
+            [d.lng, d.lat],
+            _offset(d, d.radiusKm, headingDeg),
+          ],
+        },
+      });
     }
     return _collection(features);
   }
@@ -189,27 +180,37 @@ class AirportRadar {
   /// 5 decimals is about 1 m: plenty for drawing, and a shorter payload.
   static double _round(double v) => (v * 1e5).roundToDouble() / 1e5;
 
+  /// A closed ring between [innerKm] and [outerKm] from [fromDeg] to
+  /// [toDeg]: a wedge from the center when [innerKm] is 0.
+  static List<List<double>> _sector(
+    RadarDisc d,
+    double innerKm,
+    double outerKm,
+    double fromDeg,
+    double toDeg,
+  ) {
+    final outer = _arc(d, outerKm, fromDeg, toDeg, segments: _sliceSegments);
+    return [
+      ...outer,
+      if (innerKm > 0)
+        ..._arc(d, innerKm, toDeg, fromDeg, segments: _sliceSegments)
+      else
+        [d.lng, d.lat],
+      outer.first,
+    ];
+  }
+
   static List<List<double>> _arc(
     RadarDisc d,
     double km,
     double fromDeg,
     double toDeg, {
-    int segments = _circleSegments,
+    required int segments,
   }) =>
       [
         for (var i = 0; i <= segments; i++)
           _offset(d, km, fromDeg + (toDeg - fromDeg) * i / segments),
       ];
-
-  static Map<String, dynamic> _lines(
-    String kind,
-    List<List<List<double>>> lines,
-  ) =>
-      {
-        'type': 'Feature',
-        'properties': {'kind': kind},
-        'geometry': {'type': 'MultiLineString', 'coordinates': lines},
-      };
 
   static Map<String, dynamic> _collection(List<Map<String, dynamic>> f) => {
         'type': 'FeatureCollection',

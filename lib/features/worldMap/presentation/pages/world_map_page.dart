@@ -50,7 +50,7 @@ const Map<String, Object> _kEmptyFeatureCollection = {
 };
 
 const _kBoundarySource = 'airport-boundaries-source';
-const _kRadarGridSource = 'airport-radar-grid-source';
+const _kRadarCenterSource = 'airport-radar-center-source';
 const _kRadarSweepSource = 'airport-radar-sweep-source';
 
 /// Radar color (circles, sweep, grid): a radar-screen green, the green of
@@ -243,17 +243,6 @@ const List<Object> _kGlowColor = [
 /// (1 to 2.4 with its echoes), growing a little as the camera comes in.
 const List<(double, double)> _kGlowRadius = [(2, 4), (6, 8), (9, 13), (10, 15)];
 const List<(double, double)> _kGlowCoreRadius = [(2, 2), (6, 3), (10, 4.5)];
-
-/// On the 3D map, the real buildings inside the airport circles light up
-/// lime: one extra extrusion layer over Standard's, filtered by Mapbox to
-/// the airports' circles (`distance`), so no per-building calls. The filter
-/// only changes when the nearby airports do, never per frame or per pan.
-const _kAirportBuildingsSource = 'airport-buildings-source';
-const _kAirportBuildingsLayer = 'airport-buildings';
-const double _kAirportBuildingsMinZoom = 13;
-
-/// Matches nothing: the buildings filter before any airport is near.
-const List<Object> _kNoBuildings = ['boolean', false];
 
 /// The in-view panel looks at the busiest this many airports facing the
 /// camera.
@@ -615,7 +604,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
   /// the radar is then hidden, never drawn half-way. Circles and pins stay.
   bool _radarReady = false;
 
-  /// Airport circles that get the radar grid, nearest the view center first.
+  /// Airport circles that get the radar beacon, nearest the view center first.
   List<RadarDisc> _radarDiscs = const [];
 
   /// The camera as of the last viewport refresh, to pick [_radarDiscs].
@@ -657,12 +646,6 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       ValueNotifier(const _LabelView());
   CameraState? _labelCamera;
   bool _labelsInFlight = false;
-
-  /// The airport buildings layer was added (3D map).
-  bool _buildingsReady = false;
-
-  /// The airports its filter covers, to skip unchanged updates.
-  String? _buildingsKey;
 
   /// The echoes as drawn (spread on shared spots), for taps.
   List<EchoBeacon> _beacons = const [];
@@ -1002,7 +985,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     );
   }
 
-  /// Boundary circles plus their radar grid; restarts the sweep for them.
+  /// Boundary circles plus their beacon centers; restarts the sweep for them.
   Future<void> _setBoundaries(Map<String, dynamic>? boundaries) async {
     final center = _viewCenter?.coordinates;
     _radarDiscs = !_radarReady || center == null || _viewZoom < _kRadarMinZoom
@@ -1014,7 +997,6 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
             count: _kMaxRadarDiscs,
           );
     await _setSourceData(_kBoundarySource, boundaries);
-    await _syncAirportBuildings();
     if (!_sameDiscs(_pinsRadar, _radarDiscs)) {
       _pinsRadar = _radarDiscs;
       if (_beacons.isNotEmpty) {
@@ -1028,8 +1010,8 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     if (_radarReady) {
       try {
         await _setSourceData(
-          _kRadarGridSource,
-          AirportRadar.grid(_radarDiscs),
+          _kRadarCenterSource,
+          AirportRadar.centers(_radarDiscs),
         );
       } on Object catch (e) {
         _disableRadar(e);
@@ -1049,46 +1031,6 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
               a[i].radiusKm == b[i].radiusKm,
       ].every((same) => same);
 
-  /// Points the lit-buildings filter at the airports near the view; only
-  /// when they changed, since a new filter re-evaluates the building tiles.
-  Future<void> _syncAirportBuildings() async {
-    final map = _map;
-    if (!_buildingsReady || map == null) return;
-    final discs = _radarDiscs;
-    final key = [
-      for (final d in discs) '${d.lng},${d.lat},${d.radiusKm}',
-    ].join(';');
-    if (key == _buildingsKey) return;
-    _buildingsKey = key;
-    try {
-      await map.style.setStyleLayerProperty(
-        _kAirportBuildingsLayer,
-        'filter',
-        discs.isEmpty
-            ? _kNoBuildings
-            : [
-                'any',
-                // `within` only takes points and lines, not buildings.
-                for (final d in discs)
-                  [
-                    '<=',
-                    [
-                      'distance',
-                      {
-                        'type': 'Point',
-                        'coordinates': [d.lng, d.lat],
-                      },
-                    ],
-                    d.radiusKm * 1000,
-                  ],
-              ],
-      );
-    } on Object catch (e) {
-      debugPrint('Map airport buildings off: $e');
-      _buildingsReady = false;
-    }
-  }
-
   /// Hides the radar for the rest of this map session after a failure, so
   /// a phone that can't draw it shows plain circles instead of a broken one.
   void _disableRadar(Object error) {
@@ -1097,7 +1039,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
     _radarDiscs = const [];
     _syncSweep();
     unawaited(
-      _setSourceData(_kRadarGridSource, null).catchError((Object _) {}),
+      _setSourceData(_kRadarCenterSource, null).catchError((Object _) {}),
     );
   }
 
@@ -1539,8 +1481,9 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
 
     // Our layers glow at full strength (emissive): Standard's dusk and
     // night light would otherwise dim the lime like the city around it.
-    // Airport boundaries as radar scopes: tinted disc, sweep beam, grid
-    // (rings, spokes, edge ticks), then a glowing outline on top.
+    // Airport boundaries as rotating beacons: a faintly tinted disc, a soft
+    // cone of light turning from a glowing center, and a feathered halo for
+    // the edge (no hard line, no rings or ticks).
     const radar = _kRadarColor;
     await style.addSource(GeoJsonSource(id: _kBoundarySource, data: empty));
     await style.addLayer(
@@ -1550,26 +1493,34 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         fillEmissiveStrength: 1,
         sourceId: _kBoundarySource,
         fillColor: radar.toARGB32(),
-        fillOpacity: 0.05,
+        fillOpacity: 0.025,
       ),
     );
     // The radar is decoration too: if this phone can't add it, the circles
     // and pins load without it (see [_disableRadar]).
     try {
       await style.addSource(
-        GeoJsonSource(id: _kRadarSweepSource, data: empty),
+        // Line metrics for the beam's white-to-clear gradient.
+        GeoJsonSource(id: _kRadarSweepSource, data: empty, lineMetrics: true),
       );
-      await style.addSource(GeoJsonSource(id: _kRadarGridSource, data: empty));
+      await style.addSource(
+        GeoJsonSource(id: _kRadarCenterSource, data: empty),
+      );
       await style.addLayer(
         FillLayer(
           id: 'airport-radar-sweep',
           slot: _kGroundSlot,
           fillEmissiveStrength: 1,
           sourceId: _kRadarSweepSource,
+          filter: [
+            '==',
+            ['geometry-type'],
+            'Polygon',
+          ],
           fillColor: radar.toARGB32(),
           fillOpacityExpression: [
             '*',
-            0.32,
+            0.34,
             ['get', 'alpha'],
           ],
           fillAntialias: false,
@@ -1577,24 +1528,49 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       );
       await style.addLayer(
         LineLayer(
-          id: 'airport-radar-grid',
+          id: 'airport-radar-beam',
           slot: _kGroundSlot,
           lineEmissiveStrength: 1,
-          sourceId: _kRadarGridSource,
-          lineColor: radar.toARGB32(),
-          lineOpacityExpression: [
-            'match', ['get', 'kind'], //
-            'tickMajor', 0.75,
-            'tick', 0.45,
-            'ring', 0.28,
-            0.18, // spoke
+          sourceId: _kRadarSweepSource,
+          filter: [
+            '==',
+            ['geometry-type'],
+            'LineString',
           ],
-          lineWidthExpression: [
-            'match', ['get', 'kind'], //
-            'tickMajor', 1.6,
-            'tick', 1.0,
-            0.8, // ring, spoke
+          lineWidth: 2,
+          lineCap: LineCap.ROUND,
+          // White-hot at the center, into the radar green, clear at the rim.
+          lineGradientExpression: [
+            'interpolate', ['linear'], ['line-progress'], //
+            0, 'rgba(255, 255, 255, 0.95)',
+            0.45, 'rgba(46, 213, 115, 0.7)', // _kRadarColor
+            1, 'rgba(46, 213, 115, 0)',
           ],
+        ),
+      );
+      await style.addLayer(
+        CircleLayer(
+          id: 'airport-radar-center-glow',
+          slot: _kGroundSlot,
+          circleEmissiveStrength: 1,
+          sourceId: _kRadarCenterSource,
+          circlePitchAlignment: CirclePitchAlignment.MAP,
+          circleColor: radar.toARGB32(),
+          circleRadius: 9,
+          circleBlur: 1,
+          circleOpacity: 0.6,
+        ),
+      );
+      await style.addLayer(
+        CircleLayer(
+          id: 'airport-radar-center',
+          slot: _kGroundSlot,
+          circleEmissiveStrength: 1,
+          sourceId: _kRadarCenterSource,
+          circlePitchAlignment: CirclePitchAlignment.MAP,
+          circleColor: const Color(0xFFEFFFF5).toARGB32(),
+          circleRadius: 2.5,
+          circleOpacity: 0.95,
         ),
       );
       _radarReady = true;
@@ -1602,6 +1578,7 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
       _radarReady = false;
       debugPrint('Map radar skipped: $e');
     }
+    // The edge: a wide, fully feathered halo instead of a crisp outline.
     await style.addLayer(
       LineLayer(
         id: 'airport-boundaries-outline-glow',
@@ -1609,69 +1586,11 @@ class _WorldMapPageState extends ConsumerState<WorldMapPage> {
         lineEmissiveStrength: 1,
         sourceId: _kBoundarySource,
         lineColor: radar.toARGB32(),
-        lineOpacity: 0.3,
-        lineWidth: 7,
-        lineBlur: 4,
+        lineOpacity: 0.14,
+        lineWidth: 14,
+        lineBlur: 14,
       ),
     );
-    await style.addLayer(
-      LineLayer(
-        id: 'airport-boundaries-outline',
-        slot: _kGroundSlot,
-        lineEmissiveStrength: 1,
-        sourceId: _kBoundarySource,
-        lineColor: radar.toARGB32(),
-        lineOpacity: 0.9,
-        lineWidth: 1.5,
-      ),
-    );
-
-    // The airports' own buildings, lit (3D map only, decoration).
-    _buildingsReady = false;
-    _buildingsKey = null;
-    if (_kStandardMap) {
-      try {
-        await style.addSource(
-          VectorSource(
-            id: _kAirportBuildingsSource,
-            url: 'mapbox://mapbox.mapbox-streets-v8',
-            minzoom: _kAirportBuildingsMinZoom,
-          ),
-        );
-        await style.addLayer(
-          FillExtrusionLayer(
-            id: _kAirportBuildingsLayer,
-            sourceId: _kAirportBuildingsSource,
-            sourceLayer: 'building',
-            minZoom: _kAirportBuildingsMinZoom,
-            filter: _kNoBuildings,
-            fillExtrusionColor: _kLime.toARGB32(),
-            // A shade taller than Standard's own building, so the lit shell
-            // wraps it instead of flickering against it.
-            fillExtrusionHeightExpression: [
-              '+',
-              [
-                'coalesce',
-                ['get', 'height'],
-                6,
-              ],
-              1.5,
-            ],
-            fillExtrusionBaseExpression: [
-              'coalesce',
-              ['get', 'min_height'],
-              0,
-            ],
-            fillExtrusionOpacity: 0.55,
-            fillExtrusionVerticalGradient: true,
-            fillExtrusionEmissiveStrength: 0.9,
-          ),
-        );
-        _buildingsReady = true;
-      } on Object catch (e) {
-        debugPrint('Map airport buildings skipped: $e');
-      }
-    }
 
     // Countries, under everything of ours: an invisible tap target and the
     // tapped country's outline. Extra: without them the map works as before.

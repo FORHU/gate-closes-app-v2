@@ -40,10 +40,15 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(radius);
     final colors = context.colors;
+    final light = Theme.of(context).brightness == Brightness.light;
     final surface = color ?? (blur ? colors.glass : colors.surface);
 
     Widget body = Stack(
       children: [
+        // On light, the surface is painted under the sheen: a gradient
+        // overrides a BoxDecoration's color, which left light cards see-
+        // through and greyed by their own shadow.
+        if (light) Positioned.fill(child: ColoredBox(color: surface)),
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -81,7 +86,7 @@ class GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: borderRadius,
         boxShadow: [
-          ...AppEffects.cardShadow,
+          ...(light ? AppEffects.cardShadowLight : AppEffects.cardShadow),
           if (holo) ...AppEffects.premiumGlow(colors.accent),
         ],
       ),
@@ -91,7 +96,9 @@ class GlassCard extends StatelessWidget {
           position: DecorationPosition.foreground,
           decoration: BoxDecoration(
             borderRadius: borderRadius,
-            border: border ? Border.all(color: colors.hairline) : null,
+            border: border
+                ? Border.all(color: light ? colors.border : colors.hairline)
+                : null,
           ),
           child: body,
         ),

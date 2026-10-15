@@ -42,16 +42,6 @@ List<List<double>> _coords(Map<String, dynamic> f) {
   return [for (final p in points) (p as List).cast<double>()];
 }
 
-/// The lines of a MultiLineString feature.
-List<List<List<double>>> _lines(Map<String, dynamic> f) {
-  final g = f['geometry'] as Map<String, dynamic>;
-  expect(g['type'], 'MultiLineString');
-  return [
-    for (final line in g['coordinates'] as List)
-      [for (final p in line as List) (p as List).cast<double>()],
-  ];
-}
-
 void main() {
   group('AirportRadar.discs', () {
     test('recovers center and radius from a boundary circle', () {
@@ -94,38 +84,19 @@ void main() {
     });
   });
 
-  group('AirportRadar.grid', () {
-    test('one feature per kind per disc, with every line in it', () {
-      const disc = RadarDisc(lng: 120.62, lat: 16.375, radiusKm: 8);
-      final features = _features(AirportRadar.grid([disc, disc]));
-      expect(features, hasLength(2 * 4));
-
-      int lines(String kind) => features
-          .where((f) => _prop(f, 'kind') == kind)
-          .map((f) => _lines(f).length)
-          .reduce((a, b) => a + b);
-
-      expect(lines('ring'), 2 * AirportRadar.ringFractions.length);
-      expect(lines('spoke'), 2 * AirportRadar.spokeCount);
-      expect(lines('tickMajor'), 2 * AirportRadar.spokeCount);
-      expect(
-        lines('tick'),
-        2 * (AirportRadar.tickCount - AirportRadar.spokeCount),
-      );
-    });
-
-    test('spokes reach the edge of the circle', () {
-      const disc = RadarDisc(lng: 120.62, lat: 16.375, radiusKm: 8);
-      final features = _features(AirportRadar.grid([disc]));
-      final spokes = features.firstWhere((f) => _prop(f, 'kind') == 'spoke');
-      final end = _lines(spokes).first.last;
-      // Bearing 0 is due north: same longitude, 8 km up (to ~1 m rounding).
-      expect(end[0], closeTo(120.62, 1e-5));
-      expect((end[1] - 16.375) * 110.574, closeTo(8, 0.002));
+  group('AirportRadar.centers', () {
+    test('one point per disc, at its center', () {
+      const bag = RadarDisc(lng: 120.62, lat: 16.375, radiusKm: 8);
+      const mnl = RadarDisc(lng: 121.02, lat: 14.51, radiusKm: 15);
+      final features = _features(AirportRadar.centers([bag, mnl]));
+      expect(features, hasLength(2));
+      final g = features.last['geometry'] as Map<String, dynamic>;
+      expect(g['type'], 'Point');
+      expect(g['coordinates'], [121.02, 14.51]);
     });
 
     test('nothing to draw without discs', () {
-      expect(AirportRadar.grid(const [])['features'], isEmpty);
+      expect(AirportRadar.centers(const [])['features'], isEmpty);
     });
   });
 
@@ -157,24 +128,57 @@ void main() {
   });
 
   group('AirportRadar.sweep', () {
-    test('fans slices behind the heading, fading out', () {
-      const disc = RadarDisc(lng: 0, lat: 0, radiusKm: 10);
-      final features = _features(AirportRadar.sweep([disc], 90));
-      expect(features, hasLength(AirportRadar.sweepSlices));
+    const disc = RadarDisc(lng: 0, lat: 0, radiusKm: 10);
+    final bands = AirportRadar.beamBands.length;
 
-      final alphas = [
-        for (final f in features) _prop(f, 'alpha')! as double,
-      ];
-      expect(alphas.first, 1);
-      for (var i = 1; i < alphas.length; i++) {
-        expect(alphas[i], lessThan(alphas[i - 1]));
+    List<Map<String, dynamic>> pieces(double heading) => [
+          for (final f in _features(AirportRadar.sweep([disc], heading)))
+            if ((f['geometry'] as Map)['type'] == 'Polygon') f,
+        ];
+
+    test('a banded slice fan plus one beam line per disc', () {
+      final features = _features(AirportRadar.sweep([disc, disc], 90));
+      expect(
+        features,
+        hasLength(2 * (AirportRadar.sweepSlices * bands + 1)),
+      );
+    });
+
+    test('fades behind the heading and out from the center', () {
+      final features = pieces(90);
+      double alpha(int slice, int band) =>
+          _prop(features[slice * bands + band], 'alpha')! as double;
+
+      expect(alpha(0, 0), 1);
+      for (var b = 0; b < bands; b++) {
+        for (var s = 1; s < AirportRadar.sweepSlices; s++) {
+          expect(alpha(s, b), lessThan(alpha(s - 1, b)));
+        }
       }
+      for (var s = 0; s < AirportRadar.sweepSlices; s++) {
+        for (var b = 1; b < bands; b++) {
+          expect(alpha(s, b), lessThan(alpha(s, b - 1)));
+        }
+      }
+    });
 
-      // The leading slice ends at the heading (due east at 90°).
-      final lead = _coords(features.first);
-      final edge = lead[lead.length - 2];
-      expect(edge[1], closeTo(0, 1e-9));
-      expect(edge[0], greaterThan(0));
+    test('the leading slice ends at the heading', () {
+      // The outer band's arc runs from the slice start to its end; the end
+      // point is due east at 90°, at the rim.
+      final outer = _coords(pieces(90)[bands - 1]);
+      final arcEnd = outer[2];
+      expect(arcEnd[1], closeTo(0, 1e-9));
+      expect(arcEnd[0], greaterThan(0));
+    });
+
+    test('the beam runs from the center to the rim at the heading', () {
+      final beam = _features(AirportRadar.sweep([disc], 0)).last;
+      expect(_prop(beam, 'kind'), 'beam');
+      final line = _coords(beam);
+      expect(line.first, [0, 0]);
+      // Due north: same longitude, 10 km up (to ~1 m rounding).
+      expect(line.last[0], closeTo(0, 1e-9));
+      expect(line.last[1] * 110.574, closeTo(10, 0.002));
     });
 
     test('nothing to sweep without discs', () {

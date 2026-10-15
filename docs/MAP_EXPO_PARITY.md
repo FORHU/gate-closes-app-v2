@@ -113,11 +113,13 @@ clusters are not yet seen on a device (`SESSION_2026-10-01_MAP_WORK.md`).
 - Expo's custom globe atmosphere colors have no API in `mapbox_maps_flutter`
   2.31; Mapbox's default atmosphere is used.
 - Expo's animated sweep/pulse effects over the map are not ported as-is.
-  Instead, airport circles are drawn as **radar scopes** (Flutter only,
-  uncommitted as of 2026-10-01): lime `#BBE40A` fill, grid of rings, spokes
-  and edge ticks, and a rotating sweep. From zoom 10, on the 12 / 6 airports
-  nearest the view center; no sweep on lite maps. Expo keeps the gray
-  fill + glow + outline.
+  Instead, airport circles are drawn as **rotating beacons** (Flutter only;
+  replaced the ring/spoke/tick radar scope on 2026-10-15): a faint green
+  `#2ED573` disc, a glowing center, a soft cone of light turning every 4 s
+  (bright near the center, fading to nothing at the edge, with a
+  white-to-clear core line), and a feathered halo instead of a hard outline.
+  From zoom 10, on the 12 / 6 airports nearest the view center; no sweep on
+  lite maps. Expo keeps the gray fill + glow + outline.
 
 ## Low-end phones (Flutter only)
 

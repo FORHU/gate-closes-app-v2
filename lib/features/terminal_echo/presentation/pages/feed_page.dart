@@ -77,12 +77,18 @@ class _FeedPageState extends ConsumerState<FeedPage> {
     final browsed = ref.watch(feedAirportOverrideProvider);
     final airport = browsed ?? airportState.airport;
     final echoState = ref.watch(terminalEchoControllerProvider);
+    // Light mode: a solid header with a hairline under it, so it reads as
+    // its own bar above the feed.
+    final light = Theme.of(context).brightness == Brightness.light;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: light ? colors.surface : Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: light ? 0 : null,
+        surfaceTintColor: light ? Colors.transparent : null,
+        shape: light ? Border(bottom: BorderSide(color: colors.border)) : null,
         title: Text(
           airport != null ? 'Terminal Echo — ${airport.iata}' : 'Terminal Echo',
           style:
