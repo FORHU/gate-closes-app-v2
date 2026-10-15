@@ -486,10 +486,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   _SettingsRow(
                     icon: Icons.notifications_none_rounded,
                     label: 'Notifications',
-                    onTap: () => showTopToast(
-                      context,
-                      'Notification preferences coming soon.',
-                    ),
+                    onTap: () => context.push(RouteNames.notificationSettings),
                   ),
                   const _RowDivider(),
                   _SettingsRow(

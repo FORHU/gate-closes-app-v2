@@ -22,6 +22,8 @@ class StorageService {
   static const String _legacyRefreshTokenKey = 'refresh_token';
   static const String _userModelKey = 'cached_user_model';
   static const String _onboardingKey = 'onboarding_seen';
+  static const String _notificationPermissionKey =
+      'notification_permission_asked';
 
   // --- Plain key/value ---
   String? getString(String key) => _prefs.getString(key);
@@ -65,6 +67,13 @@ class StorageService {
       false;
   Future<void> setOnboardingSeen(String userId) =>
       _prefs.setBool('$_onboardingKey:$userId', true);
+
+  // --- Notification permission ---
+  // Asked once per device; afterwards only from Settings → Notifications.
+  bool get notificationPermissionAsked =>
+      _prefs.getBool(_notificationPermissionKey) ?? false;
+  Future<void> setNotificationPermissionAsked() =>
+      _prefs.setBool(_notificationPermissionKey, true);
 
   /// Clears the whole authenticated session (token + cached user).
   Future<void> clearSession() async {

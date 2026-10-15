@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/app.dart';
 import 'package:gate_closes/core/airports/local_airport_registry.dart';
 import 'package:gate_closes/core/config/app_config.dart';
+import 'package:gate_closes/core/notifications/local_notification_service.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
 import 'package:gate_closes/core/utils/logger.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -39,6 +40,9 @@ Future<void> bootstrap(AppConfig config, {String? dotEnvFile}) async {
   // screen mounts; `initialize()` is idempotent and safe to await here even
   // if a caller has already primed it (e.g. in tests).
   await LocalAirportRegistry.instance.initialize();
+
+  // Channels, tap handling and the "launched from a notification" route.
+  await LocalNotificationService.instance.init();
 
   if (AppConfig.instance.enableLogging) {
     appLogger.i(

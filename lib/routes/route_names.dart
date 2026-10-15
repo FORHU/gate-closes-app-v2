@@ -24,7 +24,13 @@ class RouteNames {
   static const String editProfile = '/profile/edit';
   static const String changePassword = '/profile/change-password';
   static const String mapLighting = '/profile/map-lighting';
+  static const String notificationSettings = '/profile/notifications';
   static const String addBoardingPass = '/add-boarding-pass';
+
+  /// An existing conversation, by id (notifications open it this way).
+  static const String conversation = '/connections/c/:conversationId';
+  static String conversationFor(String conversationId) =>
+      '/connections/c/$conversationId';
 
   /// A conversation with a traveler that may not exist yet (`?type=` is the
   /// API conversation type, e.g. `parallel_soul`).

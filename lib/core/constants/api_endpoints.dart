@@ -79,4 +79,7 @@ class ApiEndpoints {
     String messageId,
   ) =>
       '/conversations/$conversationId/messages/$messageId/reaction';
+
+  /// Notification settings (per kind on/off).
+  static const String notificationPreferences = '/notifications/preferences';
 }
