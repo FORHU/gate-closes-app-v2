@@ -35,9 +35,8 @@ class AvatarPickerSheet extends StatefulWidget {
 
 class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
   /// Null is the letter avatar; anything that isn't a preset counts as it.
-  late final String? _current = presetAvatarId(widget.current) == null
-      ? null
-      : widget.current;
+  late final String? _current =
+      presetAvatarId(widget.current) == null ? null : widget.current;
   late String? _selected = _current;
 
   static final List<String?> _options = [
