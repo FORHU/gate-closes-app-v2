@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gate_closes/core/services/map_3d_setting.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
 import 'package:gate_closes/features/worldMap/data/datasources/device_capabilities_source.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_tier.dart';
@@ -6,23 +7,6 @@ import 'package:gate_closes/features/worldMap/domain/entities/map_tier.dart';
 final deviceCapabilitiesSourceProvider = Provider<DeviceCapabilitiesSource>(
   (ref) => const DeviceCapabilitiesSource(),
 );
-
-/// Whether the user turned the 3D map on (Settings). Off by default: the
-/// map is 2D on every phone.
-class Map3dEnabled extends Notifier<bool> {
-  static const _key = 'map_3d_on';
-
-  @override
-  bool build() => ref.read(storageServiceProvider).getString(_key) == 'true';
-
-  Future<void> set({required bool on}) async {
-    state = on;
-    await ref.read(storageServiceProvider).setString(_key, '$on');
-  }
-}
-
-final map3dEnabledProvider =
-    NotifierProvider<Map3dEnabled, bool>(Map3dEnabled.new);
 
 /// The map this phone gets (the device ladder): the 2D lite map unless the
 /// user turned 3D on, and then the 3D map only on capable phones where it
