@@ -64,7 +64,7 @@ class _FakeEchoRepository implements TerminalEchoRepository {
       throw UnimplementedError();
 
   @override
-  Future<Either<Failure, void>> incrementListen(String echoId) =>
+  Future<Either<Failure, int?>> incrementListen(String echoId) =>
       throw UnimplementedError();
 
   @override

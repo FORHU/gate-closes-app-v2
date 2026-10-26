@@ -8,6 +8,7 @@ import 'package:gate_closes/core/services/storage_service.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/echo_page.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/repositories/terminal_echo_repository.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/controllers/listen_counts.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -57,8 +58,11 @@ class _PagedRepository implements TerminalEchoRepository {
       throw UnimplementedError();
 
   @override
-  Future<Either<Failure, void>> incrementListen(String echoId) =>
-      throw UnimplementedError();
+  Future<Either<Failure, int?>> incrementListen(String echoId) async =>
+      Right(listenCount);
+
+  /// What the API answers a listen with.
+  int? listenCount;
 
   @override
   Future<Either<Failure, TerminalEchoEntity>> getEchoById(String id) =>
@@ -103,5 +107,25 @@ void main() {
     // Nothing left: no more requests.
     await controller.loadMore();
     expect(repo.cursors, [null, 'c1', 'c2']);
+  });
+
+  test("a listen keeps the API's new count for every card (GC-67)", () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final repo = _PagedRepository({})..listenCount = 11;
+    final container = ProviderContainer(
+      overrides: [
+        signedInAuthOverride,
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        terminalEchoRepositoryProvider.overrideWithValue(repo),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(terminalEchoControllerProvider.notifier)
+        .incrementListen('e1');
+
+    expect(container.read(listenCountsProvider), {'e1': 11});
   });
 }

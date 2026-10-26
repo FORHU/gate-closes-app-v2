@@ -8,6 +8,7 @@ import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_reply_entity.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/controllers/listen_counts.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_thread_controller.dart';
 import 'package:gate_closes/shared/widgets/app_state_view.dart';
@@ -445,7 +446,7 @@ class _ParentEchoCard extends ConsumerWidget {
               Icon(Icons.hearing_rounded, size: 14, color: colors.textMuted),
               const SizedBox(width: 4),
               Text(
-                '${echo.countListens}',
+                '${watchListens(ref, echo.id, echo.countListens)}',
                 style: TextStyle(color: colors.textMuted, fontSize: 12),
               ),
             ],
@@ -564,7 +565,7 @@ class _ReplyTile extends ConsumerWidget {
               Icon(Icons.hearing_rounded, size: 13, color: colors.textMuted),
               const SizedBox(width: 4),
               Text(
-                '${reply.countListens}',
+                '${watchListens(ref, reply.id, reply.countListens)}',
                 style: TextStyle(color: colors.textMuted, fontSize: 11),
               ),
             ],

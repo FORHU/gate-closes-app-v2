@@ -9,6 +9,7 @@ import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_mod
 import 'package:gate_closes/features/terminal_echo/data/repositories/terminal_echo_repository_impl.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/repositories/terminal_echo_repository.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/controllers/listen_counts.dart';
 
 // --- Dependency wiring ---
 
@@ -230,9 +231,16 @@ class TerminalEchoController extends Notifier<TerminalEchoState> {
 
   /// Fire-and-forget listen-count bump — mirrors RN's behavior of not
   /// surfacing a failure here (a missed listen tick isn't worth an error).
+  /// The new count shows on every card of this echo (see [ListenCounts]).
   Future<void> incrementListen(String echoId) async {
     final repo = ref.read(terminalEchoRepositoryProvider);
-    await repo.incrementListen(echoId);
+    final result = await repo.incrementListen(echoId);
+    if (!ref.mounted) return;
+    result.match((_) {}, (count) {
+      if (count != null) {
+        ref.read(listenCountsProvider.notifier).record(echoId, count);
+      }
+    });
   }
 }
 

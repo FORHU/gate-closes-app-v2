@@ -95,10 +95,17 @@ class TerminalEchoReplyRepositoryImpl implements TerminalEchoReplyRepository {
   }
 
   @override
-  Future<Either<Failure, void>> incrementListen(String replyId) async {
+  Future<Either<Failure, int?>> incrementListen(String replyId) async {
     try {
-      await _api.patch(ApiEndpoints.terminalEchoReplyListen(replyId), {});
-      return const Right(null);
+      // The API answers { data: reply } with the new countListens.
+      final response = await _api.patch(
+        ApiEndpoints.terminalEchoReplyListen(replyId),
+        {},
+      );
+      final reply = response is Map ? response['data'] : null;
+      return Right(
+        reply is Map ? (reply['countListens'] as num?)?.toInt() : null,
+      );
     } on AppException catch (e) {
       return Left(ServerFailure(e.message));
     } on Object catch (e) {
