@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/airports/airport_reference.dart';
 import 'package:gate_closes/core/location/location_repository_impl.dart';
 import 'package:gate_closes/core/location/simulated_airport.dart';
+import 'package:gate_closes/core/services/map_3d_setting.dart';
 import 'package:gate_closes/core/services/theme_controller.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
@@ -463,6 +464,73 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               ref.read(themeModeProvider.notifier).setThemeMode(
                                     isDark ? ThemeMode.dark : ThemeMode.light,
                                   ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const _RowDivider(),
+                  // The map is 2D by default; 3D is opt-in and needs a
+                  // capable phone (the device ladder still applies).
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: colors.surfacePressed,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.view_in_ar_rounded,
+                            size: 18,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '3D map',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: colors.textPrimary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                'From the next launch, on phones that can '
+                                'run it',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: ref.watch(map3dEnabledProvider),
+                          activeTrackColor: colors.accent,
+                          onChanged: (on) {
+                            unawaited(
+                              ref
+                                  .read(map3dEnabledProvider.notifier)
+                                  .set(on: on),
+                            );
+                            showTopToast(
+                              context,
+                              on
+                                  ? '3D map: on from the next launch'
+                                  : '2D map from the next launch',
+                            );
+                          },
                         ),
                       ],
                     ),

@@ -63,4 +63,27 @@ void main() {
 
     expect(result.isLeft(), isTrue);
   });
+
+  group('incrementListen', () {
+    test('answers with the new count from the API (GC-67)', () async {
+      when(() => api.patch(ApiEndpoints.terminalEchoListen('e1'))).thenAnswer(
+        (_) async => {
+          'data': {'id': 'e1', 'countListens': 11},
+        },
+      );
+
+      final result = await repository.incrementListen('e1');
+
+      expect(result.getOrElse((_) => throw StateError('failed')), 11);
+    });
+
+    test('answers null when the API sends no count', () async {
+      when(() => api.patch(ApiEndpoints.terminalEchoListen('e1')))
+          .thenAnswer((_) async => {'data': null});
+
+      final result = await repository.incrementListen('e1');
+
+      expect(result.getOrElse((_) => throw StateError('failed')), isNull);
+    });
+  });
 }

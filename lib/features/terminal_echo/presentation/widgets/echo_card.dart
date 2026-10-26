@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/controllers/listen_counts.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/emoji_reaction_picker.dart';
@@ -117,7 +118,7 @@ class EchoCard extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.xs),
                 Icon(Icons.hearing_rounded, size: 14, color: colors.textMuted),
                 Text(
-                  '${echo.countListens}',
+                  '${watchListens(ref, echo.id, echo.countListens)}',
                   style: TextStyle(color: colors.textMuted, fontSize: 12),
                 ),
               ],

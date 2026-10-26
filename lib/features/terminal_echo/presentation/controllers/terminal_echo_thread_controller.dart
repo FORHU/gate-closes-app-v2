@@ -10,6 +10,7 @@ import 'package:gate_closes/features/terminal_echo/data/repositories/terminal_ec
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_reply_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/repositories/terminal_echo_reply_repository.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/controllers/listen_counts.dart';
 
 final terminalEchoReplyRepositoryProvider =
     Provider<TerminalEchoReplyRepository>((ref) {
@@ -233,9 +234,16 @@ class TerminalEchoThreadController extends Notifier<TerminalEchoThreadState> {
     );
   }
 
+  /// The new count shows on the reply at once (see [ListenCounts]).
   Future<void> incrementListen(String replyId) async {
     final repo = ref.read(terminalEchoReplyRepositoryProvider);
-    await repo.incrementListen(replyId);
+    final result = await repo.incrementListen(replyId);
+    if (!ref.mounted) return;
+    result.match((_) {}, (count) {
+      if (count != null) {
+        ref.read(listenCountsProvider.notifier).record(replyId, count);
+      }
+    });
   }
 }
 

@@ -27,6 +27,7 @@ abstract class TerminalEchoReplyRepository {
     required bool isCurrentlyReacted,
   });
 
-  /// Increments listen count when an audio reply reaches >=70% played.
-  Future<Either<Failure, void>> incrementListen(String replyId);
+  /// Increments listen count when an audio reply reaches >=70% played;
+  /// answers with the new count, or null when the API sends none.
+  Future<Either<Failure, int?>> incrementListen(String replyId);
 }

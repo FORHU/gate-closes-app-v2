@@ -10,11 +10,15 @@ void main() {
       sdk: 33,
     );
 
-    test('a strong phone gets the 3D map', () {
-      expect(MapTierPolicy.decide(strong), MapTier.standard);
+    test('the 2D map by default, even on a strong phone', () {
+      expect(MapTierPolicy.decide(strong), MapTier.lite);
     });
 
-    test('any weak spot means the lite map', () {
+    test('a strong phone gets the 3D map once the user turns it on', () {
+      expect(MapTierPolicy.decide(strong, wants3d: true), MapTier.standard);
+    });
+
+    test('any weak spot means the lite map, even with 3D turned on', () {
       const cases = {
         '32-bit': DeviceCapabilities(
           is64Bit: false,
@@ -42,18 +46,22 @@ void main() {
         ),
       };
       for (final MapEntry(key: reason, value: device) in cases.entries) {
-        expect(MapTierPolicy.decide(device), MapTier.lite, reason: reason);
+        expect(
+          MapTierPolicy.decide(device, wants3d: true),
+          MapTier.lite,
+          reason: reason,
+        );
       }
     });
 
     test('unknown capabilities are not held against a 64-bit phone', () {
       const unknown = DeviceCapabilities(is64Bit: true);
-      expect(MapTierPolicy.decide(unknown), MapTier.standard);
+      expect(MapTierPolicy.decide(unknown, wants3d: true), MapTier.standard);
     });
 
     test('a phone the map was too slow on stays lite', () {
       expect(
-        MapTierPolicy.decide(strong, measuredTooSlow: true),
+        MapTierPolicy.decide(strong, measuredTooSlow: true, wants3d: true),
         MapTier.lite,
       );
     });

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_pin_plan.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_point.dart';
 
 AirportEchoCount _airport(String iata, double lng, double lat, [int n = 1]) =>
     AirportEchoCount(
@@ -102,6 +103,77 @@ void main() {
       centerLat: 0,
     );
     expect(p.airports, unorderedEquals(['NAN', 'HNL']));
+  });
+
+  group('offer airports', () {
+    AirportPoint point(String iata, double lng, double lat) =>
+        AirportPoint(iata: iata, name: iata, longitude: lng, latitude: lat);
+
+    // BAG has offers but, here, no echoes (GC-65).
+    final all = [
+      point('MNL', 121.0192, 14.5112),
+      point('CRK', 120.5603, 15.1859),
+      point('BAG', 120.6178, 16.3767),
+      point('SIN', 103.9915, 1.3644),
+    ];
+
+    AirportPinPlan offerPlan(List<AirportEchoCount> echoCounts) =>
+        AirportPinPlan.forView(
+          counts: echoCounts,
+          allAirports: all,
+          west: 120.4,
+          south: 16.2,
+          east: 120.8,
+          north: 16.5,
+          zoom: 12,
+          centerLng: 120.6,
+          centerLat: 16.35,
+        );
+
+    test('include airports in view without echoes', () {
+      final p = offerPlan([_airport('MNL', 121.0192, 14.5112, 12)]);
+      expect(p.airports, isEmpty);
+      expect(p.offerAirports, ['BAG']);
+    });
+
+    test('nearest the view center first, at most maxAirports', () {
+      final many = [
+        for (var i = 0; i < 20; i++) point('A$i', 121 + i * 0.01, 14.5),
+      ];
+      final p = AirportPinPlan.forView(
+        counts: const [],
+        allAirports: many,
+        west: 120,
+        south: 14,
+        east: 123,
+        north: 15,
+        zoom: AirportPinPlan.pinsMinZoom,
+        centerLng: 121,
+        centerLat: 14.5,
+      );
+      expect(p.offerAirports, hasLength(AirportPinPlan.maxAirports));
+      expect(p.offerAirports.first, 'A0');
+    });
+
+    test('none below the pins zoom', () {
+      final p = AirportPinPlan.forView(
+        counts: const [],
+        allAirports: all,
+        west: 116,
+        south: 4,
+        east: 127,
+        north: 21,
+        zoom: 5,
+        centerLng: 121,
+        centerLat: 12,
+      );
+      expect(p.offerAirports, isEmpty);
+    });
+
+    test('before the airport list loads: the echo airports', () {
+      final p = plan(west: 120.97, south: 14.45, east: 121.06, north: 14.58);
+      expect(p.offerAirports, ['MNL']);
+    });
   });
 
   test('a whole-world view at pins zoom keeps every longitude', () {
