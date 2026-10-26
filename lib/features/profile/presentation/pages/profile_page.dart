@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/airports/airport_reference.dart';
 import 'package:gate_closes/core/location/location_repository_impl.dart';
 import 'package:gate_closes/core/location/simulated_airport.dart';
+import 'package:gate_closes/core/services/map_3d_setting.dart';
 import 'package:gate_closes/core/services/theme_controller.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
@@ -12,7 +13,6 @@ import 'package:gate_closes/features/auth/presentation/controllers/auth_controll
 import 'package:gate_closes/features/flight/domain/entities/flight_ticket_entity.dart';
 import 'package:gate_closes/features/flight/presentation/controllers/flight_controller.dart';
 import 'package:gate_closes/features/profile/presentation/controllers/profile_controller.dart';
-import 'package:gate_closes/features/worldMap/presentation/controllers/map_tier_controller.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/top_toast.dart';
 import 'package:gate_closes/shared/widgets/user_avatar.dart';
