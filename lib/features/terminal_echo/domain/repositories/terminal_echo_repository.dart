@@ -32,8 +32,9 @@ abstract class TerminalEchoRepository {
     required EchoReactionType reaction,
   });
 
-  /// Increments listen count when an audio echo is played.
-  Future<Either<Failure, void>> incrementListen(String echoId);
+  /// Increments listen count when an audio echo is played; answers with the
+  /// new count, or null when the API sends none.
+  Future<Either<Failure, int?>> incrementListen(String echoId);
 
   /// Fetches a single Terminal Echo by its id (`GET /terminal-echo/:id`).
   Future<Either<Failure, TerminalEchoEntity>> getEchoById(String id);
