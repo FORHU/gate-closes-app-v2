@@ -252,6 +252,7 @@ class WorldMapController extends Notifier<WorldMapState> {
     if (request != _viewRequest) return;
     final plan = AirportPinPlan.forView(
       counts: _counts,
+      allAirports: state.allAirports,
       west: west,
       south: south,
       east: east,
@@ -295,7 +296,7 @@ class WorldMapController extends Notifier<WorldMapState> {
       echoNodes: nodes,
     );
     // After the echo pins, never before them: offers are extra.
-    unawaited(_refreshOffers(plan.airports, request));
+    unawaited(_refreshOffers(plan.offerAirports, request));
   }
 
   /// Loads the shown airports' offers (missing or stale ones) and shows

@@ -1,5 +1,6 @@
 import 'package:gate_closes/features/worldMap/domain/entities/airport_boundary_index.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/airport_echo_count.dart';
+import 'package:gate_closes/features/worldMap/domain/entities/airport_point.dart';
 
 /// What the map shows for a view.
 enum MapPinMode {
@@ -11,11 +12,15 @@ enum MapPinMode {
 }
 
 /// Decides, for one view, whether the map shows per-airport counts or pins,
-/// and whose pins to load. Echoes only exist inside an airport's radius, so
-/// pins are fetched per airport (`?airport=MNL`) instead of per view.
+/// and whose pins and offers to load. Echoes and offers only exist inside
+/// an airport's radius, so both are fetched per airport (`?airport=MNL`)
+/// instead of per view.
 class AirportPinPlan {
-  const AirportPinPlan._(this.mode, this.airports);
+  const AirportPinPlan._(this.mode, this.airports, this.offerAirports);
 
+  /// [allAirports] is every airport the map knows: offers don't need
+  /// echoes, so they are planned from it. Until it loads, offers follow the
+  /// echo airports.
   factory AirportPinPlan.forView({
     required List<AirportEchoCount> counts,
     required double west,
@@ -25,9 +30,10 @@ class AirportPinPlan {
     required double zoom,
     required double centerLng,
     required double centerLat,
+    List<AirportPoint> allAirports = const [],
   }) {
     if (zoom < pinsMinZoom) {
-      return const AirportPinPlan._(MapPinMode.counts, []);
+      return const AirportPinPlan._(MapPinMode.counts, <String>[], <String>[]);
     }
     final minLat = south - marginDegrees;
     final maxLat = north + marginDegrees;
@@ -40,20 +46,30 @@ class AirportPinPlan {
     bool lngHit(double lng) =>
         allLng || (w <= e ? lng >= w && lng <= e : lng >= w || lng <= e);
 
-    final inView = [
+    /// The codes of [points] in view, nearest the center first.
+    List<String> nearest(Iterable<(String, double, double)> points) {
+      final inView = [
+        for (final p in points)
+          if (p.$3 >= minLat && p.$3 <= maxLat && lngHit(p.$2)) p,
+      ]..sort(
+          (a, b) => _distance(a.$2, a.$3, centerLng, centerLat)
+              .compareTo(_distance(b.$2, b.$3, centerLng, centerLat)),
+        );
+      return [for (final p in inView.take(maxAirports)) p.$1];
+    }
+
+    final echoAirports = nearest([
       for (final c in counts)
-        if (c.count > 0 &&
-            c.latitude >= minLat &&
-            c.latitude <= maxLat &&
-            lngHit(c.longitude))
-          c,
-    ]..sort(
-        (a, b) => _distance(a, centerLng, centerLat)
-            .compareTo(_distance(b, centerLng, centerLat)),
-      );
+        if (c.count > 0) (c.airportIata, c.longitude, c.latitude),
+    ]);
     return AirportPinPlan._(
       MapPinMode.pins,
-      [for (final c in inView.take(maxAirports)) c.airportIata],
+      echoAirports,
+      allAirports.isEmpty
+          ? echoAirports
+          : nearest([
+              for (final a in allAirports) (a.iata, a.longitude, a.latitude),
+            ]),
     );
   }
 
@@ -73,12 +89,16 @@ class AirportPinPlan {
   /// Airport codes whose pins to show; empty in [MapPinMode.counts].
   final List<String> airports;
 
+  /// Airport codes whose offers to show, echoes or not; empty in
+  /// [MapPinMode.counts].
+  final List<String> offerAirports;
+
   static double _wrap(double lng) => (lng + 180) % 360 - 180;
 
   /// Squared degrees, longitude taken the short way round: only for ordering.
-  static double _distance(AirportEchoCount c, double lng, double lat) {
-    final dLng = ((c.longitude - lng + 540) % 360) - 180;
-    final dLat = c.latitude - lat;
+  static double _distance(double lng, double lat, double toLng, double toLat) {
+    final dLng = ((lng - toLng + 540) % 360) - 180;
+    final dLat = lat - toLat;
     return dLng * dLng + dLat * dLat;
   }
 }
