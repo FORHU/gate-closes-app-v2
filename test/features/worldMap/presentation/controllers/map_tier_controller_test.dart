@@ -41,31 +41,58 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('a strong phone gets the 3D map, a weak one the lite map', () async {
+  test('the 2D map by default, even on a strong phone', () async {
     final a = await container(strong);
-    final b = await container(weak);
-    expect(await a.read(mapTierControllerProvider.future), MapTier.standard);
-    expect(await b.read(mapTierControllerProvider.future), MapTier.lite);
+    expect(a.read(map3dEnabledProvider), isFalse);
+    expect(await a.read(mapTierControllerProvider.future), MapTier.lite);
     a.dispose();
-    b.dispose();
   });
 
-  test('measured too slow: the lite map from the next launch on', () async {
+  test('turning 3D on is remembered and applies from the next launch',
+      () async {
     final first = await container(strong);
-    expect(
-      await first.read(mapTierControllerProvider.future),
-      MapTier.standard,
-    );
-    await first.read(mapTierControllerProvider.notifier).markTooSlow();
-    // This run keeps its map; the next one is lite.
-    expect(
-      await first.read(mapTierControllerProvider.future),
-      MapTier.standard,
-    );
+    expect(await first.read(mapTierControllerProvider.future), MapTier.lite);
+    await first.read(map3dEnabledProvider.notifier).set(on: true);
+    // This run keeps its map; the next one is 3D.
+    expect(await first.read(mapTierControllerProvider.future), MapTier.lite);
     first.dispose();
 
     final next = await container(strong);
-    expect(await next.read(mapTierControllerProvider.future), MapTier.lite);
+    expect(next.read(map3dEnabledProvider), isTrue);
+    expect(await next.read(mapTierControllerProvider.future), MapTier.standard);
     next.dispose();
+  });
+
+  // With 3D turned on, the device ladder decides as before.
+  group('with 3D turned on', () {
+    setUp(() => SharedPreferences.setMockInitialValues({'map_3d_on': 'true'}));
+
+    test('a strong phone gets the 3D map, a weak one the lite map', () async {
+      final a = await container(strong);
+      final b = await container(weak);
+      expect(await a.read(mapTierControllerProvider.future), MapTier.standard);
+      expect(await b.read(mapTierControllerProvider.future), MapTier.lite);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('measured too slow: the lite map from the next launch on', () async {
+      final first = await container(strong);
+      expect(
+        await first.read(mapTierControllerProvider.future),
+        MapTier.standard,
+      );
+      await first.read(mapTierControllerProvider.notifier).markTooSlow();
+      // This run keeps its map; the next one is lite.
+      expect(
+        await first.read(mapTierControllerProvider.future),
+        MapTier.standard,
+      );
+      first.dispose();
+
+      final next = await container(strong);
+      expect(await next.read(mapTierControllerProvider.future), MapTier.lite);
+      next.dispose();
+    });
   });
 }

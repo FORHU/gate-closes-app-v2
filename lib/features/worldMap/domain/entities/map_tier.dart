@@ -29,8 +29,8 @@ class DeviceCapabilities {
   final int? sdk;
 }
 
-/// Picks the map for a phone: the 3D map only where it is likely to run
-/// well, the lite map on any weak spot.
+/// Picks the map for a phone: the 2D lite map by default, the 3D map only
+/// when the user turned it on and the phone is likely to run it well.
 class MapTierPolicy {
   MapTierPolicy._();
 
@@ -40,12 +40,15 @@ class MapTierPolicy {
   /// Android 10.
   static const int minSdk = 29;
 
-  /// [measuredTooSlow]: the 3D map was measured too slow on this phone
-  /// before (FrameBudgetMonitor), so it stays lite.
+  /// [wants3d]: the user turned the 3D map on (Settings); off, the map is
+  /// 2D on every phone. [measuredTooSlow]: the 3D map was measured too slow
+  /// on this phone before (FrameBudgetMonitor), so it stays lite.
   static MapTier decide(
     DeviceCapabilities device, {
+    bool wants3d = false,
     bool measuredTooSlow = false,
   }) {
+    if (!wants3d) return MapTier.lite;
     final ram = device.totalRamMb;
     final sdk = device.sdk;
     final weak = !device.is64Bit ||
