@@ -58,6 +58,16 @@ class TerminalEchoReplyEntity extends Equatable {
       countReactSad +
       countReactAngry;
 
+  /// Count per reaction key, as the reaction chips show them.
+  Map<String, int> get reactionCounts => {
+        'like': countReactLike,
+        'love': countReactLove,
+        'haha': countReactHaha,
+        'wow': countReactWow,
+        'sad': countReactSad,
+        'angry': countReactAngry,
+      };
+
   bool hasReacted(String emojiOrKey) =>
       currentUserReactions.contains(emojiOrKey);
 

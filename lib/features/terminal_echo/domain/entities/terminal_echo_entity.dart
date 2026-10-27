@@ -66,6 +66,16 @@ class TerminalEchoEntity extends Equatable {
       countReactSad +
       countReactAngry;
 
+  /// Count per reaction key, as the reaction chips show them.
+  Map<String, int> get reactionCounts => {
+        'like': countReactLike,
+        'love': countReactLove,
+        'haha': countReactHaha,
+        'wow': countReactWow,
+        'sad': countReactSad,
+        'angry': countReactAngry,
+      };
+
   TerminalEchoEntity copyWith({
     String? id,
     String? senderId,
