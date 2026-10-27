@@ -26,9 +26,9 @@ and landing: it deploys to the dev server; production AWS isn't set up yet.
 
 | Repo | `staging` = `main` | State |
 |---|---|---|
-| gate-closes-api-v2 | `ae23b22` | everything delivered and deployed (#19, 2026-10-27) |
-| gate-closes-app-v2 | `3113e13` | delivered (#22, 2026-10-27); GC-71 and GC-72 fixes in PRs into `staging` |
-| gate-closes-landing | `c84d66d` | everything delivered and deployed (#35) |
+| gate-closes-api-v2 | `bae0da8` | everything delivered and deployed (#23, 2026-10-27) |
+| gate-closes-app-v2 | `246596a` | everything delivered (#26, 2026-10-27) |
+| gate-closes-landing | `70e3345` | everything delivered and deployed (#37, 2026-10-27) |
 
 After a delivery PR, `main` has one merge commit `staging` lacks (no file
 changes). Fast-forward `staging` to it (`git push origin origin/main:staging`)
@@ -49,7 +49,9 @@ Done on 2026-10-27:
   delivered. App builds older than 2026-10-27 can't reply on the dev server.
 - Settings → 3D map says why a phone can't have it, delivered.
 - **GC-71** (no "Post Anyway" after leaving the airport) and **GC-72**
-  (reaction chips on the thread page): in PRs into `staging`.
+  (reaction chips on the thread page), delivered.
+- Admin → Airports: checked in a browser; now pages through all airports
+  and filters by country, terminal source and map setting, delivered.
 
 ---
 
@@ -128,11 +130,11 @@ Things that will confuse you if you don't know them:
 
 All of these are in TRACKER.md ("Open: needs a fix").
 
-1. **Admin Terminal / On map columns in a browser**: the API data is right
-   (checked 2026-10-27); look at the page. Log in as `developer@` or
-   `superadmin@`: the `admin` role has no `airports:manage` (403).
-   Also check the 3D map itself on a 64-bit phone with 6 GB+ (the realme
-   can't run it).
+1. **3D map on a capable phone**: a 64-bit Android phone with 6 GB+ (the
+   realme can't run it; Settings says why). Turn on Settings → General →
+   3D map, restart, check it draws and stays smooth (profile build).
+   Admin airports: log in as `developer@` or `superadmin@`; the `admin`
+   role has no `airports:manage` (403).
 2. **GC-64**: not reproduced on 2026-10-26; keep an eye out on cold start +
    login.
 3. **GC-09**: Google sign-in. Needs someone with GCP access to change the
