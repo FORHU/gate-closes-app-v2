@@ -1,7 +1,7 @@
 # Next session: start here
 
-> Written 2026-10-26 for whoever picks the project up next. Replaces the
-> 2026-10-14 version.
+> Updated 2026-10-27 for whoever picks the project up next. Replaces the
+> 2026-10-26 version.
 
 Gate Closes is a Flutter app (**gate-closes-app-v2**) on an Express +
 PostgreSQL API (**gate-closes-api-v2**), with an admin panel in
@@ -17,23 +17,31 @@ Read these, in this order:
 
 ---
 
-## State on 2026-10-26
+## State on 2026-10-27
 
-Work now goes task branch → PR into **`staging`**; `main` is production and
-only receives `staging` when the owner decides to deliver (pushing `main`
-deploys api-v2 and landing).
+Work now goes task branch → PR into **`staging`**; `main` only receives
+`staging` when the owner decides to deliver, through one `staging` → `main`
+PR per repo (no automation). Pushing `main` runs **Deploy Dev** for api-v2
+and landing: it deploys to the dev server; production AWS isn't set up yet.
 
-| Repo | `staging` | `main` | State |
-|---|---|---|---|
-| gate-closes-api-v2 | `72a7164` | `eb680ca` | `staging` is 7 PRs ahead of `main`: none of the 2026-10-26 work is deployed |
-| gate-closes-app-v2 | `b1bebc4` | `f5796a9` | `staging` 4 PRs ahead. The 2D-default change is on `feat/map-2d-default`, not merged yet |
-| gate-closes-landing | `685c2f5` | `d3589f0` | `staging` 4 PRs ahead |
+| Repo | `staging` = `main` | State |
+|---|---|---|
+| gate-closes-api-v2 | `8648efc` | everything delivered and deployed (#16) |
+| gate-closes-app-v2 | `a768c2d` | everything delivered (#17), incl. 2D default (#16, #18) |
+| gate-closes-landing | `c84d66d` | everything delivered and deployed (#35) |
+
+After a delivery PR, `main` has one merge commit `staging` lacks (no file
+changes). Fast-forward `staging` to it (`git push origin origin/main:staging`)
+so both read 0/0; done for all three on 2026-10-27.
 
 Done on 2026-10-26 (details in TRACKER.md, "Changes after the rebuild"):
 GC-65, GC-66, GC-67 fixed; PostGIS 3.6; the map shows only busy airports
 (large, or with echoes or a live offer); admin Auto / Show / Hide per airport;
 airports centred on their terminal (OpenStreetMap, admin can fix); 2D map by
 default with 3D as an opt-in setting.
+
+Done on 2026-10-27: **GC-68** applied on the shared dev database
+(`gatecloses_dev`): 2,714 of 3,478 airports now sit on their OSM terminal.
 
 ---
 
@@ -107,21 +115,22 @@ Things that will confuse you if you don't know them:
 
 All of these are in TRACKER.md ("Open: needs a fix").
 
-1. **Merge the 2D default** (app-v2 `feat/map-2d-default`) once the owner
-   approves it, then check the Settings → 3D map switch on a phone.
-2. **Phone checks not done yet**: GC-67 (play an echo past ~70%, the 👂 count
-   goes up at once), tap an offer dot at BAG (offer sheet opens), and the
-   admin Terminal / On map columns in a browser.
-3. **GC-68**: once `staging` is on the dev server, run
-   `pnpm airports:terminals` (dry run), then `-- --apply`. It changes shared
-   data: ask the owner first.
-4. **GC-64**: not reproduced on 2026-10-26; keep an eye out on cold start +
+1. **Phone checks not done yet** (realme): GC-67 (play an echo past ~70%,
+   the 👂 count goes up at once), Settings → General → 3D map switch, tap an
+   offer dot at BAG (offer sheet opens), airports centred on their terminal,
+   and the admin Terminal / On map columns in a browser. For a local run,
+   first apply terminals to the local database too:
+   `pnpm airports:terminals -- --apply` with the localhost `DATABASE_URL`.
+2. **GC-64**: not reproduced on 2026-10-26; keep an eye out on cold start +
    login.
-5. **GC-09**: Google sign-in. Needs someone with GCP access to change the
+3. **GC-09**: Google sign-in. Needs someone with GCP access to change the
    Android OAuth client's package to `com.reeethepuffer.gateclosesapp`, then
    test on a phone.
-6. **Production**: the AWS/GitHub setup in api-v2 `infra/README.md` is still
+4. **Production**: the AWS/GitHub setup in api-v2 `infra/README.md` is still
    to do. Ask before touching AWS.
+5. **CI gap**: app-v2's Flutter CI (incl. "Enforce Feature Isolation") only
+   runs on PRs into `main`, so run the AGENTS.md checklist locally before a
+   `staging` PR. Adding CI on `staging` PRs is an open option (ask first).
 
 Still waiting on a decision (ask, don't guess): **GC-22** (which repo the
 Flutter template review was about), **GC-23** (v1 local Redis).
