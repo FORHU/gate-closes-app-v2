@@ -1,7 +1,12 @@
 import 'dart:ffi';
 
 import 'package:flutter/services.dart';
-import 'package:gate_closes/features/worldMap/domain/entities/map_tier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gate_closes/core/services/map_tier.dart';
+
+final deviceCapabilitiesSourceProvider = Provider<DeviceCapabilitiesSource>(
+  (ref) => const DeviceCapabilitiesSource(),
+);
 
 /// Reads what the phone reports about itself for the map's device ladder,
 /// from `MainActivity` on Android (`gate_closes/device`). Anything it can't

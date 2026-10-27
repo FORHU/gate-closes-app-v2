@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gate_closes/core/services/device_capabilities_source.dart';
 import 'package:gate_closes/core/services/map_3d_setting.dart';
+import 'package:gate_closes/core/services/map_tier.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
-import 'package:gate_closes/features/worldMap/data/datasources/device_capabilities_source.dart';
-import 'package:gate_closes/features/worldMap/domain/entities/map_tier.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/map_tier_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
