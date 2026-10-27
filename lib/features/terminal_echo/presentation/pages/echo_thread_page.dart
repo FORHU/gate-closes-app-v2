@@ -11,6 +11,7 @@ import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/listen_counts.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_thread_controller.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/widgets/reaction_chips.dart';
 import 'package:gate_closes/shared/widgets/app_state_view.dart';
 import 'package:gate_closes/shared/widgets/emoji_reaction_picker.dart';
 import 'package:gate_closes/shared/widgets/glass_card.dart';
@@ -425,28 +426,13 @@ class _ParentEchoCard extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => unawaited(_react(context, ref)),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.favorite_border_rounded,
-                      size: 14,
-                      color: colors.textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${echo.totalReactions}',
-                      style: TextStyle(color: colors.textMuted, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
+          ReactionChips(
+            counts: echo.reactionCounts,
+            mine: {if (echo.userReaction case final r?) r},
+            onReact: () => unawaited(_react(context, ref)),
+            trailing: [
+              const SizedBox(width: AppSpacing.xs),
               Icon(Icons.hearing_rounded, size: 14, color: colors.textMuted),
-              const SizedBox(width: 4),
               Text(
                 '${watchListens(ref, echo.id, echo.countListens)}',
                 style: TextStyle(color: colors.textMuted, fontSize: 12),
@@ -544,28 +530,13 @@ class _ReplyTile extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.xs),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => unawaited(_react(context, ref)),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.favorite_border_rounded,
-                      size: 13,
-                      color: colors.textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${reply.totalReactions}',
-                      style: TextStyle(color: colors.textMuted, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
+          ReactionChips(
+            counts: reply.reactionCounts,
+            mine: reply.currentUserReactions.toSet(),
+            onReact: () => unawaited(_react(context, ref)),
+            trailing: [
+              const SizedBox(width: AppSpacing.xs),
               Icon(Icons.hearing_rounded, size: 13, color: colors.textMuted),
-              const SizedBox(width: 4),
               Text(
                 '${watchListens(ref, reply.id, reply.countListens)}',
                 style: TextStyle(color: colors.textMuted, fontSize: 11),
