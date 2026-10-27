@@ -6,6 +6,7 @@ import 'package:gate_closes/core/airports/airport_reference.dart';
 import 'package:gate_closes/core/location/location_repository_impl.dart';
 import 'package:gate_closes/core/location/simulated_airport.dart';
 import 'package:gate_closes/core/services/map_3d_setting.dart';
+import 'package:gate_closes/core/services/map_tier.dart';
 import 'package:gate_closes/core/services/theme_controller.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
@@ -309,6 +310,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final themeMode = ref.watch(themeModeProvider);
     final canSimulate = ref.watch(canSimulateAirportProvider);
     final simulated = ref.watch(simulatedAirportProvider);
+    final no3d = ref.watch(no3dReasonProvider).value;
 
     final username =
         profileState.profile?.name ?? authUser?.name ?? 'Identity Pending';
@@ -470,7 +472,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   ),
                   const _RowDivider(),
                   // The map is 2D by default; 3D is opt-in and needs a
-                  // capable phone (the device ladder still applies).
+                  // capable phone (the device ladder). On a phone that
+                  // can't run it, the switch is off and the row says why.
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -505,8 +508,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 ),
                               ),
                               Text(
-                                'From the next launch, on phones that can '
-                                'run it',
+                                no3d == null
+                                    ? 'From the next launch'
+                                    : _no3dText(no3d),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: colors.textMuted,
@@ -516,21 +520,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           ),
                         ),
                         Switch(
-                          value: ref.watch(map3dEnabledProvider),
+                          value:
+                              no3d == null && ref.watch(map3dEnabledProvider),
                           activeTrackColor: colors.accent,
-                          onChanged: (on) {
-                            unawaited(
-                              ref
-                                  .read(map3dEnabledProvider.notifier)
-                                  .set(on: on),
-                            );
-                            showTopToast(
-                              context,
-                              on
-                                  ? '3D map: on from the next launch'
-                                  : '2D map from the next launch',
-                            );
-                          },
+                          onChanged: no3d != null
+                              ? null
+                              : (on) {
+                                  unawaited(
+                                    ref
+                                        .read(map3dEnabledProvider.notifier)
+                                        .set(on: on),
+                                  );
+                                  showTopToast(
+                                    context,
+                                    on
+                                        ? '3D map: on from the next launch'
+                                        : '2D map from the next launch',
+                                  );
+                                },
                         ),
                       ],
                     ),
@@ -653,6 +660,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 }
+
+/// Under the 3D map switch: why this phone can't have the 3D map.
+String _no3dText(No3dReason reason) => switch (reason) {
+      No3dReason.is32Bit => "This phone can't run it (needs 64-bit Android)",
+      No3dReason.lowMemory => "This phone can't run it (needs 6 GB of memory)",
+      No3dReason.oldAndroid =>
+        "This phone can't run it (needs Android 10 or newer)",
+      No3dReason.measuredTooSlow => 'Turned off: it ran too slowly here',
+    };
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title, required this.color});
