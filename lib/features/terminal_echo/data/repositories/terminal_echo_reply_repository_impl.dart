@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/constants/api_endpoints.dart';
 import 'package:gate_closes/core/errors/exceptions.dart';
 import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/core/services/api_service.dart';
 import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_reply_model.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
@@ -45,15 +46,22 @@ class TerminalEchoReplyRepositoryImpl implements TerminalEchoReplyRepository {
     String? fileUrl,
     String? fileName,
     String? textMessage,
+    LocationCoordinates? coordinates,
     double audioDuration = 0,
     List<double> waveformData = const [],
   }) async {
     try {
+      final quantized = coordinates?.quantize();
       final payload = <String, dynamic>{
         'terminalEchoId': terminalEchoId,
         'fileUrl': fileUrl ?? '',
         'fileName': fileName ?? '',
         'textMessage': textMessage ?? '',
+        if (quantized != null)
+          'location': {
+            'type': 'Point',
+            'coordinates': [quantized.longitude, quantized.latitude],
+          },
         'audioDuration': audioDuration,
         'waveformData': waveformData,
       };
