@@ -12,34 +12,26 @@ import 'package:gate_closes/shared/widgets/top_toast.dart';
 import 'package:gate_closes/shared/widgets/voice_recorder_composer.dart';
 import 'package:gate_closes/theme/tokens/spacing.dart';
 
-/// Expo's "Outside Terminal Zone" alert. Resolves to true on "Post Anyway".
-Future<bool> confirmPostOutsideAirport(
-  BuildContext context,
-  String airportName,
-) async {
-  final proceed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Outside Terminal Zone'),
-      content: Text(
-        'You are currently outside the protected radius of $airportName. '
-        'Your echo will still be posted but may not be as visible to '
-        'travelers at the gate.',
+/// Shown when the user left the airport while recording. The API only takes
+/// echoes posted inside an airport (422 otherwise), so the echo isn't sent;
+/// Expo's "Post Anyway" here led to a post the server refused.
+Future<void> showLeftAirportNotice(BuildContext context, String airportName) =>
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Outside Terminal Zone'),
+        content: Text(
+          "You've left $airportName, so this echo can't be posted. Echoes "
+          'can only be posted from inside an airport.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Understood'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Post Anyway'),
-        ),
-      ],
-    ),
-  );
-  return proceed ?? false;
-}
+    );
 
 /// Compose a Terminal Echo. A voice memo is mandatory on the real API
 /// (`TerminalEchoCtrl.create`'s Joi schema requires `fileUrl`/`fileName`) —
@@ -75,11 +67,11 @@ class _CreateEchoPageState extends ConsumerState<CreateEchoPage> {
       return;
     }
 
-    // Expo re-checks at send time: the user may have left the airport's
-    // radius while recording (the map re-detects every 250 m).
+    // Re-checked at send time: the user may have left the airport's radius
+    // while recording (the map re-detects every 250 m).
     if (!airportState.isInsideAirport) {
-      final proceed = await confirmPostOutsideAirport(context, airport.name);
-      if (!proceed || !mounted) return;
+      await showLeftAirportNotice(context, airport.name);
+      return;
     }
 
     setState(() => _isSubmitting = true);
