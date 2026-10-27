@@ -26,8 +26,8 @@ and landing: it deploys to the dev server; production AWS isn't set up yet.
 
 | Repo | `staging` = `main` | State |
 |---|---|---|
-| gate-closes-api-v2 | `8648efc` | everything delivered and deployed (#16) |
-| gate-closes-app-v2 | `a768c2d` | everything delivered (#17), incl. 2D default (#16, #18) |
+| gate-closes-api-v2 | `ae23b22` | everything delivered and deployed (#19, 2026-10-27) |
+| gate-closes-app-v2 | `3113e13` | delivered (#22, 2026-10-27); GC-71 and GC-72 fixes in PRs into `staging` |
 | gate-closes-landing | `c84d66d` | everything delivered and deployed (#35) |
 
 After a delivery PR, `main` has one merge commit `staging` lacks (no file
@@ -40,8 +40,16 @@ GC-65, GC-66, GC-67 fixed; PostGIS 3.6; the map shows only busy airports
 airports centred on their terminal (OpenStreetMap, admin can fix); 2D map by
 default with 3D as an opt-in setting.
 
-Done on 2026-10-27: **GC-68** applied on the shared dev database
-(`gatecloses_dev`): 2,714 of 3,478 airports now sit on their OSM terminal.
+Done on 2026-10-27:
+- **GC-68** applied on the shared dev database (`gatecloses_dev`): 2,714 of
+  3,478 airports now sit on their OSM terminal.
+- Phone checks on the realme: GC-67 (listen count) ✅, terminal-centred
+  circle at BAG ✅, BAG offer sheet ✅ (owner).
+- **GC-70** replies only from inside the echo's airport (server 422 + app),
+  delivered. App builds older than 2026-10-27 can't reply on the dev server.
+- Settings → 3D map says why a phone can't have it, delivered.
+- **GC-71** (no "Post Anyway" after leaving the airport) and **GC-72**
+  (reaction chips on the thread page): in PRs into `staging`.
 
 ---
 
@@ -105,6 +113,11 @@ Things that will confuse you if you don't know them:
 - **Driving the phone with `adb shell input` while its screen is asleep**
   freezes the app (ANR: "does not have a focused window") and Android
   restarts it. Wake it first (`adb shell input keyevent KEYCODE_WAKEUP`).
+- **Testing posts and replies away from an airport:** log in as
+  `developer@example.com`, then Settings → Developer → Simulated airport
+  (e.g. MNL). Turn it OFF before logging out.
+- **api-v2 `format:check` fails on Windows** on many files: line endings
+  (`core.autocrlf=true`), not formatting. CI is fine.
 - The test realme (RMX3231, PowerVR GPU) gets the "lite" map. If a phone
   can't draw the map, the app shows "Map isn't available on this phone".
   That's the render guard doing its job (see GC-64).
@@ -115,12 +128,11 @@ Things that will confuse you if you don't know them:
 
 All of these are in TRACKER.md ("Open: needs a fix").
 
-1. **Phone checks not done yet** (realme): GC-67 (play an echo past ~70%,
-   the 👂 count goes up at once), Settings → General → 3D map switch, tap an
-   offer dot at BAG (offer sheet opens), airports centred on their terminal,
-   and the admin Terminal / On map columns in a browser. For a local run,
-   first apply terminals to the local database too:
-   `pnpm airports:terminals -- --apply` with the localhost `DATABASE_URL`.
+1. **Admin Terminal / On map columns in a browser**: the API data is right
+   (checked 2026-10-27); look at the page. Log in as `developer@` or
+   `superadmin@`: the `admin` role has no `airports:manage` (403).
+   Also check the 3D map itself on a 64-bit phone with 6 GB+ (the realme
+   can't run it).
 2. **GC-64**: not reproduced on 2026-10-26; keep an eye out on cold start +
    login.
 3. **GC-09**: Google sign-in. Needs someone with GCP access to change the
