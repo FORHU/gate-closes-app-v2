@@ -6,6 +6,7 @@ import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/listen_counts.dart';
 import 'package:gate_closes/features/terminal_echo/presentation/controllers/terminal_echo_controller.dart';
+import 'package:gate_closes/features/terminal_echo/presentation/widgets/reaction_chips.dart';
 import 'package:gate_closes/routes/route_names.dart';
 import 'package:gate_closes/shared/widgets/emoji_reaction_picker.dart';
 import 'package:gate_closes/shared/widgets/glass_card.dart';
@@ -87,34 +88,11 @@ class EchoCard extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: AppSpacing.sm),
-            // Expo's EmojiReactionBar: one chip per reaction in use, yours
-            // highlighted, plus a button to add or change your reaction.
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (final MapEntry(:key, value: count)
-                    in _reactionCounts.entries)
-                  if (count > 0)
-                    _ReactionChip(
-                      emoji: kEmojiReactions[key]!,
-                      count: count,
-                      mine: echo.userReaction == key,
-                    ),
-                InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => unawaited(_react(context, ref)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.add_reaction_outlined,
-                      size: 18,
-                      color: colors.textMuted,
-                      semanticLabel: 'React',
-                    ),
-                  ),
-                ),
+            ReactionChips(
+              counts: echo.reactionCounts,
+              mine: {if (echo.userReaction case final r?) r},
+              onReact: () => unawaited(_react(context, ref)),
+              trailing: [
                 const SizedBox(width: AppSpacing.xs),
                 Icon(Icons.hearing_rounded, size: 14, color: colors.textMuted),
                 Text(
@@ -128,15 +106,6 @@ class EchoCard extends ConsumerWidget {
       ),
     );
   }
-
-  Map<String, int> get _reactionCounts => {
-        'like': echo.countReactLike,
-        'love': echo.countReactLove,
-        'haha': echo.countReactHaha,
-        'wow': echo.countReactWow,
-        'sad': echo.countReactSad,
-        'angry': echo.countReactAngry,
-      };
 
   Future<void> _react(BuildContext context, WidgetRef ref) async {
     final reaction = await EmojiReactionPicker.show(context);
@@ -155,40 +124,5 @@ class EchoCard extends ConsumerWidget {
     final hrs = mins ~/ 60;
     if (hrs < 24) return '${hrs}h ago';
     return '${hrs ~/ 24}d ago';
-  }
-}
-
-class _ReactionChip extends StatelessWidget {
-  const _ReactionChip({
-    required this.emoji,
-    required this.count,
-    required this.mine,
-  });
-
-  final String emoji;
-  final int count;
-  final bool mine;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    // Light: a soft grey pill, so it doesn't vanish white-on-white.
-    final light = Theme.of(context).brightness == Brightness.light;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: mine
-            ? colors.accent.withValues(alpha: 0.18)
-            : light
-                ? colors.backgroundCanvas
-                : colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: mine ? colors.accent : colors.border),
-      ),
-      child: Text(
-        '$emoji $count',
-        style: TextStyle(color: colors.textPrimary, fontSize: 12),
-      ),
-    );
   }
 }
