@@ -29,6 +29,15 @@ class DeviceCapabilities {
   final int? sdk;
 }
 
+/// Why a phone can't have the 3D map; Settings says so under the switch.
+enum No3dReason {
+  /// The 3D map was measured too slow here before (FrameBudgetMonitor).
+  measuredTooSlow,
+  is32Bit,
+  lowMemory,
+  oldAndroid,
+}
+
 /// Picks the map for a phone: the 2D lite map by default, the 3D map only
 /// when the user turned it on and the phone is likely to run it well.
 class MapTierPolicy {
@@ -49,14 +58,24 @@ class MapTierPolicy {
     bool measuredTooSlow = false,
   }) {
     if (!wants3d) return MapTier.lite;
+    final no3d = why3dUnavailable(device, measuredTooSlow: measuredTooSlow);
+    return no3d == null ? MapTier.standard : MapTier.lite;
+  }
+
+  /// Why this phone can't run the 3D map, or null when it can.
+  static No3dReason? why3dUnavailable(
+    DeviceCapabilities device, {
+    bool measuredTooSlow = false,
+  }) {
     final ram = device.totalRamMb;
     final sdk = device.sdk;
-    final weak = !device.is64Bit ||
-        device.lowRam == true ||
-        (ram != null && ram < minRamMb) ||
-        (sdk != null && sdk < minSdk) ||
-        measuredTooSlow;
-    return weak ? MapTier.lite : MapTier.standard;
+    if (!device.is64Bit) return No3dReason.is32Bit;
+    if (device.lowRam == true || (ram != null && ram < minRamMb)) {
+      return No3dReason.lowMemory;
+    }
+    if (sdk != null && sdk < minSdk) return No3dReason.oldAndroid;
+    if (measuredTooSlow) return No3dReason.measuredTooSlow;
+    return null;
   }
 }
 

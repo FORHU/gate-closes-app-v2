@@ -2,14 +2,13 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/failure.dart';
 import 'package:gate_closes/core/services/connectivity_service.dart';
+import 'package:gate_closes/core/services/device_capabilities_source.dart';
+import 'package:gate_closes/core/services/map_tier.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
-import 'package:gate_closes/features/worldMap/data/datasources/device_capabilities_source.dart';
 import 'package:gate_closes/features/worldMap/data/datasources/map_disk_cache.dart';
 import 'package:gate_closes/features/worldMap/data/datasources/map_echo_socket.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
-import 'package:gate_closes/features/worldMap/domain/entities/map_tier.dart';
 import 'package:gate_closes/features/worldMap/domain/repositories/offer_map_repository.dart';
-import 'package:gate_closes/features/worldMap/presentation/controllers/map_tier_controller.dart';
 import 'package:gate_closes/features/worldMap/presentation/controllers/world_map_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

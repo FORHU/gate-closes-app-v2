@@ -10,6 +10,7 @@ import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/core/location/location_repository_impl.dart';
 import 'package:gate_closes/core/location/simulated_airport.dart';
 import 'package:gate_closes/core/services/connectivity_service.dart';
+import 'package:gate_closes/core/services/map_tier.dart';
 import 'package:gate_closes/core/utils/context_extensions.dart';
 import 'package:gate_closes/features/airport/domain/entities/airport_entity.dart';
 import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
@@ -23,7 +24,6 @@ import 'package:gate_closes/features/worldMap/domain/entities/echo_beacons.dart'
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_features.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/echo_map_node_entity.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_offer.dart';
-import 'package:gate_closes/features/worldMap/domain/entities/map_tier.dart';
 import 'package:gate_closes/features/worldMap/domain/entities/map_view_bounds.dart';
 import 'package:gate_closes/features/worldMap/domain/repositories/offer_map_repository.dart';
 import 'package:gate_closes/features/worldMap/presentation/airport_tags.dart';

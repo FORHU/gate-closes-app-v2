@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gate_closes/core/services/storage_service.dart';
+import 'package:gate_closes/features/airport/presentation/controllers/airport_controller.dart';
 import 'package:gate_closes/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:gate_closes/features/terminal_echo/data/datasources/terminal_echo_socket_service.dart';
 import 'package:gate_closes/features/terminal_echo/data/models/terminal_echo_reply_model.dart';
@@ -150,6 +151,9 @@ class TerminalEchoThreadController extends Notifier<TerminalEchoThreadState> {
       fileUrl: fileUrl,
       fileName: fileName,
       textMessage: textMessage,
+      // Where the user was last detected: the API checks it is inside the
+      // echo's airport.
+      coordinates: ref.read(airportControllerProvider).coordinates,
       audioDuration: audioDuration,
       waveformData: waveformData,
     );

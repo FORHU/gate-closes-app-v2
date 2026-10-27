@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:gate_closes/core/errors/failure.dart';
+import 'package:gate_closes/core/location/location_coordinates.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_entity.dart';
 import 'package:gate_closes/features/terminal_echo/domain/entities/terminal_echo_reply_entity.dart';
 
@@ -10,12 +11,14 @@ abstract class TerminalEchoReplyRepository {
   );
 
   /// Publishes a reply to an existing Terminal Echo.
-  /// Can be voice memo or text message (or both).
+  /// Can be voice memo or text message (or both). [coordinates]: where the
+  /// sender is; the API only takes replies from inside the echo's airport.
   Future<Either<Failure, TerminalEchoReplyEntity>> createReply({
     required String terminalEchoId,
     String? fileUrl,
     String? fileName,
     String? textMessage,
+    LocationCoordinates? coordinates,
     double audioDuration = 0,
     List<double> waveformData = const [],
   });
