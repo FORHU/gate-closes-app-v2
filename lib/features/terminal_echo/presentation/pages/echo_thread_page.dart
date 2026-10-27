@@ -58,7 +58,9 @@ class _EchoThreadPageState extends ConsumerState<EchoThreadPage> {
 
   bool _isInsideTargetAirport() {
     final airportState = ref.read(airportControllerProvider);
-    if (airportState.airport == null) return false;
+    if (airportState.airport == null || !airportState.isInsideAirport) {
+      return false;
+    }
     return airportState.airport!.iata.toUpperCase() ==
         widget.echo.airportIata.toUpperCase();
   }
